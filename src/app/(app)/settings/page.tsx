@@ -70,9 +70,17 @@ export default function SettingsPage() {
   }
 
   const handleDocUpload = async (file: File) => {
-    const ok = file.name.endsWith('.pdf') || file.name.endsWith('.txt') || file.name.endsWith('.md')
-    if (!ok) { alert('Only PDF, .txt, and .md files are supported.'); return }
-    if (file.size > 10 * 1024 * 1024) { alert('File must be under 10MB.'); return }
+    if (!['pro', 'team'].includes(plan?.plan ?? '')) {
+      setKbError('Document uploads are available on Pro and Team plans. Upgrade to unlock this feature.')
+      return
+    }
+    const allowedExts = ['.pdf', '.docx', '.txt', '.md']
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+    if (!allowedExts.includes(ext)) {
+      setKbError('Supported file types: PDF, Word (.docx), plain text (.txt), and Markdown (.md).')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) { setKbError('File must be under 10MB.'); return }
     setDocUploading(true)
     const fd = new FormData()
     fd.append('file', file)
@@ -145,15 +153,20 @@ export default function SettingsPage() {
             ))}
           </div>
         )}
-        <button
-          data-testid="upload-doc-button"
-          onClick={() => fileRef.current?.click()}
-          disabled={docUploading}
-          className="flex items-center gap-2 border border-gray-200 hover:border-black px-4 py-2.5 text-sm transition-colors duration-150 disabled:opacity-50"
-        >
-          {docUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" strokeWidth={1.5} />}
-          Upload new document
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            data-testid="upload-doc-button"
+            onClick={() => fileRef.current?.click()}
+            disabled={docUploading}
+            className="flex items-center gap-2 border border-gray-200 hover:border-black px-4 py-2.5 text-sm transition-colors duration-150 disabled:opacity-50"
+          >
+            {docUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" strokeWidth={1.5} />}
+            Upload document
+          </button>
+          <span className="text-xs text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+            PDF, Word (.docx), .txt, .md · 10MB max · Pro &amp; Team only
+          </span>
+        </div>
         <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md" className="hidden" onChange={(e) => e.target.files?.[0] && handleDocUpload(e.target.files[0])} />
       </section>
 

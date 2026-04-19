@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { Eye, EyeOff } from 'lucide-react'
 
 export default function SignupPage() {
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -31,7 +33,14 @@ export default function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        },
+      },
     })
     if (error) {
       setError(error.message)
@@ -148,6 +157,16 @@ export default function SignupPage() {
             {error && (
               <div data-testid="signup-error" className="border border-red-200 bg-red-50 text-red-600 text-sm px-4 py-3">{error}</div>
             )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>First name</label>
+                <input data-testid="signup-firstname-input" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150" placeholder="Jane" />
+              </div>
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Last name</label>
+                <input data-testid="signup-lastname-input" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150" placeholder="Smith" />
+              </div>
+            </div>
             <div>
               <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Email</label>
               <input data-testid="signup-email-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150" placeholder="you@example.com" />

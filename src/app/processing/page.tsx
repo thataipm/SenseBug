@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { takePendingFile } from '@/lib/pending-upload'
 
 const STEPS = [
-  'Parsing your CSV file…',
+  'Parsing your file…',
   'Loading your Knowledge Base…',
   'Ranking bugs by business impact…',
   'Finalising results…',

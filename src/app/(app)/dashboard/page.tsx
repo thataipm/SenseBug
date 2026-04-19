@@ -100,7 +100,9 @@ function DashboardContent() {
   }, [fetchData])
 
   const handleUpload = (file: File) => {
-    if (!file.name.endsWith('.csv')) { setUploadError('Only CSV files are supported.'); return }
+    const allowed = ['.csv', '.tsv', '.xlsx', '.xls', '.txt']
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+    if (!allowed.includes(ext)) { setUploadError('Supported formats: CSV, Excel (.xlsx / .xls), TSV, or TXT.'); return }
     setUploadError('')
     setUploading(true)
     setPendingFile(file)

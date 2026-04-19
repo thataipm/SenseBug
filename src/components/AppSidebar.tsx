@@ -26,13 +26,19 @@ interface PlanInfo {
 export function AppSidebar() {
   const pathname  = usePathname()
   const router    = useRouter()
-  const [email, setEmail]   = useState('')
-  const [plan, setPlan]     = useState<PlanInfo | null>(null)
+  const [email, setEmail]       = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [plan, setPlan]         = useState<PlanInfo | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setEmail(data.user.email ?? '')
+      if (data.user) {
+        setEmail(data.user.email ?? '')
+        const meta = data.user.user_metadata ?? {}
+        const full = meta.full_name || `${meta.first_name ?? ''} ${meta.last_name ?? ''}`.trim()
+        setDisplayName(full)
+      }
     })
     fetch('/api/plan').then(r => r.ok ? r.json() : null).then(d => d && setPlan(d))
   }, [])
@@ -126,8 +132,11 @@ export function AppSidebar() {
 
       {/* User */}
       <div className="px-4 py-4 border-t border-gray-100 flex-shrink-0">
+        {displayName && (
+          <p className="text-xs font-medium text-black/70 truncate mb-0.5">{displayName}</p>
+        )}
         {email && (
-          <p className="text-xs text-black/40 truncate mb-2.5">{email}</p>
+          <p className="text-xs text-black/35 truncate mb-2.5">{email}</p>
         )}
         <button
           onClick={handleSignOut}
