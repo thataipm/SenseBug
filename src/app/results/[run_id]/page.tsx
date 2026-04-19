@@ -196,8 +196,8 @@ export default function ResultsPage() {
                     <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{r.bug_id}</span>
                     <PriorityBadge p={r.pm_action === 'edited' && r.edited_priority ? r.edited_priority : r.priority} />
                     <SeverityBadge s={r.pm_action === 'edited' && r.edited_severity ? r.edited_severity : r.severity} />
-                    {r.gap_flags?.includes('Likely over-prioritised') && <Flag className="w-3 h-3 text-purple-500" strokeWidth={2} title="Likely over-prioritised" />}
-                    {r.gap_flags?.filter(f => f !== 'Likely over-prioritised').length > 0 && <Flag className="w-3 h-3 text-orange-400" strokeWidth={2} title="Has quality flags" />}
+                    {r.gap_flags?.includes('Likely over-prioritised') && <Flag className="w-3 h-3 text-purple-500" strokeWidth={2} aria-label="Likely over-prioritised" />}
+                    {r.gap_flags?.filter(f => f !== 'Likely over-prioritised').length > 0 && <Flag className="w-3 h-3 text-orange-400" strokeWidth={2} aria-label="Has quality flags" />}
                     {r.pm_action === 'approved' && <Check className="w-3 h-3 text-green-500" strokeWidth={2.5} />}
                     {r.pm_action === 'rejected' && <X className="w-3 h-3 text-black/30" strokeWidth={2.5} />}
                   </div>
