@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -54,7 +54,7 @@ interface PlanInfo {
   bugs_analyzed_this_month: number
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [runs, setRuns] = useState<TriageRun[]>([])
   const [plan, setPlan] = useState<PlanInfo | null>(null)
   const [kbEmpty, setKbEmpty] = useState(false)
@@ -351,5 +351,13 @@ export default function DashboardPage() {
         )}
       </div>
     </>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense>
+      <DashboardContent />
+    </Suspense>
   )
 }
