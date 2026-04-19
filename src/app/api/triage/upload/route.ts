@@ -386,7 +386,7 @@ export async function POST(request: NextRequest) {
       const workbook = XLSX.read(buffer, { type: 'buffer' })
       const sheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[sheetName]
-      rows = XLSX.utils.sheet_to_json<BugRow>(worksheet, { defval: '' })
+      rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as BugRow[]
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       return NextResponse.json({ error: `Failed to parse Excel file: ${msg}` }, { status: 400 })
