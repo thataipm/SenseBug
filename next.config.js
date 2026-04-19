@@ -9,6 +9,14 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['pdf-parse', 'mammoth', 'xlsx'],
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Prevent webpack from bundling native Node packages used in API routes
+      const existing = Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)
+      config.externals = [...existing, 'pdf-parse', 'mammoth', 'xlsx']
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig
