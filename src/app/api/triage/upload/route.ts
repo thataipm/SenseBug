@@ -197,7 +197,24 @@ gap_flags: string[] — empty array if none. Use these exact values when applica
 'Missing description', 'No reproduction steps', 'Missing environment info', 'Vague impact statement', 'Likely over-prioritised'
 improved_description: string | null — When gap_flags contains at least one quality flag (Missing description, No reproduction steps, Missing environment info, or Vague impact statement): write a clear, actionable 2-3 sentence improved ticket description a developer could act on immediately — covering what is broken, the user or business impact, and reproduction steps if inferable from context or the KB. Return null if gap_flags has no quality flags (ticket is already well-written).
 
-Scoring priorities (in order of weight):
+EXPLICIT SCORING OVERRIDES — apply these before general scoring priorities. They are not guidelines; they are hard rules:
+
+Rule 1 — Security exploit hierarchy:
+Actively exploitable security vulnerabilities (authentication bypass, unauthorized data access, permission escalation, session hijacking) must ALWAYS rank above configuration or access management issues — even when both carry Critical severity. A bug that lets an attacker bypass 2FA or access other users' data is categorically more urgent than an admin losing their own access. Within security bugs, rank by exploitability: externally triggerable > requires account > requires physical access.
+
+Rule 2 — Financial data integrity:
+Any bug that causes financial data corruption, incorrect calculations affecting audited statements, loss of billable hours records, or payroll errors must be treated as Critical severity regardless of how it was labelled by the reporter or in Jira. Silent data loss is worse than visible errors. If money figures or billing records are silently deleted or miscalculated, that is Critical.
+
+Rule 3 — Recency and escalation velocity:
+A bug reported weeks ago with zero escalation, no follow-up comments, and no customer mentions should rank lower than an otherwise identical bug reported recently with active customer impact. Recency alone is a weak signal, but recency combined with growing support volume, active escalation, or new customer mentions in comments is a strong signal. Check the created date and comments carefully.
+
+Rule 4 — ARR and churn signals in comments:
+When the comments field explicitly mentions: a customer name alongside an ARR value, a churn threat, a cancellation warning, a formal escalation from account management, or a specific dollar amount at risk — extract that signal and weight it explicitly in the business_impact field. Call it out by name (e.g. "Customer X ($Y ARR) has threatened cancellation"). Do not bury it in general phrasing.
+
+Rule 5 — Billing history vs. current period:
+Billing and invoicing bugs that affect only historical records (e.g. broken download of invoices older than 12 months, incorrect historical reporting) should rank Medium or lower. They cause friction but do not block current operations. Only elevate to High or above if the bug affects the current billing period, blocks payment processing, or prevents customers from paying or being paid today.
+
+General scoring priorities (apply after overrides above, in order of weight):
 1. Does this bug affect a critical user flow listed in the KB? If yes, rank higher.
 2. How severely does it break functionality — crash or data loss outranks degraded outranks cosmetic.
 3. Stakeholder urgency signals — a bug escalated by customer success from a paying customer carries more weight than an internal dev report.
