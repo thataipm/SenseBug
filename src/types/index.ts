@@ -23,6 +23,7 @@ export interface TriageRun {
   bug_count: number
   run_at: string
   priority_counts?: { P1: number; P2: number; P3: number; P4: number }
+  reviewed_count?: number
 }
 
 export interface TriageResult {

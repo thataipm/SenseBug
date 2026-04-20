@@ -148,6 +148,28 @@ function DashboardContent() {
           <Link href="/settings" className="text-blue-700 font-medium underline whitespace-nowrap text-xs hover:text-blue-900">Set it up →</Link>
         </div>
       )}
+      {/* Resume banner — most recent run has unreviewed bugs */}
+      {runs.length > 0 && (runs[0].reviewed_count ?? 0) > 0 && (runs[0].reviewed_count ?? 0) < runs[0].bug_count && (
+        <div className="border-b border-gray-200 bg-gray-50 text-sm px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <Clock className="w-4 h-4 text-black/40 flex-shrink-0" />
+            <span className="text-black/60 truncate">
+              Pick up where you left off —{' '}
+              <span className="font-medium text-black">{runs[0].filename}</span>
+              <span className="text-black/40 ml-1.5 font-mono text-xs" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                {runs[0].reviewed_count}/{runs[0].bug_count} reviewed
+              </span>
+            </span>
+          </div>
+          <Link
+            href={`/results/${runs[0].id}`}
+            className="text-xs font-mono text-black hover:underline whitespace-nowrap flex-shrink-0"
+            style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+          >
+            Continue reviewing →
+          </Link>
+        </div>
+      )}
 
       <div className="px-6 md:px-10 py-10 max-w-5xl mx-auto" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
 

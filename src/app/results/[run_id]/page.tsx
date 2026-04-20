@@ -1,9 +1,9 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { TriageResult, TriageRun } from '@/types'
-import { Check, X, Edit2, Download, ChevronLeft, Flag, Loader2, Copy, CheckCheck } from 'lucide-react'
+import { Check, X, Edit2, Download, ChevronLeft, Flag, Loader2, Copy, CheckCheck, Search } from 'lucide-react'
 
 function PriorityBadge({ p }: { p: string }) {
   const colors: Record<string, string> = {
@@ -76,8 +76,13 @@ export default function ResultsPage() {
   const [rejectMode, setRejectMode] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [bulkLoading, setBulkLoading] = useState(false)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
   const [copied, setCopied] = useState(false)
+  // Filters
+  const [search, setSearch] = useState('')
+  const [filterPriority, setFilterPriority] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string | null>(null)
   const router = useRouter()
 
   const fetchRun = useCallback(async () => {
@@ -121,6 +126,48 @@ export default function ResultsPage() {
   }
 
   const handleDownload = () => { window.open(`/api/triage/export/${run_id}`, '_blank') }
+
+  const filteredResults = useMemo(() => {
+    return results.filter(r => {
+      if (search) {
+        const q = search.toLowerCase()
+        if (!r.title.toLowerCase().includes(q) && !r.bug_id.toLowerCase().includes(q)) return false
+      }
+      if (filterPriority) {
+        const p = r.pm_action === 'edited' && r.edited_priority ? r.edited_priority : r.priority
+        if (p !== filterPriority) return false
+      }
+      if (filterStatus === 'unreviewed' && r.pm_action) return false
+      if (filterStatus === 'approved' && r.pm_action !== 'approved') return false
+      if (filterStatus === 'rejected' && r.pm_action !== 'rejected') return false
+      return true
+    })
+  }, [results, search, filterPriority, filterStatus])
+
+  const hasFilters = !!(search || filterPriority || filterStatus)
+  const clearFilters = () => { setSearch(''); setFilterPriority(null); setFilterStatus(null) }
+
+  const handleBulkApprove = async (filter: 'all_unreviewed' | 'p4_unreviewed') => {
+    const targets = filter === 'p4_unreviewed'
+      ? results.filter(r => !r.pm_action && r.priority === 'P4')
+      : results.filter(r => !r.pm_action)
+    if (targets.length === 0) return
+    if (!window.confirm(`Approve ${targets.length} bug${targets.length === 1 ? '' : 's'}?`)) return
+    setBulkLoading(true)
+    const res = await fetch('/api/triage/verdict/bulk', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ run_id, action: 'approved', filter }),
+    })
+    if (res.ok) {
+      const { ids } = await res.json()
+      setResults(prev => prev.map(r => ids.includes(r.id) ? { ...r, pm_action: 'approved' as const, edited_priority: null, edited_severity: null, rejection_reason: null } : r))
+      if (selected && ids.includes(selected.id)) {
+        setSelected(prev => prev ? { ...prev, pm_action: 'approved' as const } : prev)
+      }
+    }
+    setBulkLoading(false)
+  }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -215,7 +262,7 @@ export default function ResultsPage() {
           {/* Stats bar */}
           <div className="border-b border-gray-100 px-4 py-3 space-y-2">
             <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>
-              {results.length} bugs ranked
+              {hasFilters ? `${filteredResults.length} of ${results.length} bugs` : `${results.length} bugs ranked`}
             </p>
             <div className="flex items-center gap-3 flex-wrap">
               {[
@@ -230,10 +277,83 @@ export default function ResultsPage() {
                 </span>
               ))}
             </div>
+            {/* Bulk actions — only shown when there are unreviewed bugs */}
+            {results.filter(r => !r.pm_action).length > 0 && (
+              <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                <span className="text-xs font-mono text-black/30 flex-shrink-0" style={MONO}>Bulk:</span>
+                <button
+                  onClick={() => handleBulkApprove('all_unreviewed')}
+                  disabled={bulkLoading}
+                  className="text-xs font-mono border border-gray-200 px-2 py-0.5 hover:border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30"
+                  style={MONO}
+                >
+                  Approve unreviewed ({results.filter(r => !r.pm_action).length})
+                </button>
+                {results.filter(r => !r.pm_action && r.priority === 'P4').length > 0 && (
+                  <button
+                    onClick={() => handleBulkApprove('p4_unreviewed')}
+                    disabled={bulkLoading}
+                    className="text-xs font-mono border border-gray-200 px-2 py-0.5 hover:border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30"
+                    style={MONO}
+                  >
+                    P4s only ({results.filter(r => !r.pm_action && r.priority === 'P4').length})
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Filter + search bar */}
+          <div className="border-b border-gray-100 px-4 py-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-black/30 flex-shrink-0" strokeWidth={2} />
+              <input
+                type="text"
+                placeholder="Search by ID or title…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 text-xs bg-transparent border-0 focus:outline-none placeholder:text-black/30"
+                style={MONO}
+              />
+              {hasFilters && (
+                <button onClick={clearFilters} className="text-xs font-mono text-black/35 hover:text-black transition-colors flex-shrink-0" style={MONO}>
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(['P1','P2','P3','P4'] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setFilterPriority(filterPriority === p ? null : p)}
+                  className={`text-xs font-mono px-1.5 py-0.5 border transition-colors ${filterPriority === p ? 'bg-black text-white border-black' : 'border-gray-200 text-black/40 hover:border-black hover:text-black'}`}
+                  style={MONO}
+                >
+                  {p}
+                </button>
+              ))}
+              <span className="w-px h-3 bg-gray-200 mx-0.5 flex-shrink-0" />
+              {(['unreviewed', 'approved', 'rejected'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(filterStatus === s ? null : s)}
+                  className={`text-xs font-mono px-1.5 py-0.5 border transition-colors capitalize ${filterStatus === s ? 'bg-black text-white border-black' : 'border-gray-200 text-black/40 hover:border-black hover:text-black'}`}
+                  style={MONO}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Bug rows */}
-          {results.map((r, i) => (
+          {filteredResults.length === 0 && results.length > 0 && (
+            <div className="px-4 py-10 text-center space-y-2">
+              <p className="text-xs font-mono text-black/30" style={MONO}>No bugs match your filters</p>
+              <button onClick={clearFilters} className="text-xs font-mono text-black/40 hover:text-black underline transition-colors" style={MONO}>Clear filters</button>
+            </div>
+          )}
+          {filteredResults.map((r, i) => (
             <div
               key={r.id}
               data-testid={`bug-row-${r.id}`}
