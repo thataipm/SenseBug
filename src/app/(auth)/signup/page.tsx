@@ -32,10 +32,11 @@ function SignupContent() {
     }
     setLoading(true)
     const supabase = createClient()
-    // After email confirmation, route to checkout if a plan was selected, otherwise dashboard
+    // After email confirmation, always go through onboarding first so KB gets set up.
+    // Onboarding preserves the ?plan param and routes to checkout afterwards.
     const postConfirmUrl = plan
-      ? `${window.location.origin}/checkout?plan=${plan}`
-      : `${window.location.origin}/dashboard`
+      ? `${window.location.origin}/onboarding?plan=${plan}`
+      : `${window.location.origin}/onboarding`
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -77,7 +78,7 @@ function SignupContent() {
           <h1 className="text-2xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Check your email</h1>
           <p className="text-sm text-black/55 mb-3">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</p>
           {plan && (
-            <p className="text-xs text-black/40 mb-6">After confirming, you&apos;ll be taken straight to checkout to complete your {plan === 'pro' ? 'Pro' : 'Team'} upgrade.</p>
+            <p className="text-xs text-black/40 mb-6">After confirming, you&apos;ll set up your account first, then complete your {plan === 'pro' ? 'Pro' : 'Team'} upgrade.</p>
           )}
           <Link href="/login" className="text-sm text-black font-medium hover:underline">Back to login</Link>
         </div>

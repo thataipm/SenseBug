@@ -19,7 +19,17 @@ export async function middleware(request: NextRequest) {
 
   if (isAuthOnly && user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    const plan = request.nextUrl.searchParams.get('plan')
+    // If a valid paid plan param is present, send the already-logged-in user straight to
+    // checkout so their upgrade intent isn't lost (e.g. they opened /signup?plan=pro while
+    // already logged in, or navigated back to /login?plan=pro after confirming their email).
+    if (plan === 'pro' || plan === 'team') {
+      url.pathname = '/checkout'
+      url.search = `?plan=${plan}`
+    } else {
+      url.pathname = '/dashboard'
+      url.search = ''
+    }
     return NextResponse.redirect(url)
   }
 
