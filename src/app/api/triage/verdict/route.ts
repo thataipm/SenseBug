@@ -11,16 +11,22 @@ export async function PATCH(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { result_id, action, edited_priority, edited_severity } = await request.json()
+  const { result_id, action, edited_priority, edited_severity, rejection_reason } = await request.json()
 
   if (!result_id || !action) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+  if (action === 'rejected' && !rejection_reason) {
+    return NextResponse.json({ error: 'Rejection reason is required' }, { status: 400 })
   }
 
   const update: Record<string, unknown> = { pm_action: action }
   if (action === 'edited') {
     if (edited_priority) update.edited_priority = edited_priority
     if (edited_severity) update.edited_severity = edited_severity
+  }
+  if (action === 'rejected') {
+    update.rejection_reason = rejection_reason
   }
 
   // Verify ownership via run

@@ -39,6 +39,7 @@ export interface TriageResult {
   pm_action: 'approved' | 'edited' | 'rejected' | null
   edited_priority: string | null
   edited_severity: string | null
+  rejection_reason: string | null
   original_description: string | null
   reporter_priority: string | null
   improved_description: string | null

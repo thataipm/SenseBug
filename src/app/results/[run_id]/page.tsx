@@ -47,6 +47,17 @@ function getActionBadgeClass(action: string): string {
   return 'border-blue-200 bg-blue-50 text-blue-600'
 }
 
+function getConfidence(flags: string[]): { label: 'High' | 'Medium' | 'Low'; color: string } {
+  const quality = flags.filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
+  if (quality.includes('Missing description') || quality.length >= 2)
+    return { label: 'Low', color: 'text-red-600 bg-red-50 border-red-200' }
+  if (quality.length === 1)
+    return { label: 'Medium', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' }
+  return { label: 'High', color: 'text-green-600 bg-green-50 border-green-200' }
+}
+
+const REJECT_REASONS = ['Wrong priority', 'Wrong severity', 'Missing context', 'Duplicate', 'Other'] as const
+
 const MONO = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
 const HEADING = { fontFamily: 'var(--font-space-grotesk), sans-serif' }
 const COL_LABEL = 'text-xs font-mono uppercase tracking-widest text-black/35 mb-3'
@@ -62,6 +73,8 @@ export default function ResultsPage() {
   const [editMode, setEditMode] = useState(false)
   const [editPriority, setEditPriority] = useState('')
   const [editSeverity, setEditSeverity] = useState('')
+  const [rejectMode, setRejectMode] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -80,27 +93,29 @@ export default function ResultsPage() {
 
   useEffect(() => { fetchRun() }, [fetchRun])
 
-  // Reset copy state whenever a different bug is selected
-  useEffect(() => { setCopied(false) }, [selected?.id])
+  // Reset per-ticket UI state whenever a different bug is selected
+  useEffect(() => { setCopied(false); setRejectMode(false); setRejectReason('') }, [selected?.id])
 
-  const handleVerdict = async (action: 'approved' | 'edited' | 'rejected', resultId: string, ep?: string, es?: string) => {
+  const handleVerdict = async (action: 'approved' | 'edited' | 'rejected', resultId: string, ep?: string, es?: string, reason?: string) => {
     if (!selected) return
     setActionLoading(true)
     const res = await fetch('/api/triage/verdict', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ result_id: resultId, action, edited_priority: ep, edited_severity: es }),
+      body: JSON.stringify({ result_id: resultId, action, edited_priority: ep, edited_severity: es, rejection_reason: reason }),
     })
     if (res.ok) {
       setResults((prev) =>
         prev.map((r) =>
-          r.id === resultId ? { ...r, pm_action: action, edited_priority: ep || null, edited_severity: es || null } : r
+          r.id === resultId ? { ...r, pm_action: action, edited_priority: ep || null, edited_severity: es || null, rejection_reason: reason || null } : r
         )
       )
       if (selected.id === resultId) {
-        setSelected((prev) => prev ? { ...prev, pm_action: action, edited_priority: ep || null, edited_severity: es || null } : prev)
+        setSelected((prev) => prev ? { ...prev, pm_action: action, edited_priority: ep || null, edited_severity: es || null, rejection_reason: reason || null } : prev)
       }
       setEditMode(false)
+      setRejectMode(false)
+      setRejectReason('')
     }
     setActionLoading(false)
   }
@@ -153,6 +168,42 @@ export default function ResultsPage() {
         </div>
       )}
 
+      {/* ── Backlog health summary bar ── */}
+      {results.length > 0 && (() => {
+        const sev = { Critical: 0, High: 0, Medium: 0, Low: 0 }
+        results.forEach(r => { const s = (r.pm_action === 'edited' && r.edited_severity ? r.edited_severity : r.severity) as keyof typeof sev; if (s in sev) sev[s]++ })
+        const reviewed = results.filter(r => r.pm_action).length
+        const pct = Math.round((reviewed / results.length) * 100)
+        const sevItems = [
+          { label: 'Critical', count: sev.Critical, color: 'text-red-600', dot: 'bg-red-500' },
+          { label: 'High',     count: sev.High,     color: 'text-orange-600', dot: 'bg-orange-400' },
+          { label: 'Medium',   count: sev.Medium,   color: 'text-yellow-700', dot: 'bg-yellow-400' },
+          { label: 'Low',      count: sev.Low,      color: 'text-green-700', dot: 'bg-green-400' },
+        ].filter(s => s.count > 0)
+        return (
+          <div className="border-b border-gray-100 bg-gray-50 px-6 py-2.5 flex items-center justify-between gap-6 flex-shrink-0 flex-wrap">
+            <div className="flex items-center gap-5">
+              <span className="text-xs font-mono uppercase tracking-widest text-black/35 mr-1" style={MONO}>Severity</span>
+              {sevItems.map(s => (
+                <span key={s.label} className={`flex items-center gap-1.5 text-xs font-mono font-semibold ${s.color}`} style={MONO}>
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
+                  {s.count} {s.label}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-black/35" style={MONO}>Review progress</span>
+              <div className="flex items-center gap-2">
+                <div className="w-24 h-1.5 bg-gray-200 overflow-hidden">
+                  <div className="h-full bg-black transition-all duration-300" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-xs font-mono text-black/50 tabular-nums" style={MONO}>{reviewed}/{results.length}</span>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── Main layout: bug list + detail ── */}
       <div className="flex flex-1 overflow-hidden">
 
@@ -171,6 +222,7 @@ export default function ResultsPage() {
                 { label: 'P1', count: results.filter(r => r.priority === 'P1').length, color: 'text-red-600 bg-red-50 border-red-200' },
                 { label: 'P2', count: results.filter(r => r.priority === 'P2').length, color: 'text-orange-600 bg-orange-50 border-orange-200' },
                 { label: '⚑ Over-prioritised', count: results.filter(r => r.gap_flags?.includes('Likely over-prioritised')).length, color: 'text-purple-600 bg-purple-50 border-purple-200' },
+                { label: '⇄ Duplicates', count: results.filter(r => r.gap_flags?.includes('Possible duplicate')).length, color: 'text-blue-600 bg-blue-50 border-blue-200' },
                 { label: 'Reviewed', count: results.filter(r => r.pm_action).length, color: 'text-green-700 bg-green-50 border-green-200' },
               ].filter(s => s.count > 0).map(s => (
                 <span key={s.label} className={`text-xs font-mono px-1.5 py-0.5 border ${s.color}`} style={MONO}>
@@ -192,15 +244,24 @@ export default function ResultsPage() {
               <div className="flex items-start gap-3">
                 <span className="text-xs font-mono text-black/30 w-6 flex-shrink-0 mt-0.5" style={MONO}>{r.rank}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{r.bug_id}</span>
-                    <PriorityBadge p={r.pm_action === 'edited' && r.edited_priority ? r.edited_priority : r.priority} />
-                    <SeverityBadge s={r.pm_action === 'edited' && r.edited_severity ? r.edited_severity : r.severity} />
-                    {r.gap_flags?.includes('Likely over-prioritised') && <Flag className="w-3 h-3 text-purple-500" strokeWidth={2} aria-label="Likely over-prioritised" />}
-                    {r.gap_flags?.filter(f => f !== 'Likely over-prioritised').length > 0 && <Flag className="w-3 h-3 text-orange-400" strokeWidth={2} aria-label="Has quality flags" />}
-                    {r.pm_action === 'approved' && <Check className="w-3 h-3 text-green-500" strokeWidth={2.5} />}
-                    {r.pm_action === 'rejected' && <X className="w-3 h-3 text-black/30" strokeWidth={2.5} />}
-                  </div>
+                  {(() => {
+                    const conf = getConfidence(r.gap_flags ?? [])
+                    const qualFlags = (r.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
+                    const flagTooltip = qualFlags.length > 0 ? qualFlags.join(', ') : ''
+                    return (
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{r.bug_id}</span>
+                        <PriorityBadge p={r.pm_action === 'edited' && r.edited_priority ? r.edited_priority : r.priority} />
+                        <SeverityBadge s={r.pm_action === 'edited' && r.edited_severity ? r.edited_severity : r.severity} />
+                        <span className={`text-xs font-mono px-1.5 py-0.5 border ${conf.color}`} style={MONO} title={`Confidence: ${conf.label}`}>{conf.label[0]}</span>
+                        {r.gap_flags?.includes('Likely over-prioritised') && <span title="Likely over-prioritised"><Flag className="w-3 h-3 text-purple-500" strokeWidth={2} /></span>}
+                        {r.gap_flags?.includes('Possible duplicate') && <span className="text-blue-500 text-xs font-bold leading-none" title="Possible duplicate">⇄</span>}
+                        {qualFlags.length > 0 && <span title={flagTooltip}><Flag className="w-3 h-3 text-orange-400" strokeWidth={2} /></span>}
+                        {r.pm_action === 'approved' && <Check className="w-3 h-3 text-green-500" strokeWidth={2.5} />}
+                        {r.pm_action === 'rejected' && <X className="w-3 h-3 text-black/30" strokeWidth={2.5} />}
+                      </div>
+                    )
+                  })()}
                   <p className={`text-sm leading-tight ${r.pm_action === 'rejected' ? 'line-through text-black/30' : ''}`}>
                     {r.title}
                   </p>
@@ -212,8 +273,9 @@ export default function ResultsPage() {
 
         {/* Panels 2 + 3 — Ticket detail + Analysis */}
         {selected ? (() => {
-          const qualityFlags = (selected.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised')
+          const qualityFlags = (selected.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
           const isWellWritten = qualityFlags.length === 0
+          const confidence = getConfidence(selected.gap_flags ?? [])
           const hasOriginalDesc = selected.original_description != null
           const isMissingDescFlag = selected.gap_flags?.includes('Missing description')
           const displayPriority = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : selected.priority
@@ -242,9 +304,12 @@ export default function ResultsPage() {
                     <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{selected.bug_id}</span>
                     <PriorityBadge p={displayPriority} />
                     <SeverityBadge s={displaySeverity} />
+                    <span className={`text-xs font-mono px-2 py-0.5 border ${confidence.color}`} style={MONO} title="AI confidence based on ticket quality">
+                      {confidence.label} confidence
+                    </span>
                     {selected.pm_action && (
                       <span className={`text-xs font-mono uppercase px-2 py-0.5 border ${getActionBadgeClass(selected.pm_action)}`} style={MONO}>
-                        {selected.pm_action}
+                        {selected.pm_action}{selected.pm_action === 'rejected' && selected.rejection_reason ? ` · ${selected.rejection_reason}` : ''}
                       </span>
                     )}
                   </div>
@@ -309,6 +374,14 @@ export default function ResultsPage() {
                   {/* ── Right column: SenseBug Analysis ── */}
                   <div className="p-6 md:p-8">
                     <p className={COL_LABEL} style={MONO}>SenseBug Analysis</p>
+
+                    {/* Possible duplicate callout */}
+                    {selected.gap_flags?.includes('Possible duplicate') && (
+                      <div className="mb-5 border-l-4 border-blue-400 bg-blue-50 pl-4 pr-4 py-3.5">
+                        <p className="text-xs font-mono uppercase tracking-widest text-blue-500 mb-1" style={MONO}>⇄ Possible duplicate</p>
+                        <p className="text-sm text-blue-800">This ticket may overlap with another in this run. Check the rationale below for the related ticket key.</p>
+                      </div>
+                    )}
 
                     {/* Over-prioritised callout */}
                     {selected.gap_flags?.includes('Likely over-prioritised') && (
@@ -380,8 +453,34 @@ export default function ResultsPage() {
                       </div>
                     )}
 
+                    {/* Reject reason form */}
+                    {rejectMode && (
+                      <div className="mb-5 border border-gray-200 p-5 space-y-4">
+                        <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>Why are you rejecting this verdict?</p>
+                        <select
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          className="w-full border border-gray-200 focus:border-black focus:outline-none px-3 py-2.5 text-sm bg-white"
+                        >
+                          <option value="">Select a reason…</option>
+                          {REJECT_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                        <div className="flex gap-2">
+                          <button
+                            data-testid="confirm-reject-button"
+                            onClick={() => handleVerdict('rejected', selected.id, undefined, undefined, rejectReason)}
+                            disabled={actionLoading || !rejectReason}
+                            className="bg-black text-white px-5 py-2.5 text-sm font-semibold hover:bg-black/90 transition-colors duration-150 disabled:opacity-40"
+                          >
+                            Confirm rejection
+                          </button>
+                          <button onClick={() => { setRejectMode(false); setRejectReason('') }} className="border border-gray-200 px-4 py-2.5 text-sm hover:border-black transition-colors duration-150">Cancel</button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Action buttons */}
-                    {!editMode && (
+                    {!editMode && !rejectMode && (
                       <div data-testid="action-buttons" className="pt-5 border-t border-gray-100">
                         <p className="text-xs text-black/35 mb-4">Your call — approve it, adjust the priority, or dismiss it entirely.</p>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -407,7 +506,7 @@ export default function ResultsPage() {
                           </button>
                           <button
                             data-testid="reject-button"
-                            onClick={() => handleVerdict('rejected', selected.id)}
+                            onClick={() => selected.pm_action === 'rejected' ? null : setRejectMode(true)}
                             disabled={actionLoading || selected.pm_action === 'rejected'}
                             className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors duration-150 disabled:opacity-50 ${
                               selected.pm_action === 'rejected'

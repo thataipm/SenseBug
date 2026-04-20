@@ -31,9 +31,18 @@ export async function GET(
   // Build CSV
   const headers = [
     'rank', 'bug_id', 'title',
-    'ai_priority', 'ai_severity', 'ai_business_impact', 'ai_rationale', 'ai_gap_flags',
-    'pm_action', 'final_priority', 'final_severity',
+    'reporter_priority', 'original_description',
+    'ai_priority', 'ai_severity', 'ai_business_impact', 'ai_rationale',
+    'ai_gap_flags', 'ai_confidence', 'ai_improved_description',
+    'pm_action', 'pm_rejection_reason', 'final_priority', 'final_severity',
   ]
+
+  function getConfidence(flags: string[]): string {
+    const quality = flags.filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
+    if (quality.includes('Missing description') || quality.length >= 2) return 'Low'
+    if (quality.length === 1) return 'Medium'
+    return 'High'
+  }
 
   const escape = (v: unknown) => {
     const s = String(v ?? '')
@@ -50,12 +59,17 @@ export async function GET(
       r.rank,
       r.bug_id,
       r.title,
+      r.reporter_priority || '',
+      r.original_description || '',
       r.priority,
       r.severity,
       r.business_impact,
       r.rationale,
       (r.gap_flags || []).join('; '),
+      getConfidence(r.gap_flags || []),
+      r.improved_description || '',
       r.pm_action || '',
+      r.rejection_reason || '',
       finalPriority,
       finalSeverity,
     ].map(escape).join(',')
