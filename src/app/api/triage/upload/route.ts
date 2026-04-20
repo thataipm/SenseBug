@@ -7,7 +7,7 @@ import Papa from 'papaparse'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 
-export const maxDuration = 120
+export const maxDuration = 300
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
