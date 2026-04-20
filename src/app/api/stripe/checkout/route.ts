@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { stripe, STRIPE_PLANS } from '@/lib/stripe'
+import { getStripe, STRIPE_PLANS } from '@/lib/stripe'
 import { isValidOrigin } from '@/lib/csrf'
 
 export async function POST(request: NextRequest) {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   // Create a new Stripe customer if first time
   if (!customerId) {
-    const customer = await stripe.customers.create({
+    const customer = await getStripe().customers.create({
       email: user.email!,
       metadata: { user_id: user.id },
     })
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
   }
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     customer: customerId,
     payment_method_types: ['card'],
     line_items: [{ price: STRIPE_PLANS[plan].priceId, quantity: 1 }],
