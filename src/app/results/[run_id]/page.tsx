@@ -58,6 +58,8 @@ function getConfidence(flags: string[]): { label: 'High' | 'Medium' | 'Low'; col
 
 const REJECT_REASONS = ['Wrong priority', 'Wrong severity', 'Missing context', 'Duplicate', 'Other'] as const
 
+type BulkFilter = 'all_unreviewed' | 'p1_unreviewed' | 'p2_unreviewed' | 'p3_unreviewed' | 'p4_unreviewed'
+
 const MONO = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
 const HEADING = { fontFamily: 'var(--font-space-grotesk), sans-serif' }
 const COL_LABEL = 'text-xs font-mono uppercase tracking-widest text-black/35 mb-3'
@@ -147,9 +149,17 @@ export default function ResultsPage() {
   const hasFilters = !!(search || filterPriority || filterStatus)
   const clearFilters = () => { setSearch(''); setFilterPriority(null); setFilterStatus(null) }
 
-  const handleBulkApprove = async (filter: 'all_unreviewed' | 'p4_unreviewed') => {
-    const targets = filter === 'p4_unreviewed'
-      ? results.filter(r => !r.pm_action && r.priority === 'P4')
+  const handleBulkApprove = async (filter: BulkFilter) => {
+    const priorityMap: Record<BulkFilter, string | null> = {
+      all_unreviewed: null,
+      p1_unreviewed: 'P1',
+      p2_unreviewed: 'P2',
+      p3_unreviewed: 'P3',
+      p4_unreviewed: 'P4',
+    }
+    const pri = priorityMap[filter]
+    const targets = pri
+      ? results.filter(r => !r.pm_action && r.priority === pri)
       : results.filter(r => !r.pm_action)
     if (targets.length === 0) return
     if (!window.confirm(`Approve ${targets.length} bug${targets.length === 1 ? '' : 's'}?`)) return
@@ -280,25 +290,31 @@ export default function ResultsPage() {
             {/* Bulk actions — only shown when there are unreviewed bugs */}
             {results.filter(r => !r.pm_action).length > 0 && (
               <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                <span className="text-xs font-mono text-black/30 flex-shrink-0" style={MONO}>Bulk:</span>
+                <span className="text-xs font-mono text-black/30 flex-shrink-0" style={MONO}>Bulk approve:</span>
                 <button
                   onClick={() => handleBulkApprove('all_unreviewed')}
                   disabled={bulkLoading}
                   className="text-xs font-mono border border-gray-200 px-2 py-0.5 hover:border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30"
                   style={MONO}
                 >
-                  Approve unreviewed ({results.filter(r => !r.pm_action).length})
+                  All unreviewed ({results.filter(r => !r.pm_action).length})
                 </button>
-                {results.filter(r => !r.pm_action && r.priority === 'P4').length > 0 && (
-                  <button
-                    onClick={() => handleBulkApprove('p4_unreviewed')}
-                    disabled={bulkLoading}
-                    className="text-xs font-mono border border-gray-200 px-2 py-0.5 hover:border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30"
-                    style={MONO}
-                  >
-                    P4s only ({results.filter(r => !r.pm_action && r.priority === 'P4').length})
-                  </button>
-                )}
+                {(['P1','P2','P3','P4'] as const).map(p => {
+                  const count = results.filter(r => !r.pm_action && r.priority === p).length
+                  if (count === 0) return null
+                  const filter = `${p.toLowerCase()}_unreviewed` as BulkFilter
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => handleBulkApprove(filter)}
+                      disabled={bulkLoading}
+                      className="text-xs font-mono border border-gray-200 px-2 py-0.5 hover:border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30"
+                      style={MONO}
+                    >
+                      {p} only ({count})
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>

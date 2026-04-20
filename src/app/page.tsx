@@ -247,7 +247,7 @@ export default function LandingPage() {
               <p className="text-xs text-white/40 leading-relaxed flex-1">
                 Upload your product docs and specs — the AI understands your product, not just ticket text. Meaningfully more accurate results.
               </p>
-              <Link href="/signup" data-testid="pricing-pro-btn" className="block text-center bg-white text-black py-3 text-sm font-semibold hover:bg-white/90 transition-colors duration-150 mt-6">
+              <Link href="/checkout?plan=pro" data-testid="pricing-pro-btn" className="block text-center bg-white text-black py-3 text-sm font-semibold hover:bg-white/90 transition-colors duration-150 mt-6">
                 Get started
               </Link>
             </div>
@@ -262,7 +262,7 @@ export default function LandingPage() {
               <p className="text-xs text-black/40 leading-relaxed flex-1">
                 One shared Knowledge Base keeps every PM on the team working from the same product context — no more inconsistent rankings.
               </p>
-              <Link href="/signup" data-testid="pricing-team-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 mt-6">
+              <Link href="/checkout?plan=team" data-testid="pricing-team-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 mt-6">
                 Get started
               </Link>
             </div>
@@ -370,12 +370,12 @@ export default function LandingPage() {
                     </Link>
                   </td>
                   <td className="px-6 py-5 text-center bg-black/[0.03]">
-                    <Link href="/signup" className="inline-block bg-black text-white px-5 py-2 text-xs font-semibold hover:bg-black/80 transition-colors duration-150">
+                    <Link href="/checkout?plan=pro" className="inline-block bg-black text-white px-5 py-2 text-xs font-semibold hover:bg-black/80 transition-colors duration-150">
                       Get started
                     </Link>
                   </td>
                   <td className="px-6 py-5 text-center">
-                    <Link href="/signup" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
+                    <Link href="/checkout?plan=team" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
                       Get started
                     </Link>
                   </td>

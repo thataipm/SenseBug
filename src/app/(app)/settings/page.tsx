@@ -6,6 +6,16 @@ import { createClient } from '@/lib/supabase/client'
 import { KBDocument, TriageRun } from '@/types'
 import { Loader2, FileText, Trash2, Upload, Clock, Check, ExternalLink, Sparkles } from 'lucide-react'
 
+const EXAMPLE_CONTENT = {
+  productOverview: `Acme is a B2B project management platform used by engineering teams at 200+ software companies. Our core value is automating sprint planning and surfacing hidden blockers across team dependencies in real time. Primary users are engineering managers, product managers, and developers.`,
+  criticalFlows: `1. User authentication — login, signup, SSO, and password reset
+2. Sprint creation and task assignment to team members
+3. Cross-team dependency linking and blocker alert notifications
+4. Reporting dashboard — burndown charts, velocity tracking, cycle time
+5. Third-party integrations — Jira, GitHub, and Slack sync`,
+  productAreas: `Sprint Planning, Task Board, Dependency Map, Team Settings, Integrations (Jira/GitHub/Slack), Reports & Analytics, Notifications, Billing & Subscription`,
+}
+
 function SettingsContent() {
   const [productOverview, setProductOverview] = useState('')
   const [criticalFlows, setCriticalFlows]     = useState('')
@@ -24,6 +34,7 @@ function SettingsContent() {
   const router  = useRouter()
   const searchParams = useSearchParams()
   const justUpgraded = searchParams.get('upgraded') === '1'
+  const alreadySubscribed = searchParams.get('already_subscribed') === '1'
 
   const fetchAll = useCallback(async () => {
     const [kbRes, docsRes, runsRes, planRes] = await Promise.all([
@@ -154,11 +165,26 @@ function SettingsContent() {
             <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Product areas / modules</label>
             <textarea data-testid="settings-product-areas" value={productAreas} onChange={(e) => setProductAreas(e.target.value)} rows={2} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-none" />
           </div>
-          <button data-testid="settings-save-kb-button" type="submit" disabled={kbSaving} className="bg-black text-white px-6 py-2.5 text-sm font-semibold hover:bg-black/90 transition-colors duration-150 disabled:opacity-50 flex items-center gap-2">
-            {kbSaving && <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>}
-            {!kbSaving && kbSaved && <><Check className="w-4 h-4" />Saved</>}
-            {!kbSaving && !kbSaved && 'Save knowledge base'}
-          </button>
+          <div className="flex items-center gap-4 flex-wrap">
+            <button data-testid="settings-save-kb-button" type="submit" disabled={kbSaving} className="bg-black text-white px-6 py-2.5 text-sm font-semibold hover:bg-black/90 transition-colors duration-150 disabled:opacity-50 flex items-center gap-2">
+              {kbSaving && <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>}
+              {!kbSaving && kbSaved && <><Check className="w-4 h-4" />Saved</>}
+              {!kbSaving && !kbSaved && 'Save knowledge base'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setProductOverview(EXAMPLE_CONTENT.productOverview)
+                setCriticalFlows(EXAMPLE_CONTENT.criticalFlows)
+                setProductAreas(EXAMPLE_CONTENT.productAreas)
+              }}
+              className="flex items-center gap-1.5 text-xs font-mono text-black/35 hover:text-black/70 transition-colors duration-150"
+              style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+            >
+              <Sparkles className="w-3 h-3" strokeWidth={1.5} />
+              Fill with example
+            </button>
+          </div>
         </form>
       </section>
 
@@ -211,6 +237,17 @@ function SettingsContent() {
             <div>
               <p className="text-sm font-semibold text-green-800" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>You&apos;re all set!</p>
               <p className="text-xs text-green-700">Your plan has been upgraded. New limits apply immediately.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Already subscribed banner */}
+        {alreadySubscribed && (
+          <div className="mb-5 border border-blue-200 bg-blue-50 px-5 py-4 flex items-center gap-3">
+            <Check className="w-5 h-5 text-blue-600 flex-shrink-0" strokeWidth={2.5} />
+            <div>
+              <p className="text-sm font-semibold text-blue-800" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>You&apos;re already on this plan.</p>
+              <p className="text-xs text-blue-700">To make changes to your subscription, use the billing portal below.</p>
             </div>
           </div>
         )}

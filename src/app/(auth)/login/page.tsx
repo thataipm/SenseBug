@@ -1,17 +1,19 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Eye, EyeOff } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const plan = searchParams.get('plan') // preserved from pricing → signup → login
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +26,8 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    router.push('/dashboard')
+    // If user came via a pricing CTA with a plan, send them to checkout
+    router.push(plan ? `/checkout?plan=${plan}` : '/dashboard')
     router.refresh()
   }
 
@@ -178,12 +181,24 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-sm text-black/45">
             No account?{' '}
-            <Link href="/signup" className="text-black font-medium hover:underline">
+            <Link href={plan ? `/signup?plan=${plan}` : '/signup'} className="text-black font-medium hover:underline">
               Sign up free
             </Link>
           </p>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-black/30" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }

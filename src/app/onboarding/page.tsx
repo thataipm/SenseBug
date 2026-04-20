@@ -1,13 +1,23 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Upload, X, FileText, Loader2, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
+const EXAMPLE_CONTENT = {
+  productOverview: `Acme is a B2B project management platform used by engineering teams at 200+ software companies. Our core value is automating sprint planning and surfacing hidden blockers across team dependencies in real time. Primary users are engineering managers, product managers, and developers.`,
+  criticalFlows: `1. User authentication — login, signup, SSO, and password reset
+2. Sprint creation and task assignment to team members
+3. Cross-team dependency linking and blocker alert notifications
+4. Reporting dashboard — burndown charts, velocity tracking, cycle time
+5. Third-party integrations — Jira, GitHub, and Slack sync`,
+  productAreas: `Sprint Planning, Task Board, Dependency Map, Team Settings, Integrations (Jira/GitHub/Slack), Reports & Analytics, Notifications, Billing & Subscription`,
+}
+
 interface UploadedFile { name: string; status: 'uploading' | 'done' | 'error'; error?: string }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const [productOverview, setProductOverview] = useState('')
   const [criticalFlows, setCriticalFlows] = useState('')
   const [productAreas, setProductAreas] = useState('')
@@ -18,6 +28,8 @@ export default function OnboardingPage() {
   const [checking, setChecking] = useState(true)
   const fileRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const plan = searchParams.get('plan') // preserved from signup flow
 
   // Auth + KB guard: redirect if unauthenticated or KB already exists
   useEffect(() => {
@@ -28,12 +40,16 @@ export default function OnboardingPage() {
       const res = await fetch('/api/kb')
       if (res.ok) {
         const kb = await res.json()
-        if (kb) { router.push('/dashboard'); return }
+        // KB already set up — skip onboarding, but preserve plan param so checkout still happens
+        if (kb) {
+          router.push(plan ? `/checkout?plan=${plan}` : '/dashboard')
+          return
+        }
       }
       setChecking(false)
     }
     init()
-  }, [router])
+  }, [router, plan])
 
   const handleFileUpload = async (files: FileList) => {
     for (const file of Array.from(files)) {
@@ -98,7 +114,8 @@ export default function OnboardingPage() {
     })
     setSaving(false)
     if (!res.ok) { setError('Failed to save. Please try again.'); return }
-    router.push('/dashboard')
+    // If user came from a paid plan signup, send them to checkout next
+    router.push(plan ? `/checkout?plan=${plan}` : '/dashboard')
   }
 
   // Skip: save an empty KB so the guard doesn't redirect back here,
@@ -237,6 +254,25 @@ export default function OnboardingPage() {
             )}
           </div>
 
+          {/* Fill with example */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-100" />
+            <button
+              type="button"
+              onClick={() => {
+                setProductOverview(EXAMPLE_CONTENT.productOverview)
+                setCriticalFlows(EXAMPLE_CONTENT.criticalFlows)
+                setProductAreas(EXAMPLE_CONTENT.productAreas)
+              }}
+              className="flex items-center gap-1.5 text-xs font-mono text-black/35 hover:text-black/70 transition-colors duration-150 flex-shrink-0"
+              style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+            >
+              <Sparkles className="w-3 h-3" strokeWidth={1.5} />
+              Fill with example
+            </button>
+            <div className="flex-1 h-px bg-gray-100" />
+          </div>
+
           <button
             data-testid="onboarding-save-button"
             type="submit"
@@ -260,5 +296,17 @@ export default function OnboardingPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-black/30" />
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
   )
 }

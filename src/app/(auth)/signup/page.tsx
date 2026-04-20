@@ -1,11 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Eye, EyeOff } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
-export default function SignupPage() {
+function SignupContent() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -16,6 +16,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [checkEmail, setCheckEmail] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const plan = searchParams.get('plan') // 'pro' | 'team' — if present, go to checkout after signup
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,11 +32,16 @@ export default function SignupPage() {
     }
     setLoading(true)
     const supabase = createClient()
+    // After email confirmation, route to checkout if a plan was selected, otherwise dashboard
+    const postConfirmUrl = plan
+      ? `${window.location.origin}/checkout?plan=${plan}`
+      : `${window.location.origin}/dashboard`
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: postConfirmUrl,
         data: {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
@@ -48,7 +55,13 @@ export default function SignupPage() {
       return
     }
     if (data?.user?.email_confirmed_at || data?.session) {
-      router.push('/onboarding')
+      // Immediate session — go to onboarding first, then checkout will follow later
+      // (onboarding sets up KB; checkout can happen from settings too)
+      if (plan) {
+        router.push(`/onboarding?plan=${plan}`)
+      } else {
+        router.push('/onboarding')
+      }
       router.refresh()
     } else {
       setCheckEmail(true)
@@ -62,7 +75,10 @@ export default function SignupPage() {
         <div className="max-w-sm w-full text-center">
           <div className="font-black text-xl tracking-tight mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</div>
           <h1 className="text-2xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Check your email</h1>
-          <p className="text-sm text-black/55 mb-6">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</p>
+          <p className="text-sm text-black/55 mb-3">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</p>
+          {plan && (
+            <p className="text-xs text-black/40 mb-6">After confirming, you&apos;ll be taken straight to checkout to complete your {plan === 'pro' ? 'Pro' : 'Team'} upgrade.</p>
+          )}
           <Link href="/login" className="text-sm text-black font-medium hover:underline">Back to login</Link>
         </div>
       </div>
@@ -191,10 +207,22 @@ export default function SignupPage() {
 
           <p className="mt-6 text-center text-sm text-black/45">
             Already have an account?{' '}
-            <Link href="/login" className="text-black font-medium hover:underline">Sign in</Link>
+            <Link href={plan ? `/login?plan=${plan}` : '/login'} className="text-black font-medium hover:underline">Sign in</Link>
           </p>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-black/30" />
+      </div>
+    }>
+      <SignupContent />
+    </Suspense>
   )
 }

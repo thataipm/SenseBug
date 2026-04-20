@@ -12,7 +12,7 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { run_id, action, filter } = await request.json()
-  // filter: 'all_unreviewed' | 'p4_unreviewed'
+  // filter: 'all_unreviewed' | 'p1_unreviewed' | 'p2_unreviewed' | 'p3_unreviewed' | 'p4_unreviewed'
 
   if (!run_id || !action) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -35,8 +35,14 @@ export async function PATCH(request: NextRequest) {
     .eq('run_id', run_id)
     .is('pm_action', null)
 
-  if (filter === 'p4_unreviewed') {
-    query = query.eq('priority', 'P4')
+  const priorityFilters: Record<string, string> = {
+    p1_unreviewed: 'P1',
+    p2_unreviewed: 'P2',
+    p3_unreviewed: 'P3',
+    p4_unreviewed: 'P4',
+  }
+  if (filter && priorityFilters[filter]) {
+    query = query.eq('priority', priorityFilters[filter])
   }
 
   const { data: targets } = await query

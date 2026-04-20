@@ -119,6 +119,7 @@ export default function HistoryRunPage() {
               <th className="py-3 text-left font-mono text-xs uppercase tracking-widest text-black/40 pr-4" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>File</th>
               <th className="py-3 text-left font-mono text-xs uppercase tracking-widest text-black/40 pr-4" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Date</th>
               <th className="py-3 text-center font-mono text-xs uppercase tracking-widest text-black/40 pr-4" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Bugs</th>
+              <th className="py-3 text-left font-mono text-xs uppercase tracking-widest text-black/40 pr-4 hidden sm:table-cell" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Reviewed</th>
               <th className="py-3 w-20"></th>
             </tr>
           </thead>
@@ -137,6 +138,29 @@ export default function HistoryRunPage() {
                   <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" />{new Date(run.run_at).toLocaleDateString()}</span>
                 </td>
                 <td className="py-3 pr-4 text-center font-mono text-xs text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{run.bug_count}</td>
+                <td className="py-3 pr-4 hidden sm:table-cell">
+                  {run.bug_count > 0 ? (() => {
+                    const reviewed = run.reviewed_count ?? 0
+                    const total = run.bug_count
+                    const pct = Math.round((reviewed / total) * 100)
+                    const done = reviewed === total
+                    return (
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-gray-200 overflow-hidden flex-shrink-0">
+                          <div
+                            className={`h-full transition-all duration-300 ${done ? 'bg-green-500' : 'bg-black'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className={`text-xs font-mono tabular-nums ${done ? 'text-green-600' : 'text-black/40'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                          {reviewed}/{total}
+                        </span>
+                      </div>
+                    )
+                  })() : (
+                    <span className="text-xs text-black/25 font-mono" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>—</span>
+                  )}
+                </td>
                 <td className="py-3 text-right">
                   {deleting.has(run.id) ? (
                     <Loader2 className="w-4 h-4 animate-spin text-black/30 ml-auto" />
