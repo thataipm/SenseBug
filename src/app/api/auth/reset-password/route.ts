@@ -34,5 +34,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 
+  // Sign out all sessions so the recovery token can't be reused
+  // and the user must log in fresh with their new password.
+  await supabase.auth.signOut({ scope: 'global' })
+
   return NextResponse.json({ success: true })
 }

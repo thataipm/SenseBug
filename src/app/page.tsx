@@ -36,7 +36,7 @@ export default function LandingPage() {
         {/* Subtle grid */}
         <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-5xl mx-auto relative z-10">
-          <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-8" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+          <p className="text-sm font-mono uppercase tracking-widest text-black/55 mb-8" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
             AI Bug Triage for Product Managers
           </p>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.95] mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>

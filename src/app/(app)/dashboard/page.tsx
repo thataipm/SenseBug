@@ -136,7 +136,7 @@ function DashboardContent() {
         <div data-testid="limit-banner" className="border-b border-orange-200 bg-orange-50 text-orange-800 text-sm px-6 py-3 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" />
           You&apos;ve used all {monthlyBugLimit} bugs in your monthly quota.{' '}
-          <Link href="/settings" className="font-medium underline">Upgrade for more</Link>
+          <Link href="/#pricing" className="font-medium underline">Upgrade for more</Link>
         </div>
       )}
       {(kbSkipped || kbEmpty) && (
@@ -236,7 +236,7 @@ function DashboardContent() {
                   </div>
                 </div>
                 <Link
-                  href="/settings"
+                  href="/#pricing"
                   className="text-xs font-mono text-black/50 hover:text-black border border-gray-300 hover:border-black px-3 py-1.5 transition-colors duration-150 whitespace-nowrap flex-shrink-0"
                   style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
                 >

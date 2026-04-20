@@ -274,8 +274,8 @@ async function callClaudeBatch(
 ): Promise<Record<string, unknown>[]> {
   const userPrompt = buildUserPrompt(kbData, retrievedChunks, JSON.stringify(batch, null, 2))
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 8192,
+    model: 'claude-haiku-4-5',
+    max_tokens: 4096,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })

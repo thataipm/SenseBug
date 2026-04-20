@@ -18,7 +18,9 @@ export function isValidOrigin(request: NextRequest): boolean {
   try {
     const originHost = new URL(origin).host
     const appHost = new URL(appUrl).host
-    return originHost === appHost
+    // Normalise www — treat sensebug.com and www.sensebug.com as the same origin
+    const strip = (h: string) => h.replace(/^www\./, '')
+    return strip(originHost) === strip(appHost)
   } catch {
     return false
   }
