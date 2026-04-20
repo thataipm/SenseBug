@@ -473,7 +473,7 @@ export default function LandingPage() {
           <Link href="/privacy" className="hover:text-black transition-colors duration-150">Privacy</Link>
           <Link href="/terms" className="hover:text-black transition-colors duration-150">Terms</Link>
           <a href="mailto:contact@sensebug.com" className="hover:text-black transition-colors duration-150">Contact</a>
-          <span>© 2025 Sensebug</span>
+          <span>© 2026 Sensebug</span>
         </div>
         </div>
       </footer>

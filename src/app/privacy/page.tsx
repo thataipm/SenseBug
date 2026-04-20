@@ -70,7 +70,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="text-sm text-black/40 mb-16" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-          Last updated: April 2025
+          Last updated: April 2026
         </p>
 
         <div className="space-y-12">
