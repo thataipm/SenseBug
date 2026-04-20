@@ -1,12 +1,12 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { KBDocument, TriageRun } from '@/types'
-import { Loader2, FileText, Trash2, Upload, Clock, Check } from 'lucide-react'
+import { Loader2, FileText, Trash2, Upload, Clock, Check, ExternalLink, Sparkles } from 'lucide-react'
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [productOverview, setProductOverview] = useState('')
   const [criticalFlows, setCriticalFlows]     = useState('')
   const [productAreas, setProductAreas]       = useState('')
@@ -18,8 +18,12 @@ export default function SettingsPage() {
   const [kbSaved, setKbSaved]         = useState(false)
   const [kbError, setKbError]         = useState('')
   const [docUploading, setDocUploading] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+  const [portalLoading, setPortalLoading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const router  = useRouter()
+  const searchParams = useSearchParams()
+  const justUpgraded = searchParams.get('upgraded') === '1'
 
   const fetchAll = useCallback(async () => {
     const [kbRes, docsRes, runsRes, planRes] = await Promise.all([
@@ -92,6 +96,32 @@ export default function SettingsPage() {
       let msg = 'Upload failed.'
       try { const j = await res.json(); msg = j.error || msg } catch {}
       setKbError(msg)
+    }
+  }
+
+  const handleUpgrade = async (targetPlan: string) => {
+    setCheckoutLoading(targetPlan)
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: targetPlan }),
+    })
+    if (res.ok) {
+      const { url } = await res.json()
+      window.location.href = url
+    } else {
+      setCheckoutLoading(null)
+    }
+  }
+
+  const handleManageBilling = async () => {
+    setPortalLoading(true)
+    const res = await fetch('/api/stripe/portal', { method: 'POST' })
+    if (res.ok) {
+      const { url } = await res.json()
+      window.location.href = url
+    } else {
+      setPortalLoading(false)
     }
   }
 
@@ -173,18 +203,84 @@ export default function SettingsPage() {
       {/* Plan summary */}
       <section>
         <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Plan</p>
+
+        {/* Upgrade success banner */}
+        {justUpgraded && (
+          <div className="mb-5 border border-green-200 bg-green-50 px-5 py-4 flex items-center gap-3">
+            <Check className="w-5 h-5 text-green-600 flex-shrink-0" strokeWidth={2.5} />
+            <div>
+              <p className="text-sm font-semibold text-green-800" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>You&apos;re all set!</p>
+              <p className="text-xs text-green-700">Your plan has been upgraded. New limits apply immediately.</p>
+            </div>
+          </div>
+        )}
+
         <div className="border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-1">
             <div>
               <p className="text-xs font-mono text-black/40 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Current plan</p>
               <p className="text-lg font-bold" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{plan ? planLabels[plan.plan] : '—'}</p>
             </div>
-            {plan?.plan === 'starter' && (
-              <button data-testid="upgrade-button" className="bg-black text-white px-5 py-2.5 text-sm font-semibold hover:bg-black/90 transition-colors duration-150">
-                Upgrade to Pro
+            {(plan?.plan === 'pro' || plan?.plan === 'team') && (
+              <button
+                onClick={handleManageBilling}
+                disabled={portalLoading}
+                className="flex items-center gap-2 border border-gray-200 hover:border-black px-4 py-2 text-sm transition-colors duration-150 disabled:opacity-50"
+              >
+                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" strokeWidth={1.5} />}
+                Manage billing
               </button>
             )}
           </div>
+
+          {/* Upgrade options for starter */}
+          {plan?.plan === 'starter' && (
+            <div className="mt-5 pt-5 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Pro */}
+              <div className="border border-gray-200 p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-sm" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Pro</p>
+                  <p className="text-xs font-mono text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>$19 / mo</p>
+                </div>
+                <ul className="space-y-1.5">
+                  {['250 bugs / month', '100 bugs / run', 'Document uploads'].map(f => (
+                    <li key={f} className="flex items-center gap-2 text-xs text-black/60">
+                      <Check className="w-3 h-3 text-green-500 flex-shrink-0" strokeWidth={2.5} />{f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  data-testid="upgrade-button"
+                  onClick={() => handleUpgrade('pro')}
+                  disabled={!!checkoutLoading}
+                  className="w-full bg-black text-white py-2 text-sm font-semibold hover:bg-black/90 transition-colors duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {checkoutLoading === 'pro' ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : <><Sparkles className="w-4 h-4" strokeWidth={1.5} />Upgrade to Pro</>}
+                </button>
+              </div>
+              {/* Team */}
+              <div className="border border-gray-200 p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-sm" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Team</p>
+                  <p className="text-xs font-mono text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>$49 / mo</p>
+                </div>
+                <ul className="space-y-1.5">
+                  {['500 bugs / month', '250 bugs / run', 'Document uploads'].map(f => (
+                    <li key={f} className="flex items-center gap-2 text-xs text-black/60">
+                      <Check className="w-3 h-3 text-green-500 flex-shrink-0" strokeWidth={2.5} />{f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => handleUpgrade('team')}
+                  disabled={!!checkoutLoading}
+                  className="w-full border border-black text-black py-2 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {checkoutLoading === 'team' ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : 'Upgrade to Team'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -219,5 +315,13 @@ export default function SettingsPage() {
         )}
       </section>
     </div>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsContent />
+    </Suspense>
   )
 }
