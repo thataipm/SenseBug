@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     console.error('[stripe/checkout] Stripe API error:', message)
-    return NextResponse.json({ error: 'Failed to create checkout session. Please try again.' }, { status: 500 })
+    // Surface the Stripe error message directly — it's safe to expose (no keys/PII)
+    // and saves digging through Vercel logs during setup.
+    return NextResponse.json({ error: `Stripe error: ${message}` }, { status: 500 })
   }
 }
