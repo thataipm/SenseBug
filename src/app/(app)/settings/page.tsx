@@ -23,6 +23,7 @@ function SettingsContent() {
   const [docs, setDocs]   = useState<KBDocument[]>([])
   const [runs, setRuns]   = useState<TriageRun[]>([])
   const [plan, setPlan]   = useState<any>(null)
+  const [userEmail, setUserEmail] = useState<string>('')
   const [loading, setLoading]         = useState(true)
   const [kbSaving, setKbSaving]       = useState(false)
   const [kbSaved, setKbSaved]         = useState(false)
@@ -30,6 +31,11 @@ function SettingsContent() {
   const [docUploading, setDocUploading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError] = useState('')
+  const [cancelStep, setCancelStep] = useState<'idle' | 'confirm' | 'done'>('idle')
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelError, setCancelError] = useState('')
+  const [cancelEndsAt, setCancelEndsAt] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const router  = useRouter()
   const searchParams = useSearchParams()
@@ -59,6 +65,7 @@ function SettingsContent() {
       const supabase = createClient()
       const { data } = await supabase.auth.getUser()
       if (!data.user) { router.push('/login'); return }
+      setUserEmail(data.user.email ?? '')
       await fetchAll()
     }
     init()
@@ -106,7 +113,7 @@ function SettingsContent() {
   }
 
   const handleDocUpload = async (file: File) => {
-    if (!['pro', 'team'].includes(plan?.plan ?? '')) {
+    if (!['pro', 'team', 'max'].includes(plan?.plan ?? '')) {
       setKbError('Document uploads are available on Pro and Team plans. Upgrade to unlock this feature.')
       return
     }
@@ -148,16 +155,50 @@ function SettingsContent() {
 
   const handleManageBilling = async () => {
     setPortalLoading(true)
-    const res = await fetch('/api/dodo/portal', { method: 'POST' })
-    if (res.ok) {
-      const { url } = await res.json()
-      window.location.href = url
-    } else {
+    setPortalError('')
+    try {
+      const res = await fetch('/api/dodo/portal', { method: 'POST' })
+      if (res.ok) {
+        const { url } = await res.json()
+        if (url) {
+          window.location.href = url
+        } else {
+          setPortalError('No billing portal URL returned. Please contact support.')
+          setPortalLoading(false)
+        }
+      } else {
+        let msg = 'Failed to open billing portal.'
+        try { const j = await res.json(); msg = j.error || msg } catch {}
+        setPortalError(msg)
+        setPortalLoading(false)
+      }
+    } catch {
+      setPortalError('Network error. Please try again.')
       setPortalLoading(false)
     }
   }
 
-  const planLabels: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Team' }
+  const handleCancelSubscription = async () => {
+    setCancelLoading(true)
+    setCancelError('')
+    try {
+      const res = await fetch('/api/dodo/cancel', { method: 'POST' })
+      if (res.ok) {
+        const { ends_at } = await res.json()
+        setCancelEndsAt(ends_at ?? null)
+        setCancelStep('done')
+      } else {
+        let msg = 'Failed to cancel subscription.'
+        try { const j = await res.json(); msg = j.error || msg } catch {}
+        setCancelError(msg)
+      }
+    } catch {
+      setCancelError('Network error. Please try again.')
+    }
+    setCancelLoading(false)
+  }
+
+  const planLabels: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max' }
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -203,7 +244,7 @@ function SettingsContent() {
               style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
             >
               <Sparkles className="w-3 h-3" strokeWidth={1.5} />
-              Fill with example
+              View example
             </button>
           </div>
         </form>
@@ -247,9 +288,9 @@ function SettingsContent() {
         <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md" className="hidden" onChange={(e) => e.target.files?.[0] && handleDocUpload(e.target.files[0])} />
       </section>
 
-      {/* Plan summary */}
+      {/* Account */}
       <section>
-        <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Plan</p>
+        <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Account</p>
 
         {/* Upgrade success banner */}
         {justUpgraded && (
@@ -268,75 +309,167 @@ function SettingsContent() {
             <Check className="w-5 h-5 text-blue-600 flex-shrink-0" strokeWidth={2.5} />
             <div>
               <p className="text-sm font-semibold text-blue-800" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>You&apos;re already on this plan.</p>
-              <p className="text-xs text-blue-700">To make changes to your subscription, use the billing portal below.</p>
+              <p className="text-xs text-blue-700">To make changes to your subscription, use Manage billing below.</p>
             </div>
           </div>
         )}
 
-        <div className="border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-1">
+        <div className="border border-gray-200 divide-y divide-gray-100">
+          {/* Email row */}
+          <div className="px-6 py-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-mono text-black/40 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Current plan</p>
-              <p className="text-lg font-bold" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{plan ? planLabels[plan.plan] : '—'}</p>
+              <p className="text-xs font-mono text-black/40 mb-0.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Email</p>
+              <p className="text-sm">{userEmail || '—'}</p>
             </div>
-            {(plan?.plan === 'pro' || plan?.plan === 'team') && (
-              <button
-                onClick={handleManageBilling}
-                disabled={portalLoading}
-                className="flex items-center gap-2 border border-gray-200 hover:border-black px-4 py-2 text-sm transition-colors duration-150 disabled:opacity-50"
-              >
-                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" strokeWidth={1.5} />}
-                Manage billing
-              </button>
+          </div>
+
+          {/* Plan + usage row */}
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs font-mono text-black/40 mb-0.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Plan</p>
+                <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
+                  {plan ? planLabels[plan.plan] : '—'}
+                </p>
+              </div>
+              {plan && (
+                <div className="text-right">
+                  <p className="text-xs font-mono text-black/40 mb-0.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Bugs this month</p>
+                  <p className="text-sm font-mono" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                    {plan.bugs_analyzed_this_month ?? 0}
+                    {plan.monthly_bug_limit > 0 ? ` / ${plan.monthly_bug_limit}` : ''}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Upgrade options — shown only for starter */}
+            {plan?.plan === 'starter' && (
+              <div className="mt-2 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Pro */}
+                <div className="border border-gray-200 p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-sm" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Pro</p>
+                    <p className="text-xs font-mono text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>$19 / mo</p>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {['250 bugs / month', '100 bugs / run', 'Document uploads'].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-xs text-black/60">
+                        <Check className="w-3 h-3 text-green-500 flex-shrink-0" strokeWidth={2.5} />{f}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    data-testid="upgrade-button"
+                    onClick={() => handleUpgrade('pro')}
+                    disabled={!!checkoutLoading}
+                    className="w-full bg-black text-white py-2 text-sm font-semibold hover:bg-black/90 transition-colors duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {checkoutLoading === 'pro' ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : <><Sparkles className="w-4 h-4" strokeWidth={1.5} />Upgrade to Pro</>}
+                  </button>
+                </div>
+                {/* Max */}
+                <div className="border border-gray-200 p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-sm" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Max</p>
+                    <p className="text-xs font-mono text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>$49 / mo</p>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {['500 bugs / month', '250 bugs / run', 'Document uploads'].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-xs text-black/60">
+                        <Check className="w-3 h-3 text-green-500 flex-shrink-0" strokeWidth={2.5} />{f}
+                      </li>
+                    ))}
+                    <li className="flex items-center gap-2 text-xs text-black/40">
+                      <Check className="w-3 h-3 text-black/20 flex-shrink-0" strokeWidth={2.5} />Jira integration <span className="text-black/30">(coming soon)</span>
+                    </li>
+                  </ul>
+                  <button
+                    onClick={() => handleUpgrade('max')}
+                    disabled={!!checkoutLoading}
+                    className="w-full border border-black text-black py-2 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {checkoutLoading === 'max' ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : 'Upgrade to Max'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Upgrade options for starter */}
-          {plan?.plan === 'starter' && (
-            <div className="mt-5 pt-5 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Pro */}
-              <div className="border border-gray-200 p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-sm" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Pro</p>
-                  <p className="text-xs font-mono text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>$19 / mo</p>
-                </div>
-                <ul className="space-y-1.5">
-                  {['250 bugs / month', '100 bugs / run', 'Document uploads'].map(f => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-black/60">
-                      <Check className="w-3 h-3 text-green-500 flex-shrink-0" strokeWidth={2.5} />{f}
-                    </li>
-                  ))}
-                </ul>
+          {/* Billing row — Pro and Max only */}
+          {(plan?.plan === 'pro' || plan?.plan === 'team' || plan?.plan === 'max') && (
+            <div className="px-6 py-4">
+              <p className="text-xs font-mono text-black/40 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Billing</p>
+
+              {portalError && (
+                <p className="text-xs text-red-600 mb-3">{portalError}</p>
+              )}
+
+              {/* Manage billing button */}
+              <div className="flex flex-wrap gap-3 mb-4">
                 <button
-                  data-testid="upgrade-button"
-                  onClick={() => handleUpgrade('pro')}
-                  disabled={!!checkoutLoading}
-                  className="w-full bg-black text-white py-2 text-sm font-semibold hover:bg-black/90 transition-colors duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={handleManageBilling}
+                  disabled={portalLoading}
+                  className="flex items-center gap-2 border border-gray-200 hover:border-black px-4 py-2 text-sm transition-colors duration-150 disabled:opacity-50"
                 >
-                  {checkoutLoading === 'pro' ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : <><Sparkles className="w-4 h-4" strokeWidth={1.5} />Upgrade to Pro</>}
+                  {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" strokeWidth={1.5} />}
+                  {portalLoading ? 'Opening…' : 'Manage billing & invoices'}
                 </button>
               </div>
-              {/* Team */}
-              <div className="border border-gray-200 p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-sm" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Team</p>
-                  <p className="text-xs font-mono text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>$49 / mo</p>
-                </div>
-                <ul className="space-y-1.5">
-                  {['500 bugs / month', '250 bugs / run', 'Document uploads'].map(f => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-black/60">
-                      <Check className="w-3 h-3 text-green-500 flex-shrink-0" strokeWidth={2.5} />{f}
-                    </li>
-                  ))}
-                </ul>
+
+              {/* Cancel subscription */}
+              {cancelStep === 'idle' && (
                 <button
-                  onClick={() => handleUpgrade('team')}
-                  disabled={!!checkoutLoading}
-                  className="w-full border border-black text-black py-2 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={() => { setCancelStep('confirm'); setCancelError('') }}
+                  className="text-xs text-black/40 hover:text-red-500 transition-colors duration-150 underline underline-offset-2"
+                  style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
                 >
-                  {checkoutLoading === 'team' ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : 'Upgrade to Team'}
+                  Cancel subscription
                 </button>
-              </div>
+              )}
+
+              {cancelStep === 'confirm' && (
+                <div className="border border-red-100 bg-red-50 px-4 py-4 space-y-3">
+                  <p className="text-sm font-semibold text-red-800" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
+                    Cancel your {planLabels[plan.plan]} subscription?
+                  </p>
+                  <p className="text-xs text-red-700">
+                    Your plan stays active until the end of the current billing period, then reverts to Starter (25 bugs / month, no document uploads).
+                  </p>
+                  {cancelError && <p className="text-xs text-red-600 font-medium">{cancelError}</p>}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleCancelSubscription}
+                      disabled={cancelLoading}
+                      className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 text-xs font-semibold hover:bg-red-700 transition-colors duration-150 disabled:opacity-50"
+                    >
+                      {cancelLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {cancelLoading ? 'Cancelling…' : 'Yes, cancel subscription'}
+                    </button>
+                    <button
+                      onClick={() => { setCancelStep('idle'); setCancelError('') }}
+                      disabled={cancelLoading}
+                      className="px-4 py-2 text-xs border border-gray-200 hover:border-black transition-colors duration-150 disabled:opacity-50"
+                    >
+                      Keep subscription
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {cancelStep === 'done' && (
+                <div className="border border-gray-200 bg-gray-50 px-4 py-3 flex items-start gap-3">
+                  <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+                  <div>
+                    <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Subscription cancelled</p>
+                    <p className="text-xs text-black/50 mt-0.5">
+                      {cancelEndsAt
+                        ? `Your ${planLabels[plan.plan]} plan remains active until ${new Date(cancelEndsAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.`
+                        : `Your ${planLabels[plan.plan]} plan remains active until the end of the current billing period.`}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

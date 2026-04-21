@@ -144,6 +144,13 @@ async function getKBContext(
   userId: string,
   bugsForLlm: BugRow[]
 ): Promise<string> {
+  // Skip expensive embedding call if user has no uploaded KB documents
+  const { count } = await supabase
+    .from('kb_documents')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+  if (!count || count === 0) return 'No relevant documentation context available.'
+
   const combinedText = bugsForLlm
     .slice(0, 20)
     .map((b) => `${b.title} ${b.description}`)
@@ -191,24 +198,35 @@ title: string — bug title from the input
 rank: number — 1 = fix first, no ties allowed
 priority: string — one of: P1, P2, P3, P4
 severity: string — one of: Critical, High, Medium, Low
-business_impact: string — 1 to 2 sentences. State a specific, concrete consequence — not "this affects users" but the precise operational failure: what breaks, for whom, and when. Examples of acceptable specificity: "This blocks invoice generation during month-end close for finance teams." / "This prevents payroll from running on pay date for all customers using the payroll integration." / "This locks out all SSO-dependent users on subscription renewal, with no self-service recovery path." Vague impact statements like "this negatively affects the user experience" are not acceptable.
-rationale: string — 2 to 3 sentences. You must: (a) explicitly name which KB field or uploaded document influenced this ranking — quote the relevant KB context by name, e.g. "Per the critical_flows KB, payment processing is listed as a business emergency flow — this bug directly blocks it." or "The uploaded runbook doc identifies SSO as the sole authentication path for enterprise customers."; (b) state why the rank position is correct given the scoring rules; (c) if your severity or priority differs from the reporter's label, state specifically why. Never use phrases like "as per standard practice", "generally speaking", "typically", or "in most cases" — every sentence must reference specific content from the ticket, the comments, or the KB. If no KB context is relevant, say so explicitly rather than inventing a connection.
-gap_flags: string[] — empty array if none. Use these exact values when applicable:
+business_impact: string — 1 sentence, max 25 words. State the precise operational failure: what breaks, for whom, and when. Be specific (e.g. "Blocks invoice generation during month-end close for finance teams" or "Prevents all SSO users from logging in on subscription renewal"). No vague phrases like "negatively affects users."
+rationale: string — 2 sentences, max 50 words total. Sentence 1: name the specific KB field or document that influenced this rank (quote by name, or state "No KB context relevant"). Sentence 2: explain why the rank is correct and, if your severity differs from the reporter's label, why.
+gap_flags: string[] — empty array if none. Use these exact string values when applicable:
 'Missing description', 'No reproduction steps', 'Missing environment info', 'Vague impact statement', 'Likely over-prioritised', 'Possible duplicate', 'Unknown reporter context'
-improved_description: string | null — When gap_flags contains at least one quality flag (Missing description, No reproduction steps, Missing environment info, or Vague impact statement): write a clear, actionable 2-3 sentence improved ticket description a developer could act on immediately — covering what is broken, the user or business impact, and reproduction steps if inferable from context or the KB. Return null if gap_flags has no quality flags (ticket is already well-written).
+Note: 'Missing description', 'No reproduction steps', and 'Missing environment info' are quality flags that directly affect ticket actionability. Apply them strictly per the Gap Rules below — err on the side of flagging. Most real-world tickets are missing at least one of these.
+improved_description: string | null — When gap_flags contains at least one quality flag (Missing description, No reproduction steps, Missing environment info, or Vague impact statement): write a 1-2 sentence improved description a developer can act on immediately — what is broken, the impact, and reproduction steps if inferable. Max 40 words. Return null ONLY if gap_flags has zero quality flags AND the ticket genuinely has explicit repro steps, environment info, and a clear description. Most tickets will NOT return null.
 
-GAP IDENTIFICATION RULES — apply these precisely when populating gap_flags:
+GAP IDENTIFICATION RULES — apply these precisely when populating gap_flags. These rules are STRICT. When in doubt, flag. A false-positive flag is far less harmful than missing a real quality gap.
 
 Gap Rule 1 — Missing description:
 If the description field is absent, empty, or fewer than 10 words in total, flag as 'Missing description'. Additionally, rank this ticket LAST within its priority tier — it cannot be actioned without more information, regardless of how alarming the title sounds. A one-line title like "App is slow" with no description is ranked at the bottom of whichever tier its title suggests.
 
 Gap Rule 2 — No reproduction steps:
-If the description contains no steps to reproduce (no numbered steps, no "when I do X, Y happens" pattern, no trigger condition described) AND the bug is not self-evident from the title alone — flag as 'No reproduction steps'. Self-evident means any developer could reproduce it immediately from the title without further context (e.g. "Login button missing on homepage" is self-evident; "Dashboard broken sometimes" is not).
+Flag as 'No reproduction steps' unless the ticket contains EXPLICIT, SEQUENTIAL reproduction instructions that a developer could follow without any prior knowledge of the bug. The threshold is intentionally strict — apply this flag in ALL of the following cases:
+- No numbered or bulleted steps (e.g. "1. Go to X, 2. Click Y, 3. See error")
+- No clear trigger-action-result pattern (e.g. "When I do [specific action] on [specific screen/state], [exact failure] occurs")
+- Description only states the symptom or outcome ("Login is broken", "Payment fails", "The dashboard shows wrong data") without describing HOW to reach the failure state
+- Description uses vague triggers like "sometimes", "occasionally", "randomly", "intermittently" without a specific reproduction path
+- The description reads like a complaint or observation rather than a reproducible procedure
 
-Gap Rule 3 — Possible duplicate:
+The ONLY exception (self-evident): Do NOT flag if any developer could reproduce the bug in under 10 seconds purely from the title alone, with zero ambiguity — examples: "404 on /pricing page", "Typo: 'recieve' on signup button". If there is any ambiguity about environment, user state, data state, or navigation path, it is NOT self-evident — flag it.
+
+Gap Rule 3 — Missing environment info:
+Flag as 'Missing environment info' if the bug is plausibly environment-specific AND no environment details are provided. A bug is plausibly environment-specific if it involves: UI rendering, browser behaviour, mobile vs desktop, OS-specific paths, network conditions, account types, or subscription tiers. If the ticket has no mention of browser, OS, device, app version, environment (staging/prod), or account type — and the bug is not purely backend/data logic — flag it. Do not flag for purely backend bugs (e.g. "Payment webhook fails" does not need browser info).
+
+Gap Rule 4 — Possible duplicate:
 Compare every ticket title in the batch against every other. If two tickets have titles that are more than 70% similar in wording or describe the same failure mode in different words — flag both with 'Possible duplicate'. In the rationale for each, explicitly name the other ticket key (e.g. "Possible duplicate of FD-123"). Do not silently skip duplicates — flag both even if one appears more detailed.
 
-Gap Rule 4 — Unknown reporter context:
+Gap Rule 5 — Unknown reporter context:
 If the reporter email is a personal address (e.g. gmail.com, yahoo.com, hotmail.com, outlook.com) or a clearly generic/non-company address — flag as 'Unknown reporter context' and note in the rationale that the reporter's organisational context is unknown, which reduces confidence in the severity assessment. Do not penalise the rank heavily for this alone, but do note the reduced confidence.
 
 EXPLICIT SCORING OVERRIDES — apply these before general scoring priorities. They are not guidelines; they are hard rules:
@@ -394,18 +412,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Plan limits — increment run count for tracking (no per-run gate anymore)
-  const plan = await ensureUserPlan(supabase, user.id)
-  const limits = getPlanLimits(plan.plan)
-  await supabase
-    .from('user_plans')
-    .update({ monthly_runs_count: (plan.monthly_runs_count || 0) + 1 })
-    .eq('user_id', user.id)
-
-  // Alias for clarity — this counter never decreases when runs are deleted
-  const bugsConsumedSoFar = plan.monthly_bugs_consumed || 0
-
-  // Parse file
+  // ── Phase 1: Parse file + fetch plan + fetch KB in parallel ─────────────────
+  // These three are independent — run them concurrently to cut ~400ms off setup.
   const formData = await request.formData()
   const file = formData.get('file') as File
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -420,6 +428,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Supported formats: CSV, TSV, Excel (.xlsx/.xls).' }, { status: 400 })
   }
 
+  // Parse file content (must happen before the parallel block so we can read the file stream once)
   let rows: BugRow[]
   if (isExcel) {
     try {
@@ -447,8 +456,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Missing required columns: ${missing.join(', ')}`, missing_columns: missing }, { status: 400 })
   }
 
-  // Deduplicate rows by bug ID — Jira exports create multiple rows per bug for
-  // multi-value fields (Comments, Watchers, Attachments). Keep first occurrence.
+  // Deduplicate rows by bug ID
   const seenIds = new Set<string>()
   const dedupedRows = rows.filter((row) => {
     const id = row[cols.idCol]?.trim()
@@ -456,36 +464,33 @@ export async function POST(request: NextRequest) {
     seenIds.add(id)
     return true
   })
-
   if (!dedupedRows.length) {
     return NextResponse.json({ error: 'No valid bug IDs found in this file.' }, { status: 400 })
   }
 
+  // Fetch plan + KB simultaneously — independent DB calls
+  const [plan, { data: kb }] = await Promise.all([
+    ensureUserPlan(supabase, user.id),
+    supabase.from('knowledge_base').select('*').eq('user_id', user.id).single(),
+  ])
+  const limits = getPlanLimits(plan.plan)
+
+  // Fire-and-forget: increment run counter — not on the critical path
+  supabase
+    .from('user_plans')
+    .update({ monthly_runs_count: (plan.monthly_runs_count || 0) + 1 })
+    .eq('user_id', user.id)
+    .then(({ error }) => { if (error) console.error('[triage] run count update failed:', error.message) })
+
+  const bugsConsumedSoFar = plan.monthly_bugs_consumed || 0
+
   let trimmedWarning: string | null = null
 
-  // Warn if any bug IDs in this upload were already triaged in a previous run
-  const uploadedIds = Array.from(seenIds)
-  const { data: previousRuns } = await supabase
-    .from('triage_runs')
-    .select('id')
-    .eq('user_id', user.id)
-  const previousRunIds = (previousRuns || []).map((r: { id: string }) => r.id)
-  if (previousRunIds.length > 0) {
-    const { data: existingResults } = await supabase
-      .from('triage_results')
-      .select('bug_id')
-      .in('run_id', previousRunIds)
-    const existingIds = new Set((existingResults || []).map((r: { bug_id: string }) => r.bug_id))
-    const duplicates = uploadedIds.filter((id) => existingIds.has(id))
-    if (duplicates.length > 0) {
-      const dupMsg = `${duplicates.length} bug${duplicates.length > 1 ? 's' : ''} in this upload were already triaged in a previous run.`
-      trimmedWarning = trimmedWarning ? `${trimmedWarning} ${dupMsg}` : dupMsg
-    }
+  if (!kb) {
+    trimmedWarning = 'No Knowledge Base found — results will be less accurate. Set up your KB in Settings.'
   }
 
   // ── Monthly bug quota check ──────────────────────────────────────────────────
-  // Use the non-decreasing monthly_bugs_consumed counter so deleting a run
-  // does not restore quota slots.
   let bugs = dedupedRows
   if (limits.monthlyBugLimit !== Infinity) {
     const remaining = limits.monthlyBugLimit - bugsConsumedSoFar
@@ -505,18 +510,10 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Per-run cap ──────────────────────────────────────────────────────────────
-  // Secondary cap: keeps each individual Claude request within a manageable size.
   if (bugs.length > limits.maxBugsPerRun) {
     const msg = `Showing top ${limits.maxBugsPerRun} bugs per run. Upgrade to analyse more at once.`
     trimmedWarning = trimmedWarning ? `${trimmedWarning} ${msg}` : msg
     bugs = bugs.slice(0, limits.maxBugsPerRun)
-  }
-
-  // Get knowledge base — proceed without it if not set up, but warn the user
-  const { data: kb } = await supabase.from('knowledge_base').select('*').eq('user_id', user.id).single()
-  if (!kb) {
-    trimmedWarning = (trimmedWarning ? trimmedWarning + ' ' : '') +
-      'No Knowledge Base found — results will be less accurate. Set up your KB in Settings.'
   }
 
   // Build bug payloads for LLM — filter out untitled bugs (no signal for ranking)
@@ -532,7 +529,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No bugs with titles found. Add a title/summary column to your CSV.' }, { status: 400 })
   }
 
-  // Retrieve relevant KB doc context via vector search
+  // ── Phase 2: KB vector search + cross-run dup check in parallel ──────────────
+  // Both are non-blocking for the Claude call — run them together.
+  const uploadedIds = Array.from(seenIds)
+
+  // Cross-run duplicate check — fire in parallel, don't block Claude
+  const crossRunDupPromise = (async (): Promise<string | null> => {
+    try {
+      const { data: previousRuns } = await supabase
+        .from('triage_runs')
+        .select('id')
+        .eq('user_id', user.id)
+      const previousRunIds = (previousRuns || []).map((r: { id: string }) => r.id)
+      if (previousRunIds.length === 0) return null
+      const { data: existingResults } = await supabase
+        .from('triage_results')
+        .select('bug_id')
+        .in('run_id', previousRunIds)
+      const existingIds = new Set((existingResults || []).map((r: { bug_id: string }) => r.bug_id))
+      const duplicates = uploadedIds.filter((id) => existingIds.has(id))
+      if (duplicates.length === 0) return null
+      return `${duplicates.length} bug${duplicates.length > 1 ? 's' : ''} in this upload were already triaged in a previous run.`
+    } catch {
+      return null // non-fatal
+    }
+  })()
+
+  // KB vector context — skips OpenAI embedding if user has no uploaded docs
   let retrievedChunks = 'No relevant documentation context available.'
   try {
     retrievedChunks = await getKBContext(supabase, user.id, bugsForLlm)
@@ -540,14 +563,21 @@ export async function POST(request: NextRequest) {
     // Non-fatal — continue without vector context
   }
 
-  // Call Claude
+  // ── Phase 3: Claude (main bottleneck) + resolve dup warning in parallel ──────
   let llmResults: Record<string, unknown>[] = []
+  let crossRunDupWarning: string | null = null
   try {
-    llmResults = await callClaude(kb, retrievedChunks, bugsForLlm)
+    ;[llmResults, crossRunDupWarning] = await Promise.all([
+      callClaude(kb, retrievedChunks, bugsForLlm),
+      crossRunDupPromise,
+    ])
   } catch (e) {
     console.error('[triage] callClaude failed:', e)
     const msg = e instanceof Error ? e.message : 'Analysis failed. Please try again.'
     return NextResponse.json({ error: msg }, { status: 500 })
+  }
+  if (crossRunDupWarning) {
+    trimmedWarning = trimmedWarning ? `${trimmedWarning} ${crossRunDupWarning}` : crossRunDupWarning
   }
 
   // Store results

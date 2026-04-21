@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 
 export const metadata = {
   title: 'Pricing — Sensebug',
-  description: 'Start free. Upgrade when the value is obvious. Pro at $19/mo, Team at $49/mo.',
+  description: 'Start free. Upgrade when the value is obvious. Pro at $19/mo, Max at $49/mo.',
 }
 
 export default function PricingPage() {
@@ -81,21 +81,20 @@ export default function PricingPage() {
               </Link>
             </div>
 
-            {/* Team */}
+            {/* Max */}
             <div className="p-8 bg-white flex flex-col">
-              <div className="text-xs font-mono uppercase tracking-widest text-black/40 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Team</div>
+              <div className="text-xs font-mono uppercase tracking-widest text-black/40 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Max</div>
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
                 $49<span className="text-xl font-normal text-black/40">/mo</span>
               </div>
-              <div className="text-sm text-black/45 mb-4">For PM teams</div>
+              <div className="text-sm text-black/45 mb-4">Maximum capacity + integrations</div>
               <ul className="text-xs text-black/50 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />500 bugs / month</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />250 bugs per run</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Everything in Pro</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Shared team Knowledge Base</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Up to 5 team members</li>
+                <li className="flex items-center gap-2 text-black/35"><Check className="w-3.5 h-3.5 text-black/20 flex-shrink-0" strokeWidth={2.5} />Jira integration <span className="ml-1 text-black/30">(coming soon)</span></li>
               </ul>
-              <Link href="/checkout?plan=team" data-testid="pricing-team-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150">
+              <Link href="/checkout?plan=max" data-testid="pricing-max-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150">
                 Get started
               </Link>
             </div>
@@ -110,7 +109,7 @@ export default function PricingPage() {
                   {[
                     { name: 'Starter', sub: 'Free' },
                     { name: 'Pro', sub: '$19/mo', bold: true },
-                    { name: 'Team', sub: '$49/mo' },
+                    { name: 'Max', sub: '$49/mo' },
                   ].map(({ name, sub, bold }) => (
                     <th key={name} className={`px-6 py-4 text-center ${bold ? 'bg-black text-white' : ''}`}>
                       <div className={`text-xs font-mono uppercase tracking-widest mb-0.5 ${bold ? 'text-white/50' : 'text-black/40'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{name}</div>
@@ -167,7 +166,6 @@ export default function PricingPage() {
                 {[
                   { label: 'Knowledge Base (product context)', vals: [true,  true,  true]  },
                   { label: 'Document uploads (PDF, MD)',       vals: [false, true,  true]  },
-                  { label: 'Shared team Knowledge Base',       vals: [false, false, true]  },
                 ].map(({ label, vals }) => (
                   <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="px-6 py-3.5 text-black/70">{label}</td>
@@ -179,20 +177,16 @@ export default function PricingPage() {
                   </tr>
                 ))}
 
-                {/* Team */}
+                {/* Integrations */}
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Team</td>
+                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Integrations</td>
                 </tr>
-                {[
-                  { label: 'Team members', vals: ['1', '1', 'Up to 5'] },
-                ].map(({ label, vals }) => (
-                  <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="px-6 py-3.5 text-black/70">{label}</td>
-                    {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center text-xs font-mono font-medium ${i === 1 ? 'bg-black/[0.03]' : ''}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{v}</td>
-                    ))}
-                  </tr>
-                ))}
+                <tr className="border-b border-gray-100 hover:bg-gray-50/50">
+                  <td className="px-6 py-3.5 text-black/70">Jira integration</td>
+                  <td className="px-6 py-3.5 text-center"><span className="text-black/20 text-lg leading-none">—</span></td>
+                  <td className="px-6 py-3.5 text-center bg-black/[0.03]"><span className="text-black/20 text-lg leading-none">—</span></td>
+                  <td className="px-6 py-3.5 text-center text-xs font-mono text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Coming soon</td>
+                </tr>
 
                 {/* CTA row */}
                 <tr>
@@ -208,7 +202,7 @@ export default function PricingPage() {
                     </Link>
                   </td>
                   <td className="px-6 py-5 text-center">
-                    <Link href="/checkout?plan=team" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
+                    <Link href="/checkout?plan=max" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
                       Get started
                     </Link>
                   </td>

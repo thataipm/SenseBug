@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -50,6 +51,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Too many uploads. Please wait a moment before trying again.' },
       { status: 429, headers: { 'Retry-After': String(Math.ceil(retryAfterMs / 1000)) } }
+    )
+  }
+
+  // Plan gate — document uploads are Pro and Team only
+  const userPlan = await ensureUserPlan(supabase, user.id)
+  const limits   = getPlanLimits(userPlan.plan)
+  if (!limits.docUpload) {
+    return NextResponse.json(
+      { error: 'Document uploads are available on Pro and Team plans. Upgrade to unlock this feature.' },
+      { status: 403 }
     )
   }
 

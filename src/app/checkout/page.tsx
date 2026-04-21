@@ -5,18 +5,18 @@ import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
-// Plan upgrade hierarchy: starter < pro < team
-const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, team: 2 }
+// Plan upgrade hierarchy: starter < pro < max
+const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, team: 2, max: 2 }
 
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const plan = searchParams.get('plan') // 'pro' | 'team'
+  const plan = searchParams.get('plan') // 'pro' | 'max'
   const [error, setError] = useState('')
 
   useEffect(() => {
     const go = async () => {
-      if (!plan || (plan !== 'pro' && plan !== 'team')) {
+      if (!plan || (plan !== 'pro' && plan !== 'max')) {
         router.replace('/pricing')
         return
       }

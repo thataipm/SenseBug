@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
     // If a valid paid plan param is present, send the already-logged-in user straight to
     // checkout so their upgrade intent isn't lost (e.g. they opened /signup?plan=pro while
     // already logged in, or navigated back to /login?plan=pro after confirming their email).
-    if (plan === 'pro' || plan === 'team') {
+    if (plan === 'pro' || plan === 'max') {
       url.pathname = '/checkout'
       url.search = `?plan=${plan}`
     } else {

@@ -17,13 +17,13 @@ export function getDodo(): DodoPayments {
   return _dodo
 }
 
-export const DODO_PLANS: Record<string, { productId: string; plan: 'pro' | 'team' }> = {
+export const DODO_PLANS: Record<string, { productId: string; plan: 'pro' | 'max' }> = {
   pro: {
     productId: process.env.DODO_PRO_PRODUCT_ID!,
     plan: 'pro',
   },
-  team: {
+  max: {
     productId: process.env.DODO_TEAM_PRODUCT_ID!,
-    plan: 'team',
+    plan: 'max',
   },
 }

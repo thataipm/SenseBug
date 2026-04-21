@@ -3,7 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 export interface UserPlan {
   id: string
   user_id: string
-  plan: 'starter' | 'pro' | 'team'
+  plan: 'starter' | 'pro' | 'max'
   trial_started_at: string | null  // kept in DB for migration safety, no longer used
   trial_ends_at: string | null     // kept in DB for migration safety, no longer used
   monthly_runs_count: number
@@ -23,7 +23,8 @@ export function getPlanLimits(plan: string): PlanLimits {
       return { monthlyBugLimit: 50,  maxBugsPerRun: 50,  docUpload: false }
     case 'pro':
       return { monthlyBugLimit: 250, maxBugsPerRun: 100, docUpload: true  }
-    case 'team':
+    case 'team': // legacy identifier — kept for existing DB rows
+    case 'max':
       return { monthlyBugLimit: 500, maxBugsPerRun: 250, docUpload: true  }
     default:
       return { monthlyBugLimit: 50,  maxBugsPerRun: 50,  docUpload: false }
@@ -34,7 +35,8 @@ export function getPlanDisplayName(plan: string): string {
   switch (plan) {
     case 'starter': return 'Starter'
     case 'pro':     return 'Pro'
-    case 'team':    return 'Team'
+    case 'team':    // legacy
+    case 'max':     return 'Max'
     default:        return 'Starter'
   }
 }

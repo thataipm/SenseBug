@@ -17,7 +17,7 @@ function SignupContent() {
   const [checkEmail, setCheckEmail] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const plan = searchParams.get('plan') // 'pro' | 'team' — if present, go to checkout after signup
+  const plan = searchParams.get('plan') // 'pro' | 'max' — if present, go to checkout after signup
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,7 +78,7 @@ function SignupContent() {
           <h1 className="text-2xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Check your email</h1>
           <p className="text-sm text-black/55 mb-3">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</p>
           {plan && (
-            <p className="text-xs text-black/40 mb-6">After confirming, you&apos;ll set up your account first, then complete your {plan === 'pro' ? 'Pro' : 'Team'} upgrade.</p>
+            <p className="text-xs text-black/40 mb-6">After confirming, you&apos;ll set up your account first, then complete your {plan === 'pro' ? 'Pro' : 'Max'} upgrade.</p>
           )}
           <Link href="/login" className="text-sm text-black font-medium hover:underline">Back to login</Link>
         </div>

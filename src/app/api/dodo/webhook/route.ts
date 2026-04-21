@@ -30,10 +30,10 @@ async function getUserIdByEmail(email: string): Promise<string | null> {
  * Map a Dodo product_id back to a plan name.
  * Evaluated at request time so env vars are always resolved.
  */
-function planFromProductId(productId: string | undefined): 'pro' | 'team' | null {
+function planFromProductId(productId: string | undefined): 'pro' | 'max' | null {
   if (!productId) return null
   if (productId === process.env.DODO_PRO_PRODUCT_ID)  return 'pro'
-  if (productId === process.env.DODO_TEAM_PRODUCT_ID) return 'team'
+  if (productId === process.env.DODO_TEAM_PRODUCT_ID) return 'max'
   return null
 }
 

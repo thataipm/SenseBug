@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getDodo, DODO_PLANS } from '@/lib/dodo'
 import { isValidOrigin } from '@/lib/csrf'
 
-const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, team: 2 }
+const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, team: 2, max: 2 }
 
 export async function POST(request: NextRequest) {
   if (!isValidOrigin(request)) {

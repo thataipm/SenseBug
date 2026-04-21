@@ -14,7 +14,7 @@ interface PlanInfo {
   bugs_analyzed_this_month: number
 }
 
-const PLAN_LABELS: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Team' }
+const PLAN_LABELS: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max' }
 
 export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -138,7 +138,7 @@ export default function AccountPage() {
               </div>
               <div>
                 <p className="text-xs font-mono text-black/40 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Doc uploads</p>
-                <p className="text-sm font-medium">{['pro', 'team'].includes(plan.plan) ? 'Included' : 'Not included'}</p>
+                <p className="text-sm font-medium">{['pro', 'team', 'max'].includes(plan.plan) ? 'Included' : 'Not included'}</p>
               </div>
             </div>
           )}
