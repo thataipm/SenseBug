@@ -112,7 +112,7 @@ function SettingsContent() {
 
   const handleUpgrade = async (targetPlan: string) => {
     setCheckoutLoading(targetPlan)
-    const res = await fetch('/api/stripe/checkout', {
+    const res = await fetch('/api/dodo/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plan: targetPlan }),
@@ -127,7 +127,7 @@ function SettingsContent() {
 
   const handleManageBilling = async () => {
     setPortalLoading(true)
-    const res = await fetch('/api/stripe/portal', { method: 'POST' })
+    const res = await fetch('/api/dodo/portal', { method: 'POST' })
     if (res.ok) {
       const { url } = await res.json()
       window.location.href = url

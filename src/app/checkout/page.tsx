@@ -43,8 +43,8 @@ function CheckoutContent() {
         }
       }
 
-      // Logged in + eligible — create a Stripe Checkout session and redirect
-      const res = await fetch('/api/stripe/checkout', {
+      // Logged in + eligible — create a Dodo Payments checkout session and redirect
+      const res = await fetch('/api/dodo/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
