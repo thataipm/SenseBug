@@ -15,18 +15,18 @@ export async function POST(request: NextRequest) {
   // customer_id is stored in stripe_customer_id column (reusing column for Dodo's customer ID)
   const { data: userPlan } = await supabase
     .from('user_plans')
-    .select('stripe_customer_id')
+    .select('payment_customer_id')
     .eq('user_id', user.id)
     .single()
 
-  if (!userPlan?.stripe_customer_id) {
+  if (!userPlan?.payment_customer_id) {
     return NextResponse.json({ error: 'No billing account found' }, { status: 404 })
   }
 
   try {
     // Dodo customer portal — lets users manage subscriptions, update payment methods, etc.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const portal = await (getDodo().customers as any).customerPortal(userPlan.stripe_customer_id)
+    const portal = await (getDodo().customers as any).customerPortal(userPlan.payment_customer_id)
     const url = portal?.checkout_url ?? portal?.url
     if (!url) throw new Error('No portal URL returned')
     return NextResponse.json({ url })

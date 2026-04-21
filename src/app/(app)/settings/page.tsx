@@ -64,6 +64,27 @@ function SettingsContent() {
     init()
   }, [router, fetchAll])
 
+  // When redirected back from Dodo checkout (?upgraded=1), the webhook fires
+  // asynchronously — poll /api/plan until the plan upgrades or we time out.
+  useEffect(() => {
+    if (!justUpgraded) return
+    let polls = 0
+    const MAX_POLLS = 15 // 15 × 2 s = 30 s max wait
+    const interval = setInterval(async () => {
+      polls++
+      const res = await fetch('/api/plan')
+      if (res.ok) {
+        const updated = await res.json()
+        if (updated?.plan && updated.plan !== 'starter') {
+          setPlan(updated)
+          clearInterval(interval)
+        }
+      }
+      if (polls >= MAX_POLLS) clearInterval(interval)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [justUpgraded])
+
   const handleKBSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setKbError('')
