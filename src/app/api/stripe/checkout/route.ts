@@ -18,40 +18,60 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
   }
 
-  // Fetch existing Stripe customer ID if present
-  const { data: userPlan } = await supabase
-    .from('user_plans')
-    .select('stripe_customer_id')
-    .eq('user_id', user.id)
-    .single()
-
-  let customerId = userPlan?.stripe_customer_id as string | undefined
-
-  // Create a new Stripe customer if first time
-  if (!customerId) {
-    const customer = await getStripe().customers.create({
-      email: user.email!,
-      metadata: { user_id: user.id },
-    })
-    customerId = customer.id
-    await supabase
-      .from('user_plans')
-      .update({ stripe_customer_id: customerId })
-      .eq('user_id', user.id)
+  // Guard: price ID must be configured — gives a clear error instead of a cryptic 500
+  const priceId = STRIPE_PLANS[plan].priceId
+  if (!priceId) {
+    console.error(`[stripe/checkout] STRIPE_${plan.toUpperCase()}_PRICE_ID is not set`)
+    return NextResponse.json({ error: 'Checkout is not configured yet. Please contact support.' }, { status: 503 })
   }
 
-  const session = await getStripe().checkout.sessions.create({
-    customer: customerId,
-    payment_method_types: ['card'],
-    line_items: [{ price: STRIPE_PLANS[plan].priceId, quantity: 1 }],
-    mode: 'subscription',
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgraded=1`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
-    metadata: { user_id: user.id, plan },
-    subscription_data: {
-      metadata: { user_id: user.id, plan },
-    },
-  })
+  // Guard: app URL must be set so success/cancel redirects work
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (!appUrl) {
+    console.error('[stripe/checkout] NEXT_PUBLIC_APP_URL is not set')
+    return NextResponse.json({ error: 'Checkout is not configured yet. Please contact support.' }, { status: 503 })
+  }
 
-  return NextResponse.json({ url: session.url })
+  try {
+    // Fetch existing Stripe customer ID if present
+    const { data: userPlan } = await supabase
+      .from('user_plans')
+      .select('stripe_customer_id')
+      .eq('user_id', user.id)
+      .single()
+
+    let customerId = userPlan?.stripe_customer_id as string | undefined
+
+    // Create a new Stripe customer if first time
+    if (!customerId) {
+      const customer = await getStripe().customers.create({
+        email: user.email!,
+        metadata: { user_id: user.id },
+      })
+      customerId = customer.id
+      await supabase
+        .from('user_plans')
+        .update({ stripe_customer_id: customerId })
+        .eq('user_id', user.id)
+    }
+
+    const session = await getStripe().checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      success_url: `${appUrl}/settings?upgraded=1`,
+      cancel_url: `${appUrl}/pricing`,
+      metadata: { user_id: user.id, plan },
+      subscription_data: {
+        metadata: { user_id: user.id, plan },
+      },
+    })
+
+    return NextResponse.json({ url: session.url })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error('[stripe/checkout] Stripe API error:', message)
+    return NextResponse.json({ error: 'Failed to create checkout session. Please try again.' }, { status: 500 })
+  }
 }
