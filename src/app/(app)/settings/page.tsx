@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { KBDocument, TriageRun } from '@/types'
-import { Loader2, FileText, Trash2, Upload, Clock, Check, ExternalLink, Sparkles } from 'lucide-react'
+import { Loader2, FileText, Trash2, Upload, Clock, Check, Sparkles } from 'lucide-react'
 
 const EXAMPLE_CONTENT = {
   productOverview: `Acme is a B2B project management platform used by engineering teams at 200+ software companies. Our core value is automating sprint planning and surfacing hidden blockers across team dependencies in real time. Primary users are engineering managers, product managers, and developers.`,
@@ -30,12 +30,6 @@ function SettingsContent() {
   const [kbError, setKbError]         = useState('')
   const [docUploading, setDocUploading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
-  const [portalLoading, setPortalLoading] = useState(false)
-  const [portalError, setPortalError] = useState('')
-  const [cancelStep, setCancelStep] = useState<'idle' | 'confirm' | 'done'>('idle')
-  const [cancelLoading, setCancelLoading] = useState(false)
-  const [cancelError, setCancelError] = useState('')
-  const [cancelEndsAt, setCancelEndsAt] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const router  = useRouter()
   const searchParams = useSearchParams()
@@ -114,7 +108,7 @@ function SettingsContent() {
 
   const handleDocUpload = async (file: File) => {
     if (!['pro', 'team', 'max'].includes(plan?.plan ?? '')) {
-      setKbError('Document uploads are available on Pro and Team plans. Upgrade to unlock this feature.')
+      setKbError('Document uploads are available on Pro and Max plans. Upgrade to unlock this feature.')
       return
     }
     const allowedExts = ['.pdf', '.docx', '.txt', '.md']
@@ -151,51 +145,6 @@ function SettingsContent() {
     } else {
       setCheckoutLoading(null)
     }
-  }
-
-  const handleManageBilling = async () => {
-    setPortalLoading(true)
-    setPortalError('')
-    try {
-      const res = await fetch('/api/dodo/portal', { method: 'POST' })
-      if (res.ok) {
-        const { url } = await res.json()
-        if (url) {
-          window.location.href = url
-        } else {
-          setPortalError('No billing portal URL returned. Please contact support.')
-          setPortalLoading(false)
-        }
-      } else {
-        let msg = 'Failed to open billing portal.'
-        try { const j = await res.json(); msg = j.error || msg } catch {}
-        setPortalError(msg)
-        setPortalLoading(false)
-      }
-    } catch {
-      setPortalError('Network error. Please try again.')
-      setPortalLoading(false)
-    }
-  }
-
-  const handleCancelSubscription = async () => {
-    setCancelLoading(true)
-    setCancelError('')
-    try {
-      const res = await fetch('/api/dodo/cancel', { method: 'POST' })
-      if (res.ok) {
-        const { ends_at } = await res.json()
-        setCancelEndsAt(ends_at ?? null)
-        setCancelStep('done')
-      } else {
-        let msg = 'Failed to cancel subscription.'
-        try { const j = await res.json(); msg = j.error || msg } catch {}
-        setCancelError(msg)
-      }
-    } catch {
-      setCancelError('Network error. Please try again.')
-    }
-    setCancelLoading(false)
   }
 
   const planLabels: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max' }
@@ -282,7 +231,7 @@ function SettingsContent() {
             Upload document
           </button>
           <span className="text-xs text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-            PDF, Word (.docx), .txt, .md · 10MB max · Pro &amp; Team only
+            PDF, Word (.docx), .txt, .md · 10MB max · Pro &amp; Max only
           </span>
         </div>
         <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md" className="hidden" onChange={(e) => e.target.files?.[0] && handleDocUpload(e.target.files[0])} />
@@ -396,80 +345,13 @@ function SettingsContent() {
             )}
           </div>
 
-          {/* Billing row — Pro and Max only */}
-          {(plan?.plan === 'pro' || plan?.plan === 'team' || plan?.plan === 'max') && (
+          {/* Billing managed in Account tab */}
+          {(plan?.plan === 'pro' || plan?.plan === 'max') && (
             <div className="px-6 py-4">
-              <p className="text-xs font-mono text-black/40 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Billing</p>
-
-              {portalError && (
-                <p className="text-xs text-red-600 mb-3">{portalError}</p>
-              )}
-
-              {/* Manage billing button */}
-              <div className="flex flex-wrap gap-3 mb-4">
-                <button
-                  onClick={handleManageBilling}
-                  disabled={portalLoading}
-                  className="flex items-center gap-2 border border-gray-200 hover:border-black px-4 py-2 text-sm transition-colors duration-150 disabled:opacity-50"
-                >
-                  {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" strokeWidth={1.5} />}
-                  {portalLoading ? 'Opening…' : 'Manage billing & invoices'}
-                </button>
-              </div>
-
-              {/* Cancel subscription */}
-              {cancelStep === 'idle' && (
-                <button
-                  onClick={() => { setCancelStep('confirm'); setCancelError('') }}
-                  className="text-xs text-black/40 hover:text-red-500 transition-colors duration-150 underline underline-offset-2"
-                  style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
-                >
-                  Cancel subscription
-                </button>
-              )}
-
-              {cancelStep === 'confirm' && (
-                <div className="border border-red-100 bg-red-50 px-4 py-4 space-y-3">
-                  <p className="text-sm font-semibold text-red-800" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-                    Cancel your {planLabels[plan.plan]} subscription?
-                  </p>
-                  <p className="text-xs text-red-700">
-                    Your plan stays active until the end of the current billing period, then reverts to Starter (25 bugs / month, no document uploads).
-                  </p>
-                  {cancelError && <p className="text-xs text-red-600 font-medium">{cancelError}</p>}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleCancelSubscription}
-                      disabled={cancelLoading}
-                      className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 text-xs font-semibold hover:bg-red-700 transition-colors duration-150 disabled:opacity-50"
-                    >
-                      {cancelLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {cancelLoading ? 'Cancelling…' : 'Yes, cancel subscription'}
-                    </button>
-                    <button
-                      onClick={() => { setCancelStep('idle'); setCancelError('') }}
-                      disabled={cancelLoading}
-                      className="px-4 py-2 text-xs border border-gray-200 hover:border-black transition-colors duration-150 disabled:opacity-50"
-                    >
-                      Keep subscription
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {cancelStep === 'done' && (
-                <div className="border border-gray-200 bg-gray-50 px-4 py-3 flex items-start gap-3">
-                  <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
-                  <div>
-                    <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Subscription cancelled</p>
-                    <p className="text-xs text-black/50 mt-0.5">
-                      {cancelEndsAt
-                        ? `Your ${planLabels[plan.plan]} plan remains active until ${new Date(cancelEndsAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.`
-                        : `Your ${planLabels[plan.plan]} plan remains active until the end of the current billing period.`}
-                    </p>
-                  </div>
-                </div>
-              )}
+              <p className="text-xs text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                Manage billing, invoices, and cancellation from the{' '}
+                <a href="/account" className="underline hover:text-black transition-colors">Account</a> tab.
+              </p>
             </div>
           )}
         </div>

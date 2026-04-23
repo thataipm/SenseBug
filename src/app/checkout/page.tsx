@@ -71,7 +71,7 @@ function CheckoutContent() {
     return (
       <div className="min-h-screen flex items-center justify-center px-6" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
         <div className="max-w-sm w-full text-center">
-          <div className="font-black text-xl tracking-tight mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</div>
+          <div className="font-black text-xl tracking-tight mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</div>
           <p className="text-sm text-red-600 mb-4">{error}</p>
           <Link href="/pricing" className="text-sm text-black underline hover:no-underline">
             Back to pricing

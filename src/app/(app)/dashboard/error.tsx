@@ -10,7 +10,7 @@ export default function DashboardError({ error, reset }: { error: Error; reset: 
   return (
     <div className="min-h-screen flex items-center justify-center px-6" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       <div className="max-w-sm w-full text-center">
-        <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-8" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>SENSEBUG</p>
+        <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-8" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>SENSEBUG AI</p>
         <h1 className="text-2xl font-black tracking-tighter mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Something went wrong</h1>
         <p className="text-sm text-black/50 mb-8">An unexpected error occurred on the dashboard.</p>
         <div className="flex items-center justify-center gap-3">

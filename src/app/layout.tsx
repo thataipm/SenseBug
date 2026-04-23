@@ -23,8 +23,11 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Sensebug — Make sense of your bugs',
-  description: 'AI-powered bug prioritization for Product Managers',
+  title: 'SenseBug AI — Make sense of your bugs',
+  description: 'AI-powered bug prioritization for Product Managers. Built by SenseBug AI.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

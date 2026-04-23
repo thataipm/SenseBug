@@ -20,7 +20,7 @@ export function AppHeader({ activePage, rightSlot }: AppHeaderProps) {
     <header className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       <div className="flex items-center gap-8">
         <Link href="/dashboard" className="font-black text-lg tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          SENSEBUG
+          SENSEBUG AI
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           {links.map(({ href, key, label }) => (

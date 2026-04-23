@@ -7,7 +7,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile top bar — shown when sidebar is hidden */}
       <div className="md:hidden fixed top-0 inset-x-0 z-50 h-14 border-b border-gray-200 bg-white flex items-center px-5"
         style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-        <span className="font-black text-lg tracking-tight">SENSEBUG</span>
+        <span className="font-black text-lg tracking-tight">SENSEBUG AI</span>
       </div>
       {/* Content area */}
       <div className="flex-1 flex flex-col overflow-hidden">

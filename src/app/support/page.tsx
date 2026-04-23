@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Support — Sensebug',
-  description: 'Get help with Sensebug. Contact our support team or browse common questions.',
+  title: 'Support — SenseBug AI',
+  description: 'Get help with SenseBug AI. Contact our support team or browse common questions.',
 }
 
 function H2({ children }: { children: React.ReactNode }) {
@@ -40,7 +40,7 @@ export default function SupportPage() {
       {/* Nav */}
       <nav className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between sticky top-0 bg-white z-50">
         <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          SENSEBUG
+          SENSEBUG AI
         </Link>
         <Link href="/login" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150">
           Log in
@@ -102,11 +102,11 @@ export default function SupportPage() {
             <div>
               <Q
                 question="What file formats can I upload?"
-                answer="Sensebug supports CSV, Excel (.xlsx / .xls), TSV, and plain text files. Your file needs at minimum an ID column, a title column, and a priority column. Adding a description column significantly improves ranking accuracy."
+                answer="SenseBug AI supports CSV, Excel (.xlsx / .xls), TSV, and plain text files. Your file needs at minimum an ID column, a title column, and a priority column. Adding a description column significantly improves ranking accuracy."
               />
               <Q
-                question="How does Sensebug rank bugs?"
-                answer="Sensebug uses Claude AI (by Anthropic) combined with your Knowledge Base context to assess each bug's business impact, severity, and urgency. It then ranks them using an explicit priority hierarchy, with tiebreakers based on user impact, recency, and escalation signals."
+                question="How does SenseBug AI rank bugs?"
+                answer="SenseBug AI uses Claude AI (by Anthropic) combined with your Knowledge Base context to assess each bug's business impact, severity, and urgency. It then ranks them using an explicit priority hierarchy, with tiebreakers based on user impact, recency, and escalation signals."
               />
               <Q
                 question="Is my data used to train AI models?"
@@ -133,7 +133,7 @@ export default function SupportPage() {
       {/* Footer */}
       <footer className="border-t border-gray-100 px-6 py-8 mt-8">
         <div className="max-w-3xl mx-auto flex items-center justify-between text-sm text-black/35">
-          <span className="font-black tracking-tight text-black text-base" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</span>
+          <span className="font-black tracking-tight text-black text-base" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</span>
           <div className="flex items-center gap-6">
             <Link href="/terms" className="hover:text-black transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-black transition-colors">Privacy</Link>

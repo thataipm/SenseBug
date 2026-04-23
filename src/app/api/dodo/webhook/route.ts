@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import DodoPayments from 'dodopayments'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendPurchaseConfirmationEmail, sendCancellationEmail } from '@/lib/email'
 
 // Admin client is safe to initialise at module level — no API calls happen here
 const supabase = createAdminClient()
@@ -88,6 +89,16 @@ async function activatePlan(data: SubscriptionWebhookData) {
     console.error('[dodo/webhook] activatePlan DB error:', error.message)
   } else {
     console.log(`[dodo/webhook] activatePlan: upgraded user ${userId} to plan "${plan}"`)
+    // Send purchase confirmation email
+    if (data.customer?.email) {
+      const planDisplay = plan === 'pro' ? 'Pro' : plan === 'max' ? 'Max' : String(plan)
+      await sendPurchaseConfirmationEmail({
+        to: data.customer.email,
+        planName: planDisplay,
+        amount: plan === 'pro' ? '$19/month' : plan === 'max' ? '$49/month' : '',
+        billingDate: 'your next billing date',
+      })
+    }
   }
 }
 
@@ -111,6 +122,15 @@ async function deactivatePlan(data: SubscriptionWebhookData) {
     console.error('[dodo/webhook] deactivatePlan DB error:', error.message)
   } else {
     console.log(`[dodo/webhook] deactivatePlan: reset user ${userId} to starter`)
+    // Send cancellation confirmation email
+    if (data.customer?.email) {
+      const planDisplay = (data as any).plan ?? 'Pro'
+      await sendCancellationEmail({
+        to: data.customer.email,
+        planName: planDisplay,
+        accessUntil: null,
+      })
+    }
   }
 }
 
@@ -157,7 +177,13 @@ export async function POST(request: NextRequest) {
       break
 
     case 'subscription.cancelled':
+      // User cancelled with cancel_at_next_billing_date — subscription stays active until period end.
+      // Do NOT downgrade here; wait for subscription.expired to fire at period end.
+      console.log('[dodo/webhook] Subscription scheduled for cancellation:', event.data.subscription_id)
+      break
+
     case 'subscription.expired':
+      // Billing period ended — now actually downgrade to starter
       await deactivatePlan(event.data)
       break
 

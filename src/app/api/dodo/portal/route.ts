@@ -24,10 +24,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Dodo customer portal — lets users manage subscriptions, update payment methods, etc.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const portal = await (getDodo().customers as any).customerPortal(userPlan.payment_customer_id)
-    const url = portal?.checkout_url ?? portal?.url
+    // Dodo customer portal — customerPortal is a sub-resource with a .create() method
+    // Response shape: { link: string }
+    const portal = await getDodo().customers.customerPortal.create(
+      userPlan.payment_customer_id,
+      { return_url: `${process.env.NEXT_PUBLIC_APP_URL}/account` }
+    )
+    const url = portal?.link
     if (!url) throw new Error('No portal URL returned')
     return NextResponse.json({ url })
   } catch (err) {

@@ -42,7 +42,7 @@ function LoginContent() {
 
         {/* Wordmark */}
         <div className="relative z-10">
-          <div className="font-black text-xl text-white tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</div>
+          <div className="font-black text-xl text-white tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</div>
         </div>
 
         {/* Product mockup */}
@@ -112,7 +112,7 @@ function LoginContent() {
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8">
             <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-              SENSEBUG
+              SENSEBUG AI
             </Link>
           </div>
 

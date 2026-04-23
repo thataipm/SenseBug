@@ -117,7 +117,7 @@ export default function ProcessingPage() {
 
       <div className="relative z-10 max-w-sm w-full px-6 text-center">
         {/* Wordmark */}
-        <p className="text-xs font-mono uppercase tracking-widest text-white/30 mb-12" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>SENSEBUG</p>
+        <p className="text-xs font-mono uppercase tracking-widest text-white/30 mb-12" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>SENSEBUG AI</p>
 
         {!error ? (
           <>

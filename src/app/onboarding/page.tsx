@@ -142,14 +142,14 @@ function OnboardingContent() {
     <div className="min-h-screen bg-white" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       {/* Header */}
       <header className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between">
-        <Link href="/" className="font-black text-lg tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</Link>
+        <Link href="/" className="font-black text-lg tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</Link>
         <span className="text-xs font-mono text-black/30 uppercase tracking-widest" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Setup</span>
       </header>
 
       <div className="max-w-2xl mx-auto px-6 py-16">
 
         <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-4" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Knowledge Base Setup</p>
-        <h1 className="text-4xl font-black tracking-tighter mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Tell Sensebug about your product</h1>
+        <h1 className="text-4xl font-black tracking-tighter mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Tell SenseBug AI about your product</h1>
         <p className="text-sm text-black/55 mb-10 leading-relaxed">
           The AI uses this context to rank bugs by business impact — not just ticket text.
           The more specific you are, the more accurate the results.

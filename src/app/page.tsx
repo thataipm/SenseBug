@@ -9,7 +9,7 @@ export default function LandingPage() {
       {/* ── Nav ──────────────────────────────────────────────────────────── */}
       <nav className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between sticky top-0 bg-white z-50">
         <div style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }} className="font-black text-xl tracking-tight">
-          SENSEBUG
+          SENSEBUG AI
         </div>
         <div className="flex items-center gap-6">
           <a href="#pricing" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
@@ -44,7 +44,7 @@ export default function LandingPage() {
           </h1>
           <p className="text-xl text-black/60 max-w-2xl mb-4 leading-relaxed">
             Every ticket was filed by someone who thinks their bug is the most important one.
-            Sensebug ignores the noise and ranks by what actually matters — business impact.
+            SenseBug AI ignores the noise and ranks by what actually matters — business impact.
           </p>
           <p className="text-base text-black/40 max-w-xl mb-12 leading-relaxed">
             Drop a CSV from Jira, Linear, or any tracker. In under a minute you&apos;ll have a ranked list with the reasoning behind every call — ready to defend in the next sprint planning.
@@ -135,7 +135,7 @@ export default function LandingPage() {
             {/* After */}
             <div className="border border-black p-6">
               <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-                After — Sensebug AI ranking
+                After — SenseBug AI ranking
               </p>
               <div className="space-y-2.5">
                 {[
@@ -260,7 +260,7 @@ export default function LandingPage() {
               </div>
               <div className="text-sm text-black/45 mb-4">Maximum capacity + integrations</div>
               <p className="text-xs text-black/40 leading-relaxed flex-1">
-                2× the bug quota, higher per-run limits, and Jira integration (coming soon) for teams who need their triage workflow directly in their issue tracker.
+                Maximum bug capacity, higher per-run limits, and Jira integration (coming soon) for power users who want to push every drop of value out of SenseBug AI.
               </p>
               <Link href="/checkout?plan=max" data-testid="pricing-max-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 mt-6">
                 Get started
@@ -394,7 +394,7 @@ export default function LandingPage() {
           <div className="space-y-0 divide-y divide-gray-100">
             {[
               {
-                q: 'What CSV format does Sensebug need?',
+                q: 'What CSV format does SenseBug AI need?',
                 a: 'Required columns: id (or key / issue_key), title (or summary), and priority. Optional but recommended: description, comments, reporter, labels. More context = more accurate rankings. Jira and Linear exports work out of the box.',
               },
               {
@@ -407,7 +407,7 @@ export default function LandingPage() {
               },
               {
                 q: 'Is there a limit on how many bugs I can analyse?',
-                a: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Team: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, Sensebug sorts by original priority first so your most critical bugs are always included.',
+                a: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Max: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, SenseBug AI sorts by original priority first so your most critical bugs are always included.',
               },
               {
                 q: 'What happens to my data?',
@@ -462,13 +462,13 @@ export default function LandingPage() {
       <footer className="px-6 md:px-12 lg:px-24 py-10">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="font-black text-lg tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          SENSEBUG
+          SENSEBUG AI
         </div>
         <div className="flex items-center gap-6 text-sm text-black/35">
           <Link href="/privacy" className="hover:text-black transition-colors duration-150">Privacy</Link>
           <Link href="/terms" className="hover:text-black transition-colors duration-150">Terms</Link>
           <a href="mailto:contact@sensebug.com" className="hover:text-black transition-colors duration-150">Contact</a>
-          <span>© 2026 Sensebug</span>
+          <span>© 2026 SenseBug AI</span>
         </div>
         </div>
       </footer>

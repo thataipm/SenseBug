@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       <div className="max-w-sm w-full">
-        <Link href="/" className="font-black text-xl tracking-tight block mb-10" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</Link>
+        <Link href="/" className="font-black text-xl tracking-tight block mb-10" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</Link>
         <h1 className="text-3xl font-black tracking-tighter mb-1 " style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Set new password</h1>
         <p className="text-sm text-black/45 mb-8">Choose a new password for your account.</p>
         <Suspense fallback={<div className="text-sm text-black/45">Loading…</div>}>

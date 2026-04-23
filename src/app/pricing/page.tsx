@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Check } from 'lucide-react'
 
 export const metadata = {
-  title: 'Pricing — Sensebug',
+  title: 'Pricing — SenseBug AI',
   description: 'Start free. Upgrade when the value is obvious. Pro at $19/mo, Max at $49/mo.',
 }
 
@@ -13,7 +13,7 @@ export default function PricingPage() {
       {/* Nav */}
       <nav className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between sticky top-0 bg-white z-50">
         <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          SENSEBUG
+          SENSEBUG AI
         </Link>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150">
@@ -223,14 +223,14 @@ export default function PricingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 px-6 md:px-12 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-black/35">
-        <Link href="/" className="font-black text-sm tracking-tight text-black" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</Link>
+        <Link href="/" className="font-black text-sm tracking-tight text-black" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</Link>
         <div className="flex items-center gap-6">
           <Link href="/" className="hover:text-black transition-colors">Home</Link>
           <Link href="/support" className="hover:text-black transition-colors">Support</Link>
           <Link href="/privacy" className="hover:text-black transition-colors">Privacy</Link>
           <Link href="/terms" className="hover:text-black transition-colors">Terms</Link>
         </div>
-        <span>© 2026 Sensebug</span>
+        <span>© 2026 SenseBug AI</span>
       </footer>
     </div>
   )

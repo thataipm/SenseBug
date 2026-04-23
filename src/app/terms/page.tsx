@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Terms of Service — Sensebug',
-  description: 'The terms that govern your use of Sensebug.',
+  title: 'Terms of Service — SenseBug AI',
+  description: 'The terms that govern your use of SenseBug AI.',
 }
 
 function H2({ children }: { children: React.ReactNode }) {
@@ -54,7 +54,7 @@ export default function TermsPage() {
       {/* Nav */}
       <nav className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between sticky top-0 bg-white z-50">
         <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          SENSEBUG
+          SENSEBUG AI
         </Link>
         <Link href="/login" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150">
           Log in
@@ -77,21 +77,21 @@ export default function TermsPage() {
 
           <section>
             <H2>Agreement to terms</H2>
-            <P>These Terms of Service (&quot;Terms&quot;) govern your access to and use of Sensebug (&quot;the Service&quot;), operated by Sensebug (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) at sensebug.com. By creating an account or using the Service, you agree to be bound by these Terms.</P>
+            <P>These Terms of Service (&quot;Terms&quot;) govern your access to and use of SenseBug AI (&quot;the Service&quot;), operated by SenseBug AI (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) at sensebug.com. By creating an account or using the Service, you agree to be bound by these Terms.</P>
             <P>If you are using the Service on behalf of an organisation, you represent that you have the authority to bind that organisation to these Terms, and references to &quot;you&quot; include that organisation.</P>
           </section>
 
           <section>
             <H2>Description of service</H2>
-            <P>Sensebug is an AI-assisted bug triage tool for product managers. It allows you to upload bug backlogs in CSV format, receive AI-generated priority rankings based on business impact, and record your verdicts on each bug. Results can be exported as CSV for use in sprint planning tools.</P>
+            <P>SenseBug AI is an AI-assisted bug triage tool for product managers. It allows you to upload bug backlogs in CSV format, receive AI-generated priority rankings based on business impact, and record your verdicts on each bug. Results can be exported as CSV for use in sprint planning tools.</P>
             <P>The Service is provided &quot;as is&quot; and we may modify or discontinue features at any time. We will provide reasonable notice of significant changes.</P>
           </section>
 
           <section>
             <H2>Accounts</H2>
             <P>You must provide a valid email address to create an account. You are responsible for maintaining the security of your account credentials and for all activity that occurs under your account.</P>
-            <P>You must be at least 16 years old to use Sensebug. By creating an account, you confirm that you meet this requirement.</P>
-            <P>You may not share your account with others or create accounts for third parties without their consent. Each account is for a single individual unless you are on the Team plan, which permits up to 5 members.</P>
+            <P>You must be at least 16 years old to use SenseBug AI. By creating an account, you confirm that you meet this requirement.</P>
+            <P>You may not share your account with others or create accounts for third parties without their consent. Each account is for a single individual.</P>
           </section>
 
           <section>
@@ -113,7 +113,7 @@ export default function TermsPage() {
             <H3>Free Starter plan</H3>
             <P>The Starter plan is free forever and includes 3 triage runs per month with a per-run cap of 20 bugs. No credit card is required.</P>
             <H3>Paid plans</H3>
-            <P>Pro ($19/month) and Team ($49/month) plans are billed monthly in advance via Stripe. All prices are in USD. Subscriptions renew automatically each month until cancelled.</P>
+            <P>Pro ($19/month) and Max ($49/month) plans are billed monthly in advance via Dodo Payments. All prices are in USD. Subscriptions renew automatically each month until cancelled.</P>
             <H3>Cancellation and refunds</H3>
             <P>You may cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period — you retain access until then. We do not offer refunds for partial months, except where required by law.</P>
             <H3>Changes to pricing</H3>
@@ -122,7 +122,7 @@ export default function TermsPage() {
 
           <section>
             <H2>Your data</H2>
-            <P>You retain ownership of all data you upload to Sensebug — including CSV files, bug content, and Knowledge Base entries. By uploading data, you grant us a limited licence to process it for the sole purpose of providing the Service to you.</P>
+            <P>You retain ownership of all data you upload to SenseBug AI — including CSV files, bug content, and Knowledge Base entries. By uploading data, you grant us a limited licence to process it for the sole purpose of providing the Service to you.</P>
             <P>
               We do not use your data to train AI models. See our{' '}
               <Link href="/privacy" className="text-black underline underline-offset-2 hover:text-black/60">Privacy Policy</Link>
@@ -136,20 +136,20 @@ export default function TermsPage() {
 
           <section>
             <H2>AI output and accuracy</H2>
-            <P>Sensebug uses AI to generate bug rankings and analysis. While we work hard to make these results accurate and useful, AI output is probabilistic and may contain errors, omissions, or inconsistencies.</P>
-            <P>The rankings and analysis produced by Sensebug are intended to assist your decision-making — not replace it. You remain responsible for the final triage decisions you make and for the consequences of those decisions on your product and team.</P>
+            <P>SenseBug AI uses AI to generate bug rankings and analysis. While we work hard to make these results accurate and useful, AI output is probabilistic and may contain errors, omissions, or inconsistencies.</P>
+            <P>The rankings and analysis produced by SenseBug AI are intended to assist your decision-making — not replace it. You remain responsible for the final triage decisions you make and for the consequences of those decisions on your product and team.</P>
             <P>We make no warranty that the Service will produce correct rankings for any specific bug or backlog.</P>
           </section>
 
           <section>
             <H2>Intellectual property</H2>
-            <P>The Sensebug name, logo, product design, and underlying software are our intellectual property. You may not copy, modify, or distribute them without our written permission.</P>
+            <P>The SenseBug AI name, logo, product design, and underlying software are our intellectual property. You may not copy, modify, or distribute them without our written permission.</P>
             <P>The AI-generated analysis and rankings produced for your specific bug data belong to you. You are free to use, share, and export them as you see fit.</P>
           </section>
 
           <section>
             <H2>Limitation of liability</H2>
-            <P>To the maximum extent permitted by applicable law, Sensebug shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service — including but not limited to lost revenue, lost data, or decisions made based on AI output.</P>
+            <P>To the maximum extent permitted by applicable law, SenseBug AI shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service — including but not limited to lost revenue, lost data, or decisions made based on AI output.</P>
             <P>Our total liability to you for any claim arising from these Terms or your use of the Service shall not exceed the amount you paid us in the 12 months preceding the claim, or $100 if you are on a free plan.</P>
           </section>
 
@@ -188,7 +188,7 @@ export default function TermsPage() {
       {/* Footer */}
       <footer className="border-t border-gray-100 px-6 py-8 mt-8">
         <div className="max-w-3xl mx-auto flex items-center justify-between text-sm text-black/35">
-          <span className="font-black tracking-tight text-black text-base" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</span>
+          <span className="font-black tracking-tight text-black text-base" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</span>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="hover:text-black transition-colors">Privacy</Link>
             <a href="mailto:contact@sensebug.com" className="hover:text-black transition-colors">Contact</a>

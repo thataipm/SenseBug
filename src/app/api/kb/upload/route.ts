@@ -54,12 +54,12 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Plan gate — document uploads are Pro and Team only
+  // Plan gate — document uploads are Pro and Max only
   const userPlan = await ensureUserPlan(supabase, user.id)
   const limits   = getPlanLimits(userPlan.plan)
   if (!limits.docUpload) {
     return NextResponse.json(
-      { error: 'Document uploads are available on Pro and Team plans. Upgrade to unlock this feature.' },
+      { error: 'Document uploads are available on Pro and Max plans. Upgrade to unlock this feature.' },
       { status: 403 }
     )
   }

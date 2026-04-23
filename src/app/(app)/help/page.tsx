@@ -2,18 +2,18 @@ const faqs = [
   {
     section: 'Getting Started',
     items: [
-      { q: 'What is Sensebug?', a: "Sensebug is an AI-powered bug triage tool for Product Managers. You upload a CSV of bug tickets, and the AI ranks them by business impact using your product's Knowledge Base as context." },
+      { q: 'What is SenseBug AI?', a: "SenseBug AI is an AI-powered bug triage tool for Product Managers. You upload a CSV of bug tickets, and the AI ranks them by business impact using your product's Knowledge Base as context." },
       { q: 'How do I get started?', a: 'Sign up, complete the onboarding to set up your Knowledge Base (describe your product, critical flows, and modules), then upload a CSV from your bug tracker.' },
-      { q: 'What happens during a triage run?', a: "Sensebug parses your CSV, retrieves relevant context from your Knowledge Base, and sends the bugs to Claude (Anthropic's AI) for prioritization. Results appear in under a minute." },
+      { q: 'What happens during a triage run?', a: "SenseBug AI parses your CSV, retrieves relevant context from your Knowledge Base, and sends the bugs to Claude (Anthropic's AI) for prioritization. Results appear in under a minute." },
     ],
   },
   {
     section: 'CSV Format',
     items: [
       { q: 'What columns does my CSV need?', a: 'Required: id (or key/issue_key), title (or summary), and priority. Optional but recommended: description, comments, reporter, labels. More context = better AI rankings.' },
-      { q: 'Does Sensebug work with Jira exports?', a: "Yes. Jira exports are fully supported. Sensebug automatically deduplicates Jira's multi-row format (where each comment/attachment creates a separate row for the same issue)." },
+      { q: 'Does SenseBug AI work with Jira exports?', a: "Yes. Jira exports are fully supported. SenseBug AI automatically deduplicates Jira's multi-row format (where each comment/attachment creates a separate row for the same issue)." },
       { q: 'What priority values does the AI understand?', a: 'Both Jira-style (P1, P2, P3, P4) and plain English (Critical, High, Medium, Low) are understood. The AI re-ranks based on business impact, so the original priority is just one input.' },
-      { q: 'Is there a bug limit per run?', a: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Team: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, Sensebug sorts by original priority first so your most critical bugs are always included.' },
+      { q: 'Is there a bug limit per run?', a: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Max: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, SenseBug AI sorts by original priority first so your most critical bugs are always included.' },
     ],
   },
   {
@@ -38,7 +38,7 @@ export default function HelpPage() {
     <div className="px-6 md:px-10 py-10 max-w-2xl mx-auto" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Help & FAQ</p>
       <h1 className="text-2xl font-black tracking-tighter mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>How can we help?</h1>
-      <p className="text-sm text-black/50 mb-12">Everything you need to know about using Sensebug.</p>
+      <p className="text-sm text-black/50 mb-12">Everything you need to know about using SenseBug AI.</p>
 
       <div className="space-y-12">
         {faqs.map((section) => (

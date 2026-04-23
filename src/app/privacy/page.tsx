@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Privacy Policy — Sensebug',
-  description: 'How Sensebug collects, uses, and protects your data.',
+  title: 'Privacy Policy — SenseBug AI',
+  description: 'How SenseBug AI collects, uses, and protects your data.',
 }
 
 function H2({ children }: { children: React.ReactNode }) {
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
       {/* Nav */}
       <nav className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between sticky top-0 bg-white z-50">
         <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          SENSEBUG
+          SENSEBUG AI
         </Link>
         <Link href="/login" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150">
           Log in
@@ -77,8 +77,8 @@ export default function PrivacyPage() {
 
           <section>
             <H2>Overview</H2>
-            <P>Sensebug (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) operates the Sensebug service at sensebug.com. This Privacy Policy explains what information we collect, how we use it, and your rights in relation to it.</P>
-            <P>By using Sensebug, you agree to the collection and use of information in accordance with this policy. If you do not agree, please do not use our service.</P>
+            <P>SenseBug AI (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) operates the SenseBug AI service at sensebug.com. This Privacy Policy explains what information we collect, how we use it, and your rights in relation to it.</P>
+            <P>By using SenseBug AI, you agree to the collection and use of information in accordance with this policy. If you do not agree, please do not use our service.</P>
           </section>
 
           <section>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
           <section>
             <H2>How we use your information</H2>
             <UL>
-              <LI>To provide, operate, and improve the Sensebug service</LI>
+              <LI>To provide, operate, and improve the SenseBug AI service</LI>
               <LI>To process your CSV uploads and generate AI triage results</LI>
               <LI>To send essential service emails (account confirmations, password resets)</LI>
               <LI>To enforce our Terms of Service and prevent abuse</LI>
@@ -109,7 +109,7 @@ export default function PrivacyPage() {
 
           <section>
             <H2>AI processing</H2>
-            <P>Sensebug uses third-party AI providers (including Anthropic) to analyse your bug data. When you submit a CSV for triage, the ticket content is sent to these providers to generate rankings and analysis. This data is processed under their respective data processing agreements and is not used to train their models.</P>
+            <P>SenseBug AI uses third-party AI providers (including Anthropic) to analyse your bug data. When you submit a CSV for triage, the ticket content is sent to these providers to generate rankings and analysis. This data is processed under their respective data processing agreements and is not used to train their models.</P>
             <P>We recommend avoiding uploading CSV files that contain personally identifiable information about your end users (e.g., customer names, emails, or IDs in ticket descriptions).</P>
           </section>
 
@@ -124,7 +124,7 @@ export default function PrivacyPage() {
 
           <section>
             <H2>Third-party services</H2>
-            <P>We use the following third-party services to operate Sensebug:</P>
+            <P>We use the following third-party services to operate SenseBug AI:</P>
             <UL>
               <LI><strong className="text-black/80 font-semibold">Supabase</strong> — database, authentication, and file storage</LI>
               <LI><strong className="text-black/80 font-semibold">Anthropic</strong> — AI language model for bug analysis</LI>
@@ -152,7 +152,7 @@ export default function PrivacyPage() {
 
           <section>
             <H2>Children</H2>
-            <P>Sensebug is not directed at children under the age of 16. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us and we will delete it promptly.</P>
+            <P>SenseBug AI is not directed at children under the age of 16. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us and we will delete it promptly.</P>
           </section>
 
           <section>
@@ -174,7 +174,7 @@ export default function PrivacyPage() {
       {/* Footer */}
       <footer className="border-t border-gray-100 px-6 py-8 mt-8">
         <div className="max-w-3xl mx-auto flex items-center justify-between text-sm text-black/35">
-          <span className="font-black tracking-tight text-black text-base" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</span>
+          <span className="font-black tracking-tight text-black text-base" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</span>
           <div className="flex items-center gap-6">
             <Link href="/terms" className="hover:text-black transition-colors">Terms</Link>
             <a href="mailto:contact@sensebug.com" className="hover:text-black transition-colors">Contact</a>

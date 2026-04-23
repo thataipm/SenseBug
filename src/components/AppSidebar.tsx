@@ -67,7 +67,7 @@ export function AppSidebar() {
           className="font-black text-lg tracking-tight"
           style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}
         >
-          SENSEBUG
+          SENSEBUG AI
         </Link>
       </div>
 

@@ -200,7 +200,7 @@ export default function ResultsPage() {
           <Link href="/dashboard" className="text-black/40 hover:text-black transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </Link>
-          <Link href="/dashboard" className="font-black text-lg tracking-tight" style={HEADING}>SENSEBUG</Link>
+          <Link href="/dashboard" className="font-black text-lg tracking-tight" style={HEADING}>SENSEBUG AI</Link>
           <span className="text-black/25">|</span>
           <div>
             <span className="text-sm font-medium">{run.filename}</span>
@@ -507,9 +507,9 @@ export default function ResultsPage() {
                     )}
                   </div>
 
-                  {/* ── Right column: SenseBug Analysis ── */}
+                  {/* ── Right column: SenseBug AI Analysis ── */}
                   <div className="p-6 md:p-8">
-                    <p className={COL_LABEL} style={MONO}>SenseBug Analysis</p>
+                    <p className={COL_LABEL} style={MONO}>SenseBug AI Analysis</p>
 
                     {/* Possible duplicate callout */}
                     {selected.gap_flags?.includes('Possible duplicate') && (
@@ -528,14 +528,14 @@ export default function ResultsPage() {
                     )}
 
                     {/* Business Impact */}
-                    <div className="mb-5">
-                      <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>Business Impact</p>
+                    <div className="mb-5 border border-gray-100 bg-gray-50 px-4 py-4">
+                      <p className="text-xs font-mono uppercase tracking-widest text-black/35 mb-2" style={MONO}>Business Impact</p>
                       <p className="text-sm text-black/90 leading-relaxed font-medium">{selected.business_impact}</p>
                     </div>
 
-                    {/* SenseBug Analysis */}
+                    {/* SenseBug AI Analysis */}
                     <div className="mb-5">
-                      <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug Analysis</p>
+                      <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug AI Analysis</p>
                       <p className="text-sm text-black/65 leading-relaxed">{selected.rationale}</p>
                     </div>
 
