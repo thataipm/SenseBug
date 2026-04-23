@@ -22,6 +22,6 @@ export function getDodo(): DodoPayments {
 export function getDodoPlans(): Record<string, { productId: string; plan: 'pro' | 'max' }> {
   return {
     pro: { productId: process.env.DODO_PRO_PRODUCT_ID ?? '', plan: 'pro' },
-    max: { productId: process.env.DODO_TEAM_PRODUCT_ID ?? '', plan: 'max' },
+    max: { productId: process.env.DODO_MAX_PRODUCT_ID ?? '', plan: 'max' },
   }
 }

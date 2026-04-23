@@ -34,7 +34,7 @@ async function getUserIdByEmail(email: string): Promise<string | null> {
 function planFromProductId(productId: string | undefined): 'pro' | 'max' | null {
   if (!productId) return null
   if (productId === process.env.DODO_PRO_PRODUCT_ID)  return 'pro'
-  if (productId === process.env.DODO_TEAM_PRODUCT_ID) return 'max'
+  if (productId === process.env.DODO_MAX_PRODUCT_ID) return 'max'
   return null
 }
 
