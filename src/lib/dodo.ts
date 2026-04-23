@@ -17,13 +17,11 @@ export function getDodo(): DodoPayments {
   return _dodo
 }
 
-export const DODO_PLANS: Record<string, { productId: string; plan: 'pro' | 'max' }> = {
-  pro: {
-    productId: process.env.DODO_PRO_PRODUCT_ID!,
-    plan: 'pro',
-  },
-  max: {
-    productId: process.env.DODO_TEAM_PRODUCT_ID!,
-    plan: 'max',
-  },
+// Evaluated at call time so env vars are always resolved at request time,
+// not frozen at module initialization (which can happen before env vars load).
+export function getDodoPlans(): Record<string, { productId: string; plan: 'pro' | 'max' }> {
+  return {
+    pro: { productId: process.env.DODO_PRO_PRODUCT_ID ?? '', plan: 'pro' },
+    max: { productId: process.env.DODO_TEAM_PRODUCT_ID ?? '', plan: 'max' },
+  }
 }

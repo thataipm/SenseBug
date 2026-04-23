@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getDodo, DODO_PLANS } from '@/lib/dodo'
+import { getDodo, getDodoPlans } from '@/lib/dodo'
 import { isValidOrigin } from '@/lib/csrf'
 
 const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, team: 2, max: 2 }
@@ -16,14 +16,17 @@ export async function POST(request: NextRequest) {
 
   const { plan } = await request.json()
 
-  if (!DODO_PLANS[plan]) {
+  const dodoPlans = getDodoPlans()
+
+  if (!dodoPlans[plan]) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
   }
 
   // Guard: product ID must be configured
-  const productId = DODO_PLANS[plan].productId
+  const productId = dodoPlans[plan].productId
   if (!productId) {
-    console.error(`[dodo/checkout] DODO_${plan.toUpperCase()}_PRODUCT_ID is not set`)
+    const envVarName = plan === 'max' ? 'DODO_TEAM_PRODUCT_ID' : `DODO_${plan.toUpperCase()}_PRODUCT_ID`
+    console.error(`[dodo/checkout] ${envVarName} is not set`)
     return NextResponse.json({ error: 'Checkout is not configured yet. Please contact support.' }, { status: 503 })
   }
 
