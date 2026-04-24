@@ -103,8 +103,22 @@ export default function ProcessingPage() {
           setError(data.error || 'Upload failed. Please try again.')
           return
         }
+        // If some bugs were trimmed, store the raw rows in sessionStorage so the
+        // results page can offer a "Download remaining bugs" CSV button.
+        if (data.trimmed_rows?.length > 0) {
+          try {
+            sessionStorage.setItem(`trimmed:${data.run_id}`, JSON.stringify(data.trimmed_rows))
+          } catch {
+            // sessionStorage full or unavailable — non-fatal, download button just won't appear
+          }
+        }
         await new Promise((r) => setTimeout(r, 600))
-        router.push(`/results/${data.run_id}${data.warning ? `?note=${encodeURIComponent(data.warning)}` : ''}`)
+        const params = new URLSearchParams()
+        if (data.warning) params.set('note', data.warning)
+        if (data.total_uploaded) params.set('total', String(data.total_uploaded))
+        if (data.bugs_analyzed) params.set('analyzed', String(data.bugs_analyzed))
+        const qs = params.toString()
+        router.push(`/results/${data.run_id}${qs ? `?${qs}` : ''}`)
       } catch {
         setError('Something went wrong. Please try again.')
       }

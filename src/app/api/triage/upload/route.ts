@@ -390,13 +390,13 @@ async function storeTriage(
   // Build a map of original bug data keyed by bug_id for O(1) lookup
   const bugMap = new Map(originalBugs.map((b) => [String(b.bug_id), b]))
 
-  const { data: run } = await supabase
+  const { data: run, error: runError } = await supabase
     .from('triage_runs')
     .insert({ user_id: userId, filename, bug_count: validResults.length })
     .select()
     .single()
 
-  if (!run) throw new Error('Failed to create triage run')
+  if (runError || !run) throw new Error(`Failed to create triage run${runError ? ': ' + runError.message : ''}`)
 
   const toInsert = validResults.map((r) => {
     const orig = bugMap.get(String(r.bug_id || ''))
@@ -417,8 +417,45 @@ async function storeTriage(
     }
   })
 
-  const { data: results } = await supabase.from('triage_results').insert(toInsert).select()
+  const { data: results, error: resultsError } = await supabase
+    .from('triage_results')
+    .insert(toInsert)
+    .select()
+
+  if (resultsError) {
+    // Clean up the orphaned run row so history stays consistent before rethrowing
+    await supabase.from('triage_runs').delete().eq('id', run.id)
+    throw new Error(`Failed to save triage results: ${resultsError.message}`)
+  }
+
   return { run, results: results || [] }
+}
+
+// Retry storeTriage up to maxAttempts times with exponential backoff.
+// This prevents a transient DB error from forcing the user to re-upload
+// and re-running the (already paid-for) Claude API call.
+async function storeTriageWithRetry(
+  supabase: SupabaseClient,
+  userId: string,
+  filename: string,
+  llmResults: Record<string, unknown>[],
+  originalBugs: BugRow[],
+  maxAttempts = 3
+) {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await storeTriage(supabase, userId, filename, llmResults, originalBugs)
+    } catch (e) {
+      lastError = e
+      if (attempt < maxAttempts) {
+        // 500 ms, then 1 000 ms before the final attempt
+        await new Promise((resolve) => setTimeout(resolve, 500 * attempt))
+        console.warn(`[triage] storeTriage attempt ${attempt} failed — retrying...`)
+      }
+    }
+  }
+  throw lastError
 }
 
 // ─── Main route handler ───────────────────────────────────────────────────────
@@ -508,6 +545,8 @@ export async function POST(request: NextRequest) {
     trimmedWarning = 'No Knowledge Base found — results will be less accurate. Set up your KB in Settings.'
   }
 
+  const totalUploaded = dedupedRows.length
+
   // ── Monthly bug quota check ──────────────────────────────────────────────────
   let bugs = dedupedRows
   if (limits.monthlyBugLimit !== Infinity) {
@@ -515,24 +554,23 @@ export async function POST(request: NextRequest) {
 
     if (remaining <= 0) {
       return NextResponse.json(
-        { error: `Monthly limit of ${limits.monthlyBugLimit} bugs reached. Upgrade for more.`, plan: plan.plan, upgrade_url: '/settings' },
+        { error: `Monthly limit of ${limits.monthlyBugLimit} bugs reached. Upgrade for more.`, plan: plan.plan, upgrade_url: '/pricing' },
         { status: 403 }
       )
     }
 
     if (bugs.length > remaining) {
-      const msg = `You have ${remaining} bug${remaining !== 1 ? 's' : ''} left in your monthly quota. Showing top ${remaining}.`
-      trimmedWarning = trimmedWarning ? `${trimmedWarning} ${msg}` : msg
       bugs = bugs.slice(0, remaining)
     }
   }
 
   // ── Per-run cap ──────────────────────────────────────────────────────────────
   if (bugs.length > limits.maxBugsPerRun) {
-    const msg = `Showing top ${limits.maxBugsPerRun} bugs per run. Upgrade to analyse more at once.`
-    trimmedWarning = trimmedWarning ? `${trimmedWarning} ${msg}` : msg
     bugs = bugs.slice(0, limits.maxBugsPerRun)
   }
+
+  // Rows not processed in this run (trimmed by quota or per-run cap)
+  const trimmedRows = dedupedRows.slice(bugs.length)
 
   // Build bug payloads for LLM — filter out untitled bugs (no signal for ranking)
   const allBugsForLlm = buildBugsForLlm(bugs, cols, Object.keys(rows[0]))
@@ -598,12 +636,13 @@ export async function POST(request: NextRequest) {
     trimmedWarning = trimmedWarning ? `${trimmedWarning} ${crossRunDupWarning}` : crossRunDupWarning
   }
 
-  // Store results
+  // Store results — retried up to 3× so a transient DB error doesn't waste
+  // the already-completed (and paid-for) Claude API call.
   let run, results
   try {
-    ;({ run, results } = await storeTriage(supabase, user.id, file.name, llmResults, bugsForLlm))
+    ;({ run, results } = await storeTriageWithRetry(supabase, user.id, file.name, llmResults, bugsForLlm))
   } catch (e) {
-    console.error('[triage] storeTriage failed:', e)
+    console.error('[triage] storeTriage failed after retries:', e)
     const msg = e instanceof Error ? e.message : 'Failed to save results.'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
@@ -625,5 +664,12 @@ export async function POST(request: NextRequest) {
       })
   }
 
-  return NextResponse.json({ run_id: run.id, results, warning: trimmedWarning })
+  return NextResponse.json({
+    run_id: run.id,
+    results,
+    warning: trimmedWarning,
+    total_uploaded: totalUploaded,
+    bugs_analyzed: actualBugsStored,
+    trimmed_rows: trimmedRows.length > 0 ? trimmedRows : undefined,
+  })
 }

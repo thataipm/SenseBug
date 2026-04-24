@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 export default function LandingPage() {
   return (
@@ -12,9 +12,9 @@ export default function LandingPage() {
           SENSEBUG AI
         </div>
         <div className="flex items-center gap-6">
-          <a href="#pricing" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
+          <Link href="/pricing" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
             Pricing
-          </a>
+          </Link>
           <a href="#faq" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
             FAQ
           </a>
@@ -210,173 +210,67 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Pricing ──────────────────────────────────────────────────────── */}
-      <section id="pricing" className="px-6 md:px-12 lg:px-24 py-24 border-b border-gray-200 bg-gray-50">
+      {/* ── Outcomes ─────────────────────────────────────────────────────── */}
+      <section className="px-6 md:px-12 lg:px-24 py-24 border-b border-gray-200 bg-gray-50">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-4" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-            Pricing
+          <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-8" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+            What you actually get
           </p>
-          <h2 className="text-4xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            Pay for what you use.
+          <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
+            Sprint planning in 5 minutes.<br />Not 5 hours.
           </h2>
-          <p className="text-base text-black/45 mb-12">Start free. Upgrade when the value is obvious.</p>
+          <p className="text-base text-black/45 mb-14 max-w-xl">
+            SenseBug AI doesn&apos;t just rank bugs — it gives you the reasoning to defend every call in the room.
+          </p>
 
-          {/* ── Plan cards ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 border border-gray-200 mb-0">
-            {/* Starter */}
-            <div className="p-8 bg-white md:border-r border-gray-200 border-b md:border-b-0 flex flex-col">
-              <div className="text-xs font-mono uppercase tracking-widest text-black/40 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Starter</div>
-              <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Free</div>
-              <div className="text-sm text-black/45 mb-4">No credit card required</div>
-              <p className="text-xs text-black/40 leading-relaxed flex-1">
-                Enough to run triage on a real backlog and see the difference before you commit to anything.
-              </p>
-              <Link href="/signup" data-testid="pricing-starter-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 mt-6">
-                Get started free
-              </Link>
-            </div>
-
-            {/* Pro */}
-            <div className="p-8 bg-black text-white md:border-r border-gray-200 border-b md:border-b-0 flex flex-col">
-              <div className="text-xs font-mono uppercase tracking-widest text-white/40 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-                Pro <span className="text-white/25 normal-case font-normal tracking-normal ml-1">— most popular</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-gray-200 mb-12">
+            {[
+              {
+                n: '01',
+                heading: 'A ranked list that defends itself',
+                body: 'Every bug comes with a 3-sentence rationale written to be read aloud. Paste it into Slack, put it in the sprint doc, or read it in standup. Stop explaining — start deciding.',
+              },
+              {
+                n: '02',
+                heading: 'Cover to say no',
+                body: "When the AI flags a P1 as actually P4, you have documented evidence. Not your opinion — the system's verdict. No more uncomfortable conversations about whose bug matters more.",
+              },
+              {
+                n: '03',
+                heading: 'Gaps before they block your sprint',
+                body: 'Vague tickets missing repro steps are flagged before they hit development. Engineers stop asking for context two days in. Reporters learn what a good ticket looks like.',
+              },
+              {
+                n: '04',
+                heading: 'Consistent triage, every time',
+                body: 'Same scoring rules, every sprint. No mood dependencies. No memory of last quarter\'s argument. The kind of consistent prioritization that builds credibility with your engineering team.',
+              },
+            ].map((item, i) => (
+              <div
+                key={item.n}
+                className={`p-8 bg-white ${
+                  i === 0 ? 'md:border-r border-b border-gray-200' :
+                  i === 1 ? 'border-b border-gray-200' :
+                  i === 2 ? 'md:border-r border-b md:border-b-0 border-gray-200' : ''
+                }`}
+              >
+                <div className="text-xs font-mono text-black/25 mb-4" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{item.n}</div>
+                <h3 className="text-xl font-bold mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{item.heading}</h3>
+                <p className="text-sm text-black/55 leading-relaxed">{item.body}</p>
               </div>
-              <div className="text-4xl font-black mb-4" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-                $19<span className="text-xl font-normal text-white/50">/mo</span>
-              </div>
-              <p className="text-xs text-white/40 leading-relaxed flex-1">
-                Upload your product docs and specs — the AI understands your product, not just ticket text. Meaningfully more accurate results.
-              </p>
-              <Link href="/checkout?plan=pro" data-testid="pricing-pro-btn" className="block text-center bg-white text-black py-3 text-sm font-semibold hover:bg-white/90 transition-colors duration-150 mt-6">
-                Get started
-              </Link>
-            </div>
-
-            {/* Max */}
-            <div className="p-8 bg-white flex flex-col">
-              <div className="text-xs font-mono uppercase tracking-widest text-black/40 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Max</div>
-              <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-                $49<span className="text-xl font-normal text-black/40">/mo</span>
-              </div>
-              <div className="text-sm text-black/45 mb-4">Maximum capacity + integrations</div>
-              <p className="text-xs text-black/40 leading-relaxed flex-1">
-                Maximum bug capacity, higher per-run limits, and Jira integration (coming soon) for power users who want to push every drop of value out of SenseBug AI.
-              </p>
-              <Link href="/checkout?plan=max" data-testid="pricing-max-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 mt-6">
-                Get started
-              </Link>
-            </div>
+            ))}
           </div>
 
-          {/* ── Feature comparison table ── */}
-          <div className="border border-t-0 border-gray-200 bg-white overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left px-6 py-4 text-xs font-mono uppercase tracking-widest text-black/30 w-1/2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Feature</th>
-                  {[
-                    { name: 'Starter', sub: 'Free' },
-                    { name: 'Pro', sub: '$19/mo', bold: true },
-                    { name: 'Max', sub: '$49/mo' },
-                  ].map(({ name, sub, bold }) => (
-                    <th key={name} className={`px-6 py-4 text-center ${bold ? 'bg-black text-white' : ''}`}>
-                      <div className={`text-xs font-mono uppercase tracking-widest mb-0.5 ${bold ? 'text-white/50' : 'text-black/40'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{name}</div>
-                      <div className={`text-sm font-bold ${bold ? 'text-white' : 'text-black'}`} style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{sub}</div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {/* ── Usage ── */}
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Usage</td>
-                </tr>
-                {[
-                  { label: 'Monthly bug quota',  vals: ['50 bugs', '250 bugs', '500 bugs'] },
-                  { label: 'Per-run cap',         vals: ['50 / run', '100 / run', '250 / run'] },
-                  { label: 'Triage runs',         vals: ['Unlimited', 'Unlimited', 'Unlimited'] },
-                ].map(({ label, vals }) => (
-                  <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="px-6 py-3.5 text-black/70">{label}</td>
-                    {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center text-xs font-mono font-medium ${i === 1 ? 'bg-black/[0.03]' : ''}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{v}</td>
-                    ))}
-                  </tr>
-                ))}
-
-                {/* ── Analysis ── */}
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Analysis</td>
-                </tr>
-                {[
-                  { label: 'AI ranking by business impact',  vals: [true, true, true] },
-                  { label: 'Reporter bias removal',          vals: [true, true, true] },
-                  { label: 'Over-prioritised flags',         vals: [true, true, true] },
-                  { label: 'SenseBug AI Analysis',           vals: [true, true, true] },
-                  { label: 'PM verdicts (approve / edit / reject)', vals: [true, true, true] },
-                  { label: 'CSV export',                     vals: [true, true, true] },
-                  { label: 'Run history',                    vals: [true, true, true] },
-                ].map(({ label, vals }) => (
-                  <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="px-6 py-3.5 text-black/70">{label}</td>
-                    {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center ${i === 1 ? 'bg-black/[0.03]' : ''}`}>
-                        {v ? <Check className="w-4 h-4 text-black/50 mx-auto" strokeWidth={2.5} /> : <span className="text-black/20 text-lg leading-none">—</span>}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-
-                {/* ── Knowledge Base ── */}
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Knowledge Base</td>
-                </tr>
-                {[
-                  { label: 'Knowledge Base (product context)',  vals: [true,  true,  true]  },
-                  { label: 'Document uploads (PDF, MD)',        vals: [false, true,  true]  },
-                ].map(({ label, vals }) => (
-                  <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="px-6 py-3.5 text-black/70">{label}</td>
-                    {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center ${i === 1 ? 'bg-black/[0.03]' : ''}`}>
-                        {v ? <Check className="w-4 h-4 text-black/50 mx-auto" strokeWidth={2.5} /> : <span className="text-black/20 text-lg leading-none">—</span>}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-
-                {/* ── Integrations ── */}
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Integrations</td>
-                </tr>
-                <tr className="border-b border-gray-100 hover:bg-gray-50/50">
-                  <td className="px-6 py-3.5 text-black/70">Jira integration</td>
-                  <td className="px-6 py-3.5 text-center"><span className="text-black/20 text-lg leading-none">—</span></td>
-                  <td className="px-6 py-3.5 text-center bg-black/[0.03]"><span className="text-black/20 text-lg leading-none">—</span></td>
-                  <td className="px-6 py-3.5 text-center text-xs font-mono text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Coming soon</td>
-                </tr>
-
-                {/* ── CTA row ── */}
-                <tr>
-                  <td className="px-6 py-5" />
-                  <td className="px-6 py-5 text-center">
-                    <Link href="/signup" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
-                      Get started free
-                    </Link>
-                  </td>
-                  <td className="px-6 py-5 text-center bg-black/[0.03]">
-                    <Link href="/checkout?plan=pro" className="inline-block bg-black text-white px-5 py-2 text-xs font-semibold hover:bg-black/80 transition-colors duration-150">
-                      Get started
-                    </Link>
-                  </td>
-                  <td className="px-6 py-5 text-center">
-                    <Link href="/checkout?plan=max" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
-                      Get started
-                    </Link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="flex items-center gap-6 flex-wrap">
+            <Link
+              href="/signup"
+              className="bg-black text-white px-8 py-3.5 font-semibold text-sm flex items-center gap-2 hover:bg-black/90 transition-colors duration-150"
+            >
+              Try free — no card needed <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/pricing" className="text-sm font-medium text-black/45 hover:text-black transition-colors duration-150">
+              See pricing →
+            </Link>
           </div>
         </div>
       </section>
@@ -415,7 +309,7 @@ export default function LandingPage() {
               },
               {
                 q: 'Is there a free plan?',
-                a: 'Yes. The Starter plan is free forever — 3 runs per month, up to 20 bugs per run, no credit card required. Upgrade to Pro when you need more runs, larger CSVs, or Knowledge Base doc uploads.',
+                a: 'Yes. The Starter plan is free forever — 50 bugs per month, no credit card required. Upgrade to Pro or Max when you need larger backlogs or Knowledge Base document uploads.',
               },
             ].map((item, i) => (
               <div key={i} className="py-6">

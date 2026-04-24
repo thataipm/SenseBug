@@ -142,11 +142,17 @@ export default function ResultsPage() {
   const { run_id }  = useParams() as { run_id: string }
   const searchParams = useSearchParams()
   const note         = searchParams.get('note')
+  const totalParam   = searchParams.get('total')
+  const analyzedParam = searchParams.get('analyzed')
+  const trimmedCount = totalParam && analyzedParam
+    ? Number(totalParam) - Number(analyzedParam)
+    : 0
 
   const [run, setRun]           = useState<TriageRun | null>(null)
   const [results, setResults]   = useState<TriageResult[]>([])
   const [selected, setSelected] = useState<TriageResult | null>(null)
   const [loading, setLoading]   = useState(true)
+  const [trimmedRows, setTrimmedRows] = useState<Record<string, string>[] | null>(null)
 
   // Detail-pane state
   const [editMode, setEditMode]         = useState(false)
@@ -178,6 +184,17 @@ export default function ResultsPage() {
   }, [run_id])
 
   useEffect(() => { fetchRun() }, [fetchRun])
+
+  // Load trimmed rows from sessionStorage (stored by processing page after upload)
+  useEffect(() => {
+    if (!run_id || trimmedCount <= 0) return
+    try {
+      const stored = sessionStorage.getItem(`trimmed:${run_id}`)
+      if (stored) setTrimmedRows(JSON.parse(stored))
+    } catch {
+      // sessionStorage unavailable or parse error — non-fatal
+    }
+  }, [run_id, trimmedCount])
 
   // Reset per-ticket UI when a different bug is selected
   useEffect(() => {
@@ -212,6 +229,23 @@ export default function ResultsPage() {
   }
 
   const handleDownload = () => { window.open(`/api/triage/export/${run_id}`, '_blank') }
+
+  const handleDownloadTrimmed = () => {
+    if (!trimmedRows?.length) return
+    const headers = Object.keys(trimmedRows[0])
+    const escape = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const csvLines = [
+      headers.map(escape).join(','),
+      ...trimmedRows.map(row => headers.map(h => escape(row[h] ?? '')).join(','))
+    ]
+    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `remaining-bugs-${run_id}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const filteredResults = useMemo(() => {
     return results.filter(r => {
@@ -344,13 +378,33 @@ export default function ResultsPage() {
         </div>
       </header>
 
-      {/* ── Analysis note banner ── */}
-      {note && (
+      {/* ── Trimmed-file banner (rich variant when counts are available) ── */}
+      {trimmedCount > 0 && totalParam && analyzedParam ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0 flex-wrap" data-testid="analysis-note-banner">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="font-mono text-xs font-semibold uppercase tracking-widest text-amber-700 flex-shrink-0" style={MONO}>Partial</span>
+            <span className="text-xs text-amber-800">
+              <strong>{Number(analyzedParam).toLocaleString()}</strong> of <strong>{Number(totalParam).toLocaleString()}</strong> bugs analysed —{' '}
+              <strong>{trimmedCount.toLocaleString()}</strong> remaining{note && note.toLowerCase().includes('quota') ? ' (monthly quota reached)' : ' (per-run limit)'}
+            </span>
+          </div>
+          {trimmedRows && trimmedRows.length > 0 && (
+            <button
+              onClick={handleDownloadTrimmed}
+              className="flex items-center gap-1.5 text-xs font-mono font-medium text-amber-700 border border-amber-300 bg-white hover:bg-amber-50 px-3 py-1.5 transition-colors duration-100 flex-shrink-0"
+              style={MONO}
+            >
+              <Download className="w-3.5 h-3.5" strokeWidth={2} />
+              Download remaining {trimmedCount} bugs
+            </button>
+          )}
+        </div>
+      ) : note ? (
         <div className="border-b border-amber-200 bg-amber-50 text-amber-800 text-xs px-6 py-2.5 flex items-center gap-2 flex-shrink-0" data-testid="analysis-note-banner">
           <span className="font-mono font-semibold uppercase tracking-widest" style={MONO}>Note</span>
           <span>{note}</span>
         </div>
-      )}
+      ) : null}
 
       {/* ── Backlog health strip ── */}
       {results.length > 0 && (
