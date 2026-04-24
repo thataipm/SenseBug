@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         email: user.email!,
         name: fullName,
       },
-      return_url: `${appUrl}/settings?upgraded=1`,
+      return_url: `${appUrl}/account?upgraded=1`,
       cancel_url: `${appUrl}/pricing`,
       // metadata is passed through to webhook payloads so we can
       // identify the user and plan when the subscription activates

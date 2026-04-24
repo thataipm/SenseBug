@@ -235,13 +235,15 @@ function DashboardContent() {
                     </span>
                   </div>
                 </div>
-                <Link
-                  href="/pricing"
-                  className="text-xs font-mono text-black/50 hover:text-black border border-gray-300 hover:border-black px-3 py-1.5 transition-colors duration-150 whitespace-nowrap flex-shrink-0"
-                  style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
-                >
-                  Upgrade →
-                </Link>
+                {plan?.plan === 'starter' && (
+                  <Link
+                    href="/pricing"
+                    className="text-xs font-mono text-black/50 hover:text-black border border-gray-300 hover:border-black px-3 py-1.5 transition-colors duration-150 whitespace-nowrap flex-shrink-0"
+                    style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+                  >
+                    Upgrade →
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">

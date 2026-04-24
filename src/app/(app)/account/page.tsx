@@ -55,6 +55,27 @@ function AccountContent() {
     init()
   }, [router])
 
+  // When redirected from Dodo checkout (?upgraded=1), poll until the webhook
+  // fires and the plan is actually upgraded (webhook is async, takes a few sec).
+  useEffect(() => {
+    if (!justUpgraded) return
+    let polls = 0
+    const MAX_POLLS = 15 // 15 × 2 s = 30 s max wait
+    const interval = setInterval(async () => {
+      polls++
+      const res = await fetch('/api/plan')
+      if (res.ok) {
+        const updated = await res.json()
+        if (updated?.plan && updated.plan !== 'starter') {
+          setPlan(updated)
+          clearInterval(interval)
+        }
+      }
+      if (polls >= MAX_POLLS) clearInterval(interval)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [justUpgraded])
+
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault()
     setNameError('')
@@ -130,13 +151,23 @@ function AccountContent() {
     <div className="px-6 md:px-10 py-10 max-w-2xl mx-auto space-y-10" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       <h1 className="text-2xl font-black tracking-tighter" style={HEADING}>Account</h1>
 
-      {/* Upgrade success banner (if redirected from checkout) */}
-      {justUpgraded && (
+      {/* Upgrade success banner — only show once plan is confirmed upgraded */}
+      {justUpgraded && isPaid && (
         <div className="border border-green-200 bg-green-50 px-5 py-4 flex items-center gap-3">
           <Check className="w-5 h-5 text-green-600 flex-shrink-0" strokeWidth={2.5} />
           <div>
             <p className="text-sm font-semibold text-green-800" style={HEADING}>You&apos;re all set!</p>
             <p className="text-xs text-green-700">Your plan has been upgraded. New limits apply immediately.</p>
+          </div>
+        </div>
+      )}
+      {/* While waiting for the webhook to fire after checkout */}
+      {justUpgraded && !isPaid && (
+        <div className="border border-gray-200 bg-gray-50 px-5 py-4 flex items-center gap-3">
+          <Loader2 className="w-5 h-5 text-black/35 animate-spin flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-black/70" style={HEADING}>Verifying payment…</p>
+            <p className="text-xs text-black/40">Confirming your plan upgrade — this usually takes a few seconds.</p>
           </div>
         </div>
       )}

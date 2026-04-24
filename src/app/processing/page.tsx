@@ -52,10 +52,19 @@ export default function ProcessingPage() {
   const [step, setStep] = useState(0)
   const [error, setError] = useState('')
   const [tipIndex, setTipIndex] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
+
   // Rotate tips every 5 s while processing
   useEffect(() => {
     if (error) return
     const interval = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 5000)
+    return () => clearInterval(interval)
+  }, [error])
+
+  // Tick elapsed seconds for progress bar
+  useEffect(() => {
+    if (error) return
+    const interval = setInterval(() => setElapsed(e => e + 1), 1000)
     return () => clearInterval(interval)
   }, [error])
 
@@ -136,7 +145,25 @@ export default function ProcessingPage() {
             <h1 className="text-xl font-semibold mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
               {STEPS[Math.min(step, STEPS.length - 1)]}
             </h1>
-            <p className="text-sm text-white/40 mb-12">This usually takes 20–45 seconds</p>
+            <p className="text-sm text-white/40 mb-4">This usually takes 60–90 seconds</p>
+
+            {/* Progress bar */}
+            {(() => {
+              const progress = step === 3 ? 100 : Math.min(88, (elapsed / 75) * 100)
+              return (
+                <div className="mb-10">
+                  <div className="w-full h-0.5 bg-white/10 overflow-hidden mb-2">
+                    <div
+                      className="h-full bg-white transition-all duration-1000 ease-linear"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs font-mono text-white/20 text-right tabular-nums" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                    {Math.round(progress)}%
+                  </p>
+                </div>
+              )
+            })()}
 
             {/* Step list */}
             <div className="text-left space-y-3">

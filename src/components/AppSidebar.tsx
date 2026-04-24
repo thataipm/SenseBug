@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, Clock, BookOpen, User, LifeBuoy, LogOut } from 'lucide-react'
+import { LayoutDashboard, Clock, BookOpen, User, LifeBuoy, LogOut, Zap } from 'lucide-react'
 
 const NAV = [
   { href: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard'       },
@@ -90,6 +90,16 @@ export function AppSidebar() {
             </Link>
           )
         })}
+        {/* Upgrade shortcut — only for Starter users */}
+        {plan?.plan === 'starter' && (
+          <Link
+            href="/pricing"
+            className="flex items-center gap-3 px-3 py-2.5 text-sm mt-1 bg-black text-white font-medium hover:bg-black/80 transition-colors duration-100"
+          >
+            <Zap className="w-4 h-4 flex-shrink-0" strokeWidth={2} />
+            Upgrade
+          </Link>
+        )}
       </nav>
 
       {/* Plan quota */}

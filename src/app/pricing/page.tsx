@@ -75,6 +75,7 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Everything in Starter</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Document uploads (PDF, MD, DOCX)</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Noticeably more accurate results</li>
+                <li className="flex items-center gap-2 text-white/30"><Check className="w-3.5 h-3.5 text-white/20 flex-shrink-0" strokeWidth={2.5} />Jira integration <span className="ml-1 text-white/20">(coming soon)</span></li>
               </ul>
               <Link href="/checkout?plan=pro" data-testid="pricing-pro-btn" className="block text-center bg-white text-black py-3 text-sm font-semibold hover:bg-white/90 transition-colors duration-150">
                 Get started
@@ -184,7 +185,7 @@ export default function PricingPage() {
                 <tr className="border-b border-gray-100 hover:bg-gray-50/50">
                   <td className="px-6 py-3.5 text-black/70">Jira integration</td>
                   <td className="px-6 py-3.5 text-center"><span className="text-black/20 text-lg leading-none">—</span></td>
-                  <td className="px-6 py-3.5 text-center bg-black/[0.03]"><span className="text-black/20 text-lg leading-none">—</span></td>
+                  <td className="px-6 py-3.5 text-center bg-black/[0.03] text-xs font-mono text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Coming soon</td>
                   <td className="px-6 py-3.5 text-center text-xs font-mono text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Coming soon</td>
                 </tr>
 
