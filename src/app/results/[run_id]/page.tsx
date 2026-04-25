@@ -1,11 +1,11 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
 import { TriageResult, TriageRun } from '@/types'
 import {
   Check, X, Edit2, Download, ChevronLeft, ChevronDown, ChevronRight,
-  Flag, Loader2, Copy, CheckCheck, Search,
+  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle,
   LayoutDashboard, Clock, BookOpen, User,
 } from 'lucide-react'
 
@@ -75,7 +75,6 @@ function SeverityBadge({ s }: { s: string }) {
   )
 }
 
-/** Three-dot confidence meter: filled dots = High/Medium/Low */
 function ConfidenceDots({ flags }: { flags: string[] }) {
   const { label } = getConfidence(flags)
   const filled    = label === 'High' ? 3 : label === 'Medium' ? 2 : 1
@@ -86,27 +85,6 @@ function ConfidenceDots({ flags }: { flags: string[] }) {
         <span key={i} className={`w-2 h-2 rounded-full flex-shrink-0 ${i < filled ? dotColor : 'bg-gray-200'}`} />
       ))}
     </span>
-  )
-}
-
-/** Horizontal track showing where this bug sits in the overall priority order */
-function RankTrack({ rank, total }: { rank: number; total: number }) {
-  const pct    = total > 1 ? ((rank - 1) / (total - 1)) * 100 : 0
-  const topPct = total > 0 ? Math.round((rank / total) * 100) : 100
-  return (
-    <div className="flex items-center gap-3 flex-1 min-w-0">
-      <span className="text-xs font-mono text-black/55 tabular-nums flex-shrink-0" style={MONO}>
-        <span className="font-semibold">#{rank}</span>
-        <span className="text-black/30"> of {total}</span>
-      </span>
-      <div className="relative flex-1 h-0.5 bg-gray-200 overflow-visible" style={{ minWidth: 48 }}>
-        <div
-          className="absolute top-1/2 w-2.5 h-2.5 rounded-full bg-black border-2 border-white shadow-sm"
-          style={{ left: `${pct}%`, transform: 'translate(-50%, -50%)' }}
-        />
-      </div>
-      <span className="text-xs font-mono text-black/30 flex-shrink-0" style={MONO}>top {topPct}%</span>
-    </div>
   )
 }
 
@@ -123,15 +101,292 @@ function PriorityBar({ results }: { results: TriageResult[] }) {
     { key: 'P4', cls: 'bg-green-400',  count: c.P4 },
   ].filter(s => s.count > 0)
   return (
-    <div className="flex h-1.5 w-full gap-px overflow-hidden" style={{ borderRadius: 2 }}>
+    <div className="flex h-1 w-full gap-px overflow-hidden" style={{ borderRadius: 1 }}>
       {segs.map(s => (
-        <div
-          key={s.key}
-          className={s.cls}
-          style={{ width: `${(s.count / total) * 100}%` }}
-          title={`${s.key}: ${s.count} (${Math.round((s.count / total) * 100)}%)`}
-        />
+        <div key={s.key} className={s.cls} style={{ width: `${(s.count / total) * 100}%` }} title={`${s.key}: ${s.count}`} />
       ))}
+    </div>
+  )
+}
+
+// ── Right pane components ──────────────────────────────────────────────────
+
+/** Circular arc gauge — fills based on rank urgency */
+function RankGauge({ rank, total }: { rank: number; total: number }) {
+  const urgency = total > 1 ? (total - rank) / (total - 1) : 1
+  const radius  = 34
+  const circ    = 2 * Math.PI * radius
+  const offset  = circ * (1 - urgency)
+  const color   = urgency > 0.66 ? '#ef4444' : urgency > 0.33 ? '#f97316' : '#22c55e'
+  const topPct  = total > 0 ? Math.round((rank / total) * 100) : 100
+
+  return (
+    <div className="flex flex-col items-center py-5 px-4">
+      <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-4 self-start" style={MONO}>Rank</p>
+      <div className="relative w-20 h-20">
+        <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r={radius} fill="none" stroke="#f3f4f6" strokeWidth="7" />
+          <circle
+            cx="40" cy="40" r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-lg font-black leading-none" style={HEADING}>#{rank}</span>
+          <span className="text-[10px] text-black/35 mt-0.5" style={MONO}>of {total}</span>
+        </div>
+      </div>
+      <p className="text-[10px] font-mono text-black/30 mt-2" style={MONO}>top {topPct}%</p>
+    </div>
+  )
+}
+
+/** Reporter-filed priority vs AI-assigned priority */
+function ReporterVsAI({ reporterPriority, aiPriority, pmAction, editedPriority }: {
+  reporterPriority?: string | null
+  aiPriority: string
+  pmAction?: string | null
+  editedPriority?: string | null
+}) {
+  const displayPriority = pmAction === 'edited' && editedPriority ? editedPriority : aiPriority
+  const changed = reporterPriority && reporterPriority !== displayPriority
+
+  return (
+    <div className="py-4 border-t border-gray-100 px-4">
+      <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Reporter vs AI</p>
+      {reporterPriority ? (
+        <>
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex-1 text-center">
+              <p className="text-[10px] text-black/35 mb-2" style={MONO}>Reporter</p>
+              <PriorityBadge p={reporterPriority} />
+            </div>
+            <ChevronRight
+              className={`w-3.5 h-3.5 flex-shrink-0 ${changed ? 'text-amber-400' : 'text-black/20'}`}
+              strokeWidth={2.5}
+            />
+            <div className="flex-1 text-center">
+              <p className="text-[10px] text-black/35 mb-2" style={MONO}>AI</p>
+              <PriorityBadge p={displayPriority} />
+            </div>
+          </div>
+          {changed && (
+            <p className="text-[10px] font-mono text-amber-600 text-center mt-2.5" style={MONO}>
+              Priority adjusted
+            </p>
+          )}
+        </>
+      ) : (
+        <div className="text-center">
+          <p className="text-[10px] text-black/30 mb-2" style={MONO}>No reporter priority</p>
+          <PriorityBadge p={displayPriority} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Signal quality indicators derived from gap flags */
+function SignalMeters({ flags }: { flags: string[] }) {
+  const qualityFlags  = flags.filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
+  const hasMissingDesc = flags.includes('Missing description')
+  const hasNoRepro    = flags.includes('No reproduction steps')
+  const isOverPri     = flags.includes('Likely over-prioritised')
+  const { label: confLabel } = getConfidence(flags)
+
+  const clarity = hasMissingDesc ? 'Low' : qualityFlags.length > 1 ? 'Medium' : 'High'
+  const repro   = hasNoRepro ? 'Missing' : 'Present'
+
+  const signals = [
+    {
+      label: 'Clarity',
+      value: clarity,
+      dot: clarity === 'High' ? 'bg-green-500' : clarity === 'Medium' ? 'bg-yellow-400' : 'bg-red-500',
+      text: clarity === 'High' ? 'text-green-600' : clarity === 'Medium' ? 'text-yellow-600' : 'text-red-500',
+    },
+    {
+      label: 'Repro steps',
+      value: repro,
+      dot:  repro === 'Present' ? 'bg-green-500' : 'bg-red-500',
+      text: repro === 'Present' ? 'text-green-600' : 'text-red-500',
+    },
+    {
+      label: 'Confidence',
+      value: confLabel,
+      dot:  confLabel === 'High' ? 'bg-green-500' : confLabel === 'Medium' ? 'bg-yellow-400' : 'bg-red-500',
+      text: confLabel === 'High' ? 'text-green-600' : confLabel === 'Medium' ? 'text-yellow-600' : 'text-red-500',
+    },
+    {
+      label: 'Over-pri risk',
+      value: isOverPri ? 'Flagged' : 'Clean',
+      dot:  isOverPri ? 'bg-purple-500' : 'bg-green-500',
+      text: isOverPri ? 'text-purple-600' : 'text-green-600',
+    },
+  ]
+
+  return (
+    <div className="py-4 border-t border-gray-100 px-4">
+      <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Signals</p>
+      <div className="space-y-2.5">
+        {signals.map(s => (
+          <div key={s.label} className="flex items-center justify-between gap-2">
+            <span className="text-xs text-black/45">{s.label}</span>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
+              <span className={`text-xs font-mono font-medium ${s.text}`} style={MONO}>{s.value}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Quality flags as color-coded icon chips */
+function FlagChips({ flags }: { flags: string[] }) {
+  const FLAG_MAP: Record<string, { color: string; short: string; useFlag?: boolean }> = {
+    'Missing description':        { color: 'text-red-600 bg-red-50 border-red-200',          short: 'No description'  },
+    'No reproduction steps':      { color: 'text-orange-600 bg-orange-50 border-orange-200', short: 'No repro steps'  },
+    'Missing expected behavior':  { color: 'text-orange-600 bg-orange-50 border-orange-200', short: 'No expected'     },
+    'Vague description':          { color: 'text-yellow-700 bg-yellow-50 border-yellow-200', short: 'Vague desc'      },
+    'Likely over-prioritised':    { color: 'text-purple-600 bg-purple-50 border-purple-200', short: 'Over-pri', useFlag: true },
+    'Possible duplicate':         { color: 'text-blue-600 bg-blue-50 border-blue-200',       short: 'Possible dupe'   },
+  }
+
+  return (
+    <div className="py-4 border-t border-gray-100 px-4">
+      <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Quality flags</p>
+      {flags.length === 0 ? (
+        <div className="flex items-center gap-1.5 text-green-600">
+          <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+          <span className="text-xs font-mono" style={MONO}>Well-written ticket</span>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {flags.map(f => {
+            const cfg = FLAG_MAP[f]
+            if (!cfg) return (
+              <span key={f} className="flex items-center gap-1 text-xs border border-gray-200 bg-gray-50 text-black/50 px-2 py-0.5">
+                <AlertCircle className="w-3 h-3" strokeWidth={2} />{f}
+              </span>
+            )
+            return (
+              <span key={f} title={f} className={`flex items-center gap-1 text-xs border px-2 py-0.5 ${cfg.color}`}>
+                {cfg.useFlag
+                  ? <Flag className="w-3 h-3" strokeWidth={2} />
+                  : <AlertCircle className="w-3 h-3" strokeWidth={2} />
+                }
+                {cfg.short}
+              </span>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Session progress — always visible at bottom of right pane */
+function SessionSnapshot({ results }: { results: TriageResult[] }) {
+  const total    = results.length
+  const approved = results.filter(r => r.pm_action === 'approved').length
+  const rejected = results.filter(r => r.pm_action === 'rejected').length
+  const edited   = results.filter(r => r.pm_action === 'edited').length
+  const reviewed = approved + rejected + edited
+  const pending  = total - reviewed
+  const pct      = total > 0 ? Math.round((reviewed / total) * 100) : 0
+
+  return (
+    <div className="py-4 border-t border-gray-100 px-4 mt-auto">
+      <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Session</p>
+      <div className="space-y-3">
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-black/45">Reviewed</span>
+            <span className="text-xs font-mono font-semibold tabular-nums" style={MONO}>{reviewed}/{total}</span>
+          </div>
+          <div className="w-full h-1 bg-gray-100 overflow-hidden">
+            <div className="h-full bg-black transition-all duration-300" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-1 pt-0.5 text-center">
+          <div>
+            <p className="text-base font-black text-green-600" style={HEADING}>{approved}</p>
+            <p className="text-[10px] font-mono text-black/30 mt-0.5" style={MONO}>Approved</p>
+          </div>
+          <div>
+            <p className="text-base font-black text-black/50" style={HEADING}>{pending}</p>
+            <p className="text-[10px] font-mono text-black/30 mt-0.5" style={MONO}>Pending</p>
+          </div>
+          <div>
+            <p className="text-base font-black text-black/30" style={HEADING}>{rejected}</p>
+            <p className="text-[10px] font-mono text-black/30 mt-0.5" style={MONO}>Rejected</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Bulk-approve dropdown — replaces the old inline button row */
+function BulkApproveMenu({ results, bulkLoading, onBulkApprove }: {
+  results: TriageResult[]
+  bulkLoading: boolean
+  onBulkApprove: (filter: BulkFilter) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const unreviewed = results.filter(r => !r.pm_action)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  if (unreviewed.length === 0) return null
+
+  const options: { label: string; filter: BulkFilter }[] = [
+    { label: `All (${unreviewed.length})`, filter: 'all_unreviewed' },
+    ...(['P1', 'P2', 'P3', 'P4'] as const).flatMap(p => {
+      const count = unreviewed.filter(r => r.priority === p).length
+      return count > 0 ? [{ label: `${p} (${count})`, filter: `${p.toLowerCase()}_unreviewed` as BulkFilter }] : []
+    }),
+  ]
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        disabled={bulkLoading}
+        className="flex items-center gap-1 text-xs font-mono border border-gray-200 px-2 py-1 hover:border-black transition-colors disabled:opacity-30"
+        style={MONO}
+      >
+        Bulk approve <ChevronDown className="w-3 h-3" strokeWidth={2} />
+      </button>
+      {open && (
+        <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 shadow-sm z-20 min-w-[130px]">
+          {options.map(o => (
+            <button
+              key={o.filter}
+              onClick={() => { onBulkApprove(o.filter); setOpen(false) }}
+              className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+              style={MONO}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -139,14 +394,12 @@ function PriorityBar({ results }: { results: TriageResult[] }) {
 // ── Main page ──────────────────────────────────────────────────────────────
 
 export default function ResultsPage() {
-  const { run_id }  = useParams() as { run_id: string }
-  const searchParams = useSearchParams()
-  const note         = searchParams.get('note')
-  const totalParam   = searchParams.get('total')
+  const { run_id }    = useParams() as { run_id: string }
+  const searchParams  = useSearchParams()
+  const note          = searchParams.get('note')
+  const totalParam    = searchParams.get('total')
   const analyzedParam = searchParams.get('analyzed')
-  const trimmedCount = totalParam && analyzedParam
-    ? Number(totalParam) - Number(analyzedParam)
-    : 0
+  const trimmedCount  = totalParam && analyzedParam ? Number(totalParam) - Number(analyzedParam) : 0
 
   const [run, setRun]           = useState<TriageRun | null>(null)
   const [results, setResults]   = useState<TriageResult[]>([])
@@ -155,22 +408,22 @@ export default function ResultsPage() {
   const [trimmedRows, setTrimmedRows] = useState<Record<string, string>[] | null>(null)
 
   // Detail-pane state
-  const [editMode, setEditMode]         = useState(false)
-  const [editPriority, setEditPriority] = useState('')
-  const [editSeverity, setEditSeverity] = useState('')
-  const [rejectMode, setRejectMode]     = useState(false)
-  const [rejectReason, setRejectReason] = useState('')
+  const [editMode, setEditMode]           = useState(false)
+  const [editPriority, setEditPriority]   = useState('')
+  const [editSeverity, setEditSeverity]   = useState('')
+  const [rejectMode, setRejectMode]       = useState(false)
+  const [rejectReason, setRejectReason]   = useState('')
   const [actionLoading, setActionLoading] = useState(false)
-  const [copied, setCopied]             = useState(false)
-  const [showOriginal, setShowOriginal] = useState(false)
-  const [showRewrite, setShowRewrite]   = useState(true)
+  const [copied, setCopied]               = useState(false)
+  const [showOriginal, setShowOriginal]   = useState(false)
+  const [showRewrite, setShowRewrite]     = useState(true)
 
   // List state
-  const [bulkLoading, setBulkLoading]             = useState(false)
-  const [mobileShowDetail, setMobileShowDetail]   = useState(false)
-  const [search, setSearch]                       = useState('')
-  const [filterPriority, setFilterPriority]       = useState<string | null>(null)
-  const [filterStatus, setFilterStatus]           = useState<string | null>(null)
+  const [bulkLoading, setBulkLoading]           = useState(false)
+  const [mobileShowDetail, setMobileShowDetail] = useState(false)
+  const [search, setSearch]                     = useState('')
+  const [filterPriority, setFilterPriority]     = useState<string | null>(null)
+  const [filterStatus, setFilterStatus]         = useState<string | null>(null)
 
   const fetchRun = useCallback(async () => {
     const res = await fetch(`/api/triage/runs/${run_id}`)
@@ -185,14 +438,13 @@ export default function ResultsPage() {
 
   useEffect(() => { fetchRun() }, [fetchRun])
 
-  // Load trimmed rows from sessionStorage (stored by processing page after upload)
   useEffect(() => {
     if (!run_id || trimmedCount <= 0) return
     try {
       const stored = sessionStorage.getItem(`trimmed:${run_id}`)
       if (stored) setTrimmedRows(JSON.parse(stored))
     } catch {
-      // sessionStorage unavailable or parse error — non-fatal
+      // sessionStorage unavailable — non-fatal
     }
   }, [run_id, trimmedCount])
 
@@ -233,14 +485,14 @@ export default function ResultsPage() {
   const handleDownloadTrimmed = () => {
     if (!trimmedRows?.length) return
     const headers = Object.keys(trimmedRows[0])
-    const escape = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const escape  = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`
     const csvLines = [
       headers.map(escape).join(','),
       ...trimmedRows.map(row => headers.map(h => escape(row[h] ?? '')).join(','))
     ]
     const blob = new Blob([csvLines.join('\n')], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
     a.href = url
     a.download = `remaining-bugs-${run_id}.csv`
     a.click()
@@ -257,14 +509,14 @@ export default function ResultsPage() {
         const p = r.pm_action === 'edited' && r.edited_priority ? r.edited_priority : r.priority
         if (p !== filterPriority) return false
       }
-      if (filterStatus === 'unreviewed' && r.pm_action)               return false
+      if (filterStatus === 'unreviewed' && r.pm_action)                return false
       if (filterStatus === 'approved'   && r.pm_action !== 'approved') return false
       if (filterStatus === 'rejected'   && r.pm_action !== 'rejected') return false
       return true
     })
   }, [results, search, filterPriority, filterStatus])
 
-  const hasFilters  = !!(search || filterPriority || filterStatus)
+  const hasFilters   = !!(search || filterPriority || filterStatus)
   const clearFilters = () => { setSearch(''); setFilterPriority(null); setFilterStatus(null) }
 
   const handleBulkApprove = async (filter: BulkFilter) => {
@@ -305,14 +557,14 @@ export default function ResultsPage() {
     </div>
   )
 
-  // ── Health strip data (computed once per render, outside JSX) ──────────
+  // ── Health strip data ──────────────────────────────────────────────────────
   const sevCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 }
   results.forEach(r => {
     const s = (r.pm_action === 'edited' && r.edited_severity ? r.edited_severity : r.severity) as keyof typeof sevCounts
     if (s in sevCounts) sevCounts[s]++
   })
-  const sevTotal   = sevCounts.Critical + sevCounts.High + sevCounts.Medium + sevCounts.Low
-  const sevSegs    = [
+  const sevTotal  = sevCounts.Critical + sevCounts.High + sevCounts.Medium + sevCounts.Low
+  const sevSegs   = [
     { cls: 'bg-red-400',    count: sevCounts.Critical, label: 'Crit' },
     { cls: 'bg-orange-400', count: sevCounts.High,     label: 'High' },
     { cls: 'bg-yellow-400', count: sevCounts.Medium,   label: 'Med'  },
@@ -334,7 +586,6 @@ export default function ResultsPage() {
 
       {/* ── Top bar ── */}
       <header className="border-b border-gray-200 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0">
-        {/* Left: back · logo · run info */}
         <div className="flex items-center gap-4 min-w-0">
           <Link href="/dashboard" className="text-black/40 hover:text-black transition-colors flex-shrink-0">
             <ChevronLeft className="w-5 h-5" />
@@ -350,8 +601,6 @@ export default function ResultsPage() {
             </span>
           </div>
         </div>
-
-        {/* Right: nav shortcuts + download */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <nav className="hidden md:flex items-center border-r border-gray-200 pr-3 mr-1">
             {NAV_ITEMS.map(({ href, icon: Icon, label }) => (
@@ -378,7 +627,7 @@ export default function ResultsPage() {
         </div>
       </header>
 
-      {/* ── Trimmed-file banner (rich variant when counts are available) ── */}
+      {/* ── Trimmed-file banner ── */}
       {trimmedCount > 0 && totalParam && analyzedParam ? (
         <div className="border-b border-amber-200 bg-amber-50 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0 flex-wrap" data-testid="analysis-note-banner">
           <div className="flex items-center gap-3 min-w-0">
@@ -391,7 +640,7 @@ export default function ResultsPage() {
           {trimmedRows && trimmedRows.length > 0 && (
             <button
               onClick={handleDownloadTrimmed}
-              className="flex items-center gap-1.5 text-xs font-mono font-medium text-amber-700 border border-amber-300 bg-white hover:bg-amber-50 px-3 py-1.5 transition-colors duration-100 flex-shrink-0"
+              className="flex items-center gap-1.5 text-xs font-mono font-medium text-amber-700 border border-amber-300 bg-white hover:bg-amber-50 px-3 py-1.5 transition-colors flex-shrink-0"
               style={MONO}
             >
               <Download className="w-3.5 h-3.5" strokeWidth={2} />
@@ -409,18 +658,11 @@ export default function ResultsPage() {
       {/* ── Backlog health strip ── */}
       {results.length > 0 && (
         <div className="border-b border-gray-100 bg-gray-50 px-6 py-2.5 flex items-center justify-between gap-6 flex-shrink-0 flex-wrap" data-testid="health-strip">
-
-          {/* Severity stacked bar + legend */}
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-xs font-mono uppercase tracking-widest text-black/35 flex-shrink-0" style={MONO}>Severity</span>
             <div className="flex h-2 gap-px overflow-hidden flex-shrink-0" style={{ width: 72, borderRadius: 2 }}>
               {sevSegs.map(s => (
-                <div
-                  key={s.label}
-                  className={s.cls}
-                  style={{ width: `${(s.count / sevTotal) * 100}%` }}
-                  title={`${s.label}: ${s.count}`}
-                />
+                <div key={s.label} className={s.cls} style={{ width: `${(s.count / sevTotal) * 100}%` }} title={`${s.label}: ${s.count}`} />
               ))}
             </div>
             {sevSegs.map(s => (
@@ -429,16 +671,12 @@ export default function ResultsPage() {
               </span>
             ))}
           </div>
-
-          {/* Backlog health stats */}
           <div className="flex items-center gap-4 flex-wrap">
             <span className="text-xs font-mono text-green-700 flex-shrink-0 tabular-nums" style={MONO}>{wellWrittenPct}% well-written</span>
             {missingRepro  > 0 && <span className="text-xs font-mono text-orange-600 flex-shrink-0 tabular-nums" style={MONO}>{missingRepro} no repro</span>}
             {overPri       > 0 && <span className="text-xs font-mono text-purple-600 flex-shrink-0 tabular-nums" style={MONO}>{overPri} over-pri</span>}
             {possibleDupes > 0 && <span className="text-xs font-mono text-blue-600 flex-shrink-0 tabular-nums"  style={MONO}>{possibleDupes} dupes</span>}
           </div>
-
-          {/* Review progress */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-xs font-mono text-black/35" style={MONO}>Reviewed</span>
             <div className="w-20 h-1.5 bg-gray-200 overflow-hidden" style={{ borderRadius: 1 }}>
@@ -449,72 +687,27 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* ── Main layout: bug list + detail ── */}
+      {/* ── Main layout: list · detail · metrics ── */}
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── Panel 1: Bug list ── */}
         <div
-          className={`${mobileShowDetail ? 'hidden md:flex md:flex-col' : 'flex flex-col'} w-full md:w-80 xl:w-96 border-r border-gray-200 overflow-y-auto flex-shrink-0`}
+          className={`${mobileShowDetail ? 'hidden md:flex md:flex-col' : 'flex flex-col'} w-full md:w-72 xl:w-80 border-r border-gray-200 flex-shrink-0 overflow-hidden`}
           data-testid="bug-list-panel"
         >
-          {/* Stats + bulk actions */}
-          <div className="border-b border-gray-100 px-4 py-3 space-y-2.5">
-            <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>
-              {hasFilters ? `${filteredResults.length} of ${results.length} bugs` : `${results.length} bugs ranked`}
-            </p>
-
-            {/* Priority distribution bar */}
-            <PriorityBar results={results} />
-
-            {/* Stat chips */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {[
-                { label: 'P1',         count: results.filter(r => r.priority === 'P1').length,                                 color: 'text-red-600 bg-red-50 border-red-200'         },
-                { label: 'P2',         count: results.filter(r => r.priority === 'P2').length,                                 color: 'text-orange-600 bg-orange-50 border-orange-200' },
-                { label: '⚑ Over-pri', count: results.filter(r => r.gap_flags?.includes('Likely over-prioritised')).length,   color: 'text-purple-600 bg-purple-50 border-purple-200' },
-                { label: '⇄ Dupes',    count: results.filter(r => r.gap_flags?.includes('Possible duplicate')).length,        color: 'text-blue-600 bg-blue-50 border-blue-200'       },
-                { label: 'Reviewed',   count: results.filter(r => r.pm_action).length,                                         color: 'text-green-700 bg-green-50 border-green-200'   },
-              ].filter(s => s.count > 0).map(s => (
-                <span key={s.label} className={`text-xs font-mono px-1.5 py-0.5 border ${s.color}`} style={MONO}>
-                  {s.count} {s.label}
-                </span>
-              ))}
+          {/* List header: count + priority bar + bulk dropdown */}
+          <div className="border-b border-gray-100 px-4 py-3 space-y-2 flex-shrink-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>
+                {hasFilters ? `${filteredResults.length} of ${results.length} bugs` : `${results.length} bugs`}
+              </p>
+              <BulkApproveMenu results={results} bulkLoading={bulkLoading} onBulkApprove={handleBulkApprove} />
             </div>
-
-            {/* Bulk approve */}
-            {results.filter(r => !r.pm_action).length > 0 && (
-              <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                <span className="text-xs font-mono text-black/30 flex-shrink-0" style={MONO}>Bulk approve:</span>
-                <button
-                  onClick={() => handleBulkApprove('all_unreviewed')}
-                  disabled={bulkLoading}
-                  className="text-xs font-mono border border-gray-200 px-2 py-0.5 hover:border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30"
-                  style={MONO}
-                >
-                  All ({results.filter(r => !r.pm_action).length})
-                </button>
-                {(['P1','P2','P3','P4'] as const).map(p => {
-                  const count = results.filter(r => !r.pm_action && r.priority === p).length
-                  if (count === 0) return null
-                  const filter = `${p.toLowerCase()}_unreviewed` as BulkFilter
-                  return (
-                    <button
-                      key={p}
-                      onClick={() => handleBulkApprove(filter)}
-                      disabled={bulkLoading}
-                      className="text-xs font-mono border border-gray-200 px-2 py-0.5 hover:border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30"
-                      style={MONO}
-                    >
-                      {p} ({count})
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+            <PriorityBar results={results} />
           </div>
 
           {/* Filter + search */}
-          <div className="border-b border-gray-100 px-4 py-2.5 space-y-2">
+          <div className="border-b border-gray-100 px-4 py-2.5 space-y-2 flex-shrink-0">
             <div className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-black/30 flex-shrink-0" strokeWidth={2} />
               <input
@@ -556,53 +749,54 @@ export default function ResultsPage() {
             </div>
           </div>
 
-          {/* Bug rows */}
-          {filteredResults.length === 0 && results.length > 0 && (
-            <div className="px-4 py-10 text-center space-y-2">
-              <p className="text-xs font-mono text-black/30" style={MONO}>No bugs match your filters</p>
-              <button onClick={clearFilters} className="text-xs font-mono text-black/40 hover:text-black underline transition-colors" style={MONO}>Clear filters</button>
-            </div>
-          )}
-          {filteredResults.map((r, i) => {
-            const qualFlags   = (r.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
-            const flagTooltip = qualFlags.length > 0 ? qualFlags.join(', ') : ''
-            return (
-              <div
-                key={r.id}
-                data-testid={`bug-row-${r.id}`}
-                onClick={() => { setSelected(r); setEditMode(false); setMobileShowDetail(true) }}
-                className={getBugRowClass(r, selected?.id === r.id)}
-                style={{ animation: `fade-in 0.3s ease-out ${Math.min(i * 0.03, 0.4)}s both` }}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-xs font-mono text-black/30 w-6 flex-shrink-0 mt-0.5 tabular-nums" style={MONO}>{r.rank}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{r.bug_id}</span>
-                      <PriorityBadge p={r.pm_action === 'edited' && r.edited_priority ? r.edited_priority : r.priority} />
-                      <SeverityBadge s={r.pm_action === 'edited' && r.edited_severity ? r.edited_severity : r.severity} />
-                      <ConfidenceDots flags={r.gap_flags ?? []} />
-                      {r.gap_flags?.includes('Likely over-prioritised') && <span title="Likely over-prioritised"><Flag className="w-3 h-3 text-purple-500" strokeWidth={2} /></span>}
-                      {r.gap_flags?.includes('Possible duplicate')      && <span className="text-blue-500 text-xs font-bold leading-none" title="Possible duplicate">⇄</span>}
-                      {qualFlags.length > 0                             && <span title={flagTooltip}><Flag className="w-3 h-3 text-orange-400" strokeWidth={2} /></span>}
-                      {r.pm_action === 'approved' && <Check className="w-3 h-3 text-green-500" strokeWidth={2.5} />}
-                      {r.pm_action === 'rejected' && <X    className="w-3 h-3 text-black/30"  strokeWidth={2.5} />}
+          {/* Bug rows — scrollable */}
+          <div className="overflow-y-auto flex-1">
+            {filteredResults.length === 0 && results.length > 0 && (
+              <div className="px-4 py-10 text-center space-y-2">
+                <p className="text-xs font-mono text-black/30" style={MONO}>No bugs match your filters</p>
+                <button onClick={clearFilters} className="text-xs font-mono text-black/40 hover:text-black underline transition-colors" style={MONO}>Clear filters</button>
+              </div>
+            )}
+            {filteredResults.map((r, i) => {
+              const qualFlags   = (r.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
+              const flagTooltip = qualFlags.length > 0 ? qualFlags.join(', ') : ''
+              return (
+                <div
+                  key={r.id}
+                  data-testid={`bug-row-${r.id}`}
+                  onClick={() => { setSelected(r); setEditMode(false); setMobileShowDetail(true) }}
+                  className={getBugRowClass(r, selected?.id === r.id)}
+                  style={{ animation: `fade-in 0.3s ease-out ${Math.min(i * 0.03, 0.4)}s both` }}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-xs font-mono text-black/30 w-6 flex-shrink-0 mt-0.5 tabular-nums" style={MONO}>{r.rank}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{r.bug_id}</span>
+                        <PriorityBadge p={r.pm_action === 'edited' && r.edited_priority ? r.edited_priority : r.priority} />
+                        <SeverityBadge s={r.pm_action === 'edited' && r.edited_severity ? r.edited_severity : r.severity} />
+                        <ConfidenceDots flags={r.gap_flags ?? []} />
+                        {r.gap_flags?.includes('Likely over-prioritised') && <span title="Likely over-prioritised"><Flag className="w-3 h-3 text-purple-500" strokeWidth={2} /></span>}
+                        {r.gap_flags?.includes('Possible duplicate')      && <span className="text-blue-500 text-xs font-bold leading-none" title="Possible duplicate">⇄</span>}
+                        {qualFlags.length > 0                             && <span title={flagTooltip}><Flag className="w-3 h-3 text-orange-400" strokeWidth={2} /></span>}
+                        {r.pm_action === 'approved' && <Check className="w-3 h-3 text-green-500" strokeWidth={2.5} />}
+                        {r.pm_action === 'rejected' && <X    className="w-3 h-3 text-black/30"  strokeWidth={2.5} />}
+                      </div>
+                      <p className={`text-sm leading-tight ${r.pm_action === 'rejected' ? 'line-through text-black/30' : ''}`}>
+                        {r.title}
+                      </p>
                     </div>
-                    <p className={`text-sm leading-tight ${r.pm_action === 'rejected' ? 'line-through text-black/30' : ''}`}>
-                      {r.title}
-                    </p>
                   </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
 
-        {/* ── Panel 2: Detail (single column) ── */}
+        {/* ── Panel 2: Detail ── */}
         {selected ? (() => {
-          const qualityFlags  = (selected.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
-          const isWellWritten = qualityFlags.length === 0
-          const confidence    = getConfidence(selected.gap_flags ?? [])
+          const qualityFlags      = (selected.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
+          const isWellWritten     = qualityFlags.length === 0
           const hasOriginalDesc   = selected.original_description != null
           const isMissingDescFlag = selected.gap_flags?.includes('Missing description')
           const displayPriority   = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : selected.priority
@@ -623,46 +817,40 @@ export default function ResultsPage() {
                   <ChevronLeft className="w-4 h-4" /> Back to list
                 </button>
 
-                {/* ── Header: rank · id · badges · title · rank track ── */}
+                {/* Header: bug ID · badges · title */}
                 <div className="px-6 md:px-8 py-5 border-b border-gray-100">
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <span className="text-xs font-mono text-black/30 border border-gray-200 px-1.5 py-0.5 tabular-nums" style={MONO}>#{selected.rank}</span>
                     <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{selected.bug_id}</span>
                     <PriorityBadge p={displayPriority} />
                     <SeverityBadge s={displaySeverity} />
-                    <span className={`text-xs font-mono px-2 py-0.5 border ${confidence.color}`} style={MONO} title="AI confidence based on ticket quality">
-                      {confidence.label} confidence
-                    </span>
-                    <ConfidenceDots flags={selected.gap_flags ?? []} />
                     {selected.pm_action && (
                       <span className={`text-xs font-mono uppercase px-2 py-0.5 border ${getActionBadgeClass(selected.pm_action)}`} style={MONO}>
                         {selected.pm_action}{selected.pm_action === 'rejected' && selected.rejection_reason ? ` · ${selected.rejection_reason}` : ''}
                       </span>
                     )}
                   </div>
-                  <h2 className="text-xl font-bold tracking-tight leading-snug mb-4" style={HEADING}>
+                  <h2 className="text-xl font-bold tracking-tight leading-snug" style={HEADING}>
                     {selected.title}
                   </h2>
-                  {/* Rank track */}
-                  <RankTrack rank={selected.rank} total={results.length} />
                 </div>
 
-                {/* ── Analysis body ── */}
+                {/* Analysis body */}
                 <div className="px-6 md:px-8 py-6 space-y-5">
-
-                  {/* Possible duplicate callout */}
-                  {selected.gap_flags?.includes('Possible duplicate') && (
-                    <div className="border-l-4 border-blue-400 bg-blue-50 pl-4 pr-4 py-3.5">
-                      <p className="text-xs font-mono uppercase tracking-widest text-blue-500 mb-1" style={MONO}>⇄ Possible duplicate</p>
-                      <p className="text-sm text-blue-800">This ticket may overlap with another in this run. Check the rationale below for the related ticket key.</p>
-                    </div>
-                  )}
 
                   {/* Over-prioritised callout */}
                   {selected.gap_flags?.includes('Likely over-prioritised') && (
                     <div className="border-l-4 border-purple-400 bg-purple-50 pl-4 pr-4 py-3.5">
                       <p className="text-xs font-mono uppercase tracking-widest text-purple-500 mb-1" style={MONO}>⚑ Over-prioritised</p>
                       <p className="text-sm text-purple-900 leading-relaxed">The original priority doesn&apos;t match the actual business impact — worth a closer look before committing resources.</p>
+                    </div>
+                  )}
+
+                  {/* Possible duplicate callout */}
+                  {selected.gap_flags?.includes('Possible duplicate') && (
+                    <div className="border-l-4 border-blue-400 bg-blue-50 pl-4 pr-4 py-3.5">
+                      <p className="text-xs font-mono uppercase tracking-widest text-blue-500 mb-1" style={MONO}>⇄ Possible duplicate</p>
+                      <p className="text-sm text-blue-800">This ticket may overlap with another in this run. Check the rationale below for the related ticket key.</p>
                     </div>
                   )}
 
@@ -678,32 +866,7 @@ export default function ResultsPage() {
                     <p className="text-sm text-black/65 leading-relaxed">{selected.rationale}</p>
                   </div>
 
-                  {/* Quality flags */}
-                  {qualityFlags.length > 0 && (
-                    <div className="border border-orange-200 bg-orange-50 px-4 py-4">
-                      <p className="text-xs font-mono uppercase tracking-widest text-orange-500 mb-3" style={MONO}>What&apos;s missing</p>
-                      <ul className="space-y-2">
-                        {qualityFlags.map(f => (
-                          <li key={f} className="flex items-center gap-2 text-sm text-orange-800">
-                            <Flag className="w-3.5 h-3.5 flex-shrink-0 text-orange-400" strokeWidth={2} />{f}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Well-written badge */}
-                  {isWellWritten && (
-                    <div className="flex items-start gap-3 border border-green-200 bg-green-50 px-4 py-3.5">
-                      <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" strokeWidth={2.5} />
-                      <div>
-                        <p className="text-sm font-semibold text-green-800 mb-0.5" style={HEADING}>Well written ticket</p>
-                        <p className="text-xs text-green-700 leading-relaxed">Clear description, sufficient context, and no missing information — the AI could rank this with full confidence.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── Suggested Rewrite (collapsible, expanded by default) ── */}
+                  {/* Suggested Rewrite (only for tickets with quality issues) */}
                   {!isWellWritten && selected.improved_description && (
                     <div className="border border-gray-200 overflow-hidden">
                       <button
@@ -739,7 +902,7 @@ export default function ResultsPage() {
                     </div>
                   )}
 
-                  {/* ── Original Ticket (collapsible, collapsed by default) ── */}
+                  {/* Original Ticket */}
                   <div className="border border-gray-200 overflow-hidden">
                     <button
                       onClick={() => setShowOriginal(v => !v)}
@@ -771,7 +934,7 @@ export default function ResultsPage() {
                     )}
                   </div>
 
-                  {/* ── Edit mode ── */}
+                  {/* Edit mode */}
                   {editMode && (
                     <div className="border border-gray-200 p-5 space-y-4">
                       <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>Adjust priority &amp; severity</p>
@@ -815,7 +978,7 @@ export default function ResultsPage() {
                     </div>
                   )}
 
-                  {/* ── Reject reason form ── */}
+                  {/* Reject reason form */}
                   {rejectMode && (
                     <div className="border border-gray-200 p-5 space-y-4">
                       <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>Why are you rejecting this verdict?</p>
@@ -843,7 +1006,7 @@ export default function ResultsPage() {
                     </div>
                   )}
 
-                  {/* ── Action buttons ── */}
+                  {/* Action buttons */}
                   {!editMode && !rejectMode && (
                     <div data-testid="action-buttons" className="pt-5 border-t border-gray-100">
                       <p className="text-xs text-black/35 mb-4">Your call — approve it, adjust the priority, or dismiss it entirely.</p>
@@ -893,6 +1056,30 @@ export default function ResultsPage() {
             ← Select a bug to see its full analysis
           </div>
         )}
+
+        {/* ── Panel 3: Visual metrics (right) — lg+ only ── */}
+        <div className="hidden lg:flex flex-col w-56 xl:w-64 border-l border-gray-200 flex-shrink-0 overflow-y-auto">
+          {selected ? (
+            <>
+              <RankGauge rank={selected.rank} total={results.length} />
+              <ReporterVsAI
+                reporterPriority={selected.reporter_priority}
+                aiPriority={selected.priority}
+                pmAction={selected.pm_action}
+                editedPriority={selected.edited_priority}
+              />
+              <SignalMeters flags={selected.gap_flags ?? []} />
+              <FlagChips flags={selected.gap_flags ?? []} />
+              <div className="flex-1" />
+              <SessionSnapshot results={results} />
+            </>
+          ) : (
+            <>
+              <div className="flex-1" />
+              <SessionSnapshot results={results} />
+            </>
+          )}
+        </div>
 
       </div>
     </div>
