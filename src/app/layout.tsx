@@ -32,6 +32,7 @@ export const metadata: Metadata = {
     siteName: 'SenseBug AI',
     type: 'website',
     locale: 'en_US',
+    url: 'https://www.sensebug.com',
   },
   twitter: {
     card: 'summary_large_image',
