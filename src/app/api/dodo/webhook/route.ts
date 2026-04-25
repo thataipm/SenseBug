@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import DodoPayments from 'dodopayments'
+import type { Subscription } from 'dodopayments/resources/subscriptions'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendPurchaseConfirmationEmail, sendCancellationEmail } from '@/lib/email'
+import {
+  sendPurchaseConfirmationEmail,
+  sendRenewalEmail,
+  sendPaymentFailedEmail,
+  sendCancellationEmail,
+  formatBillingAmount,
+  formatEmailDate,
+} from '@/lib/email'
 
 // Admin client is safe to initialise at module level — no API calls happen here
 const supabase = createAdminClient()
+
+// ─── User resolution ──────────────────────────────────────────────────────────
 
 /**
  * Look up a Supabase user ID by email.
@@ -31,40 +41,49 @@ async function getUserIdByEmail(email: string): Promise<string | null> {
  * Map a Dodo product_id back to a plan name.
  * Evaluated at request time so env vars are always resolved.
  */
-function planFromProductId(productId: string | undefined): 'pro' | 'max' | null {
-  if (!productId) return null
-  if (productId === process.env.DODO_PRO_PRODUCT_ID)  return 'pro'
+function planFromProductId(productId: string): 'pro' | 'max' | null {
+  if (productId === process.env.DODO_PRO_PRODUCT_ID) return 'pro'
   if (productId === process.env.DODO_MAX_PRODUCT_ID) return 'max'
   return null
 }
 
-type SubscriptionWebhookData = {
-  subscription_id?: string
-  product_id?: string
-  customer?: { customer_id?: string; email?: string }
-  metadata?: Record<string, string>
-}
-
-/** Resolve the Supabase user ID from webhook data (metadata first, then email lookup). */
-async function resolveUserId(data: SubscriptionWebhookData): Promise<string | null> {
-  // Primary: Dodo may propagate checkout-session metadata to the subscription
+/** Resolve the Supabase user ID from a Dodo Subscription object. */
+async function resolveUserId(data: Subscription): Promise<string | null> {
+  // Primary: checkout-session metadata carries user_id through to the subscription
   if (data.metadata?.user_id) return data.metadata.user_id
 
   // Fallback: look up by the customer's email address
-  if (data.customer?.email) {
-    const id = await getUserIdByEmail(data.customer.email)
-    if (id) return id
-  }
-
-  return null
+  return getUserIdByEmail(data.customer.email)
 }
 
-async function activatePlan(data: SubscriptionWebhookData) {
-  const userId = await resolveUserId(data)
+/** Capitalise a plan key for display ("pro" → "Pro"). */
+function planDisplay(plan: string): string {
+  return plan === 'pro' ? 'Pro' : plan === 'max' ? 'Max' : plan
+}
 
-  // Plan: prefer metadata value, fall back to product_id mapping
-  const plan: string | null =
-    data.metadata?.plan ?? planFromProductId(data.product_id)
+// ─── Persist next_billing_date (non-critical — requires DB migration) ─────────
+//
+// Run this in your Supabase SQL editor before deploying:
+//   ALTER TABLE user_plans ADD COLUMN IF NOT EXISTS next_billing_date timestamptz;
+//
+// Until then, this call fails silently — plan activation is unaffected.
+
+async function storeNextBillingDate(userId: string, nextBillingDate: string) {
+  const { error } = await supabase
+    .from('user_plans')
+    .update({ next_billing_date: nextBillingDate })
+    .eq('user_id', userId)
+  if (error) {
+    console.warn('[dodo/webhook] Could not store next_billing_date (run migration):', error.message)
+  }
+}
+
+// ─── Event handlers ───────────────────────────────────────────────────────────
+
+/** subscription.active / subscription.plan_changed — new purchase or upgrade */
+async function activatePlan(data: Subscription) {
+  const userId = await resolveUserId(data)
+  const plan: string | null = data.metadata?.plan ?? planFromProductId(data.product_id)
 
   if (!userId || !plan) {
     console.error('[dodo/webhook] activatePlan: could not resolve userId or plan', {
@@ -80,29 +99,60 @@ async function activatePlan(data: SubscriptionWebhookData) {
     .from('user_plans')
     .update({
       plan,
-      payment_subscription_id: data.subscription_id ?? null,
-      payment_customer_id:     data.customer?.customer_id ?? null,
+      payment_subscription_id: data.subscription_id,
+      payment_customer_id:     data.customer.customer_id,
     })
     .eq('user_id', userId)
 
   if (error) {
     console.error('[dodo/webhook] activatePlan DB error:', error.message)
-  } else {
-    console.log(`[dodo/webhook] activatePlan: upgraded user ${userId} to plan "${plan}"`)
-    // Send purchase confirmation email
-    if (data.customer?.email) {
-      const planDisplay = plan === 'pro' ? 'Pro' : plan === 'max' ? 'Max' : String(plan)
-      await sendPurchaseConfirmationEmail({
-        to: data.customer.email,
-        planName: planDisplay,
-        amount: plan === 'pro' ? '$19/month' : plan === 'max' ? '$49/month' : '',
-        billingDate: 'your next billing date',
-      })
-    }
+    return
   }
+
+  console.log(`[dodo/webhook] activatePlan: upgraded user ${userId} to plan "${plan}"`)
+
+  // Store next_billing_date for renewal reminders (graceful failure if column missing)
+  await storeNextBillingDate(userId, data.next_billing_date)
+
+  // Send purchase confirmation email
+  await sendPurchaseConfirmationEmail({
+    to:              data.customer.email,
+    planName:        planDisplay(plan),
+    amount:          formatBillingAmount(data.recurring_pre_tax_amount, data.currency),
+    nextBillingDate: formatEmailDate(data.next_billing_date),
+  })
 }
 
-async function deactivatePlan(data: SubscriptionWebhookData) {
+/** subscription.renewed — recurring charge succeeded */
+async function handleRenewal(data: Subscription) {
+  const userId = await resolveUserId(data)
+  const plan: string | null = data.metadata?.plan ?? planFromProductId(data.product_id)
+
+  if (!userId) {
+    console.error('[dodo/webhook] handleRenewal: could not resolve userId', {
+      metadataUserId: data.metadata?.user_id,
+      customerEmail:  data.customer?.email,
+    })
+    return
+  }
+
+  // Update next_billing_date so the reminder cron stays accurate
+  await storeNextBillingDate(userId, data.next_billing_date)
+
+  // Send renewal receipt email
+  await sendRenewalEmail({
+    to:              data.customer.email,
+    planName:        planDisplay(plan ?? 'Pro'),
+    amount:          formatBillingAmount(data.recurring_pre_tax_amount, data.currency),
+    billedDate:      formatEmailDate(data.previous_billing_date),
+    nextBillingDate: formatEmailDate(data.next_billing_date),
+  })
+
+  console.log(`[dodo/webhook] handleRenewal: renewal email sent to ${data.customer.email}`)
+}
+
+/** subscription.expired — billing period ended after cancellation; downgrade to starter */
+async function deactivatePlan(data: Subscription) {
   const userId = await resolveUserId(data)
 
   if (!userId) {
@@ -115,29 +165,39 @@ async function deactivatePlan(data: SubscriptionWebhookData) {
 
   const { error } = await supabase
     .from('user_plans')
-    .update({ plan: 'starter', payment_subscription_id: null })
+    .update({ plan: 'starter', payment_subscription_id: null, next_billing_date: null })
     .eq('user_id', userId)
 
   if (error) {
     console.error('[dodo/webhook] deactivatePlan DB error:', error.message)
-  } else {
-    console.log(`[dodo/webhook] deactivatePlan: reset user ${userId} to starter`)
-    // Send cancellation confirmation email
-    if (data.customer?.email) {
-      const planDisplay = (data as any).plan ?? 'Pro'
-      await sendCancellationEmail({
-        to: data.customer.email,
-        planName: planDisplay,
-        accessUntil: null,
-      })
-    }
+    return
   }
+
+  console.log(`[dodo/webhook] deactivatePlan: reset user ${userId} to starter`)
+
+  const plan = data.metadata?.plan ?? planFromProductId(data.product_id) ?? 'Pro'
+  await sendCancellationEmail({
+    to:          data.customer.email,
+    planName:    planDisplay(plan),
+    accessUntil: data.expires_at ?? null,
+  })
 }
+
+/** subscription.failed — payment failed; subscription may go on_hold */
+async function handlePaymentFailed(data: Subscription) {
+  const plan = data.metadata?.plan ?? planFromProductId(data.product_id) ?? 'Pro'
+  console.warn('[dodo/webhook] Payment failed for customer:', data.customer?.email)
+  await sendPaymentFailedEmail({
+    to:       data.customer.email,
+    planName: planDisplay(plan),
+  })
+}
+
+// ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
 
-  // All env var access inside the request handler — never at module load time
   const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY
   if (!webhookKey) {
     console.error('[dodo/webhook] DODO_PAYMENTS_WEBHOOK_KEY is not set')
@@ -150,7 +210,7 @@ export async function POST(request: NextRequest) {
     environment: process.env.DODO_PAYMENTS_ENVIRONMENT === 'live_mode' ? 'live_mode' : 'test_mode',
   })
 
-  let event: { type: string; data: SubscriptionWebhookData }
+  let event: { type: string; data: Subscription }
   try {
     event = verifier.webhooks.unwrap(body, {
       headers: {
@@ -158,37 +218,45 @@ export async function POST(request: NextRequest) {
         'webhook-signature': request.headers.get('webhook-signature') ?? '',
         'webhook-timestamp': request.headers.get('webhook-timestamp') ?? '',
       },
-    }) as { type: string; data: SubscriptionWebhookData }
+    }) as { type: string; data: Subscription }
   } catch {
     console.error('[dodo/webhook] Signature verification failed')
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 })
   }
 
-  // In test_mode log the full payload to Vercel Functions logs for debugging
+  // Log full payload in test mode for debugging
   if (process.env.DODO_PAYMENTS_ENVIRONMENT !== 'live_mode') {
     console.log('[dodo/webhook] Event:', JSON.stringify({ type: event.type, data: event.data }, null, 2))
   }
 
-  switch (event.type) {
+  const { type, data } = event
+
+  switch (type) {
+    // New subscription activated or plan upgraded
     case 'subscription.active':
-    case 'subscription.renewed':
     case 'subscription.plan_changed':
-      await activatePlan(event.data)
+      await activatePlan(data)
       break
 
+    // Recurring charge succeeded — send renewal receipt
+    case 'subscription.renewed':
+      await handleRenewal(data)
+      break
+
+    // User requested cancellation — subscription stays active until period end.
+    // DO NOT downgrade here; wait for subscription.expired.
     case 'subscription.cancelled':
-      // User cancelled with cancel_at_next_billing_date — subscription stays active until period end.
-      // Do NOT downgrade here; wait for subscription.expired to fire at period end.
-      console.log('[dodo/webhook] Subscription scheduled for cancellation:', event.data.subscription_id)
+      console.log('[dodo/webhook] Subscription scheduled for cancellation:', data.subscription_id)
       break
 
+    // Billing period ended after cancellation — downgrade to starter
     case 'subscription.expired':
-      // Billing period ended — now actually downgrade to starter
-      await deactivatePlan(event.data)
+      await deactivatePlan(data)
       break
 
+    // Payment failed — notify user to update payment method
     case 'subscription.failed':
-      console.warn('[dodo/webhook] Payment failed for customer:', event.data.customer?.email)
+      await handlePaymentFailed(data)
       break
 
     default:
