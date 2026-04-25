@@ -5,7 +5,6 @@ import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
 import { checkRateLimit } from '@/lib/rate-limit'
 import Papa from 'papaparse'
 import OpenAI from 'openai'
-import Anthropic from '@anthropic-ai/sdk'
 
 export const maxDuration = 300
 
@@ -16,7 +15,7 @@ const SYSTEM_PROMPT = `You are an expert Product Manager specialising in bug tri
 CRITICAL RULE — REPORTER BIAS REMOVAL:
 The priority or severity label already on a ticket was assigned by the reporter, who has a vested interest in their own bugs being fixed first. Treat those existing labels as unreliable signals. You must derive severity and priority independently from the actual ticket content — description, reproduction steps, environment, comments, and KB context — not from what the reporter labelled it. If a reporter marked something P1 but the content describes a minor cosmetic issue, your output should reflect the true impact, not the reporter's label.
 
-You must respond with a valid JSON array only. No preamble, no explanation, no markdown fences. Just the raw JSON array. If a ticket has insufficient information to rank meaningfully, still include it but flag it in gap_flags and place it at the bottom of the ranking.
+You must respond with a JSON object containing a single key "results" whose value is the array of bug objects. No preamble, no explanation, no markdown. If a ticket has insufficient information to rank meaningfully, still include it but flag it in gap_flags and place it at the bottom of the ranking.
 
 INSTRUCTIONS
 For each bug, analyse it against the product knowledge base and return a JSON object with these exact fields:
@@ -96,7 +95,7 @@ ABSOLUTE RULE — NO TIES: Every bug must have a unique rank integer. The final 
 When to use 'Likely over-prioritised' in gap_flags:
 Add this flag when a bug has a high reporter-assigned priority OR significant comment noise (many comments, strong language, escalations) BUT the actual content describes low real-world impact — cosmetic issues, edge cases affecting very few users, or problems with easy workarounds. This is the most politically useful signal you can give a PM.
 
-Return only the JSON array. No other text.`
+Return a JSON object with a single key "results" containing the array. No other text.`
 
 // ─── Helper: column finder ───────────────────────────────────────────────────
 
@@ -140,17 +139,24 @@ function validateColumns(keys: string[]): { cols: Columns | null; missing: strin
 
 type BugRow = Record<string, string>
 
-// Column name patterns that are pure noise for bug triage — skip these even
-// if they contain values (dates, attachment URLs, internal IDs, agile metadata).
-const NOISY_COL_RE = /\b(created|updated|modified|resolved|due.?date|timestamp|attachment|image|icon|avatar|watcher|vote|account.?id|board|sprint|story.?point|\bsp\b)\b/i
+// Column allowlist: only extra columns whose name contains one of these
+// triage-signal keywords are forwarded to the LLM. This is intentionally
+// an allowlist (not a blocklist) so that wide enterprise exports (Jira,
+// ServiceNow, etc. with 400+ columns) don't flood the prompt with noise.
+const USEFUL_SIGNAL_RE = /\b(severity|impact|revenue|customer|escalat|reproducib|repro|steps|environ|browser|device|os|actual|expected|workaround|urgency|urgence|accept|root.?cause|resolution.?note|user.?impact|business|criticali|blocker|blocking|complaint|sentiment|churn|arr|priority|feedback|effort|risk|affected|scope)\b/i
 
-// Value-level noise: ISO dates, plain numbers, URLs — no signal for triage.
+// Value-level noise: ISO dates, plain numbers, URLs, UUIDs / Atlassian
+// account IDs — no signal for triage.
 function isNoisyValue(v: string): boolean {
   const t = v.trim()
   if (!t) return true
-  if (/^\d+$/.test(t)) return true               // pure number
-  if (/^https?:\/\//i.test(t)) return true        // URL
-  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return true  // ISO date
+  if (/^\d+$/.test(t)) return true                        // pure number
+  if (/^https?:\/\//i.test(t)) return true                // URL
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return true          // ISO date
+  // UUID / Atlassian account ID (e.g. 712020:5a2b3ff3-9b33-...)
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t)) return true
+  if (/^\d{6}:[0-9a-f-]{36}$/i.test(t)) return true
+  if (/^[0-9a-f]{24}$/i.test(t)) return true              // Mongo-style hex ID
   return false
 }
 
@@ -201,15 +207,18 @@ function buildBugsForLlm(bugs: BugRow[], cols: Columns, keys: string[]): BugRow[
     if (labelsCol   && row[labelsCol])   bug.labels             = row[labelsCol]
 
     // ── Extra-context sweep ───────────────────────────────────────────────
-    // Pick up any remaining columns we haven't explicitly mapped that look
-    // like useful text (not dates, not URLs, not pure numbers, not noise headers).
+    // Only forward columns whose name matches triage-relevant signal keywords.
+    // Using an allowlist (not a blocklist) keeps enterprise exports with 400+
+    // columns from flooding the prompt with project IDs, user IDs, and other
+    // irrelevant Jira/ServiceNow metadata. Cap at 8 fields × 150 chars.
     const extras: string[] = []
     for (const key of keys) {
       if (handledCols.has(key)) continue
-      if (NOISY_COL_RE.test(key)) continue
+      if (!USEFUL_SIGNAL_RE.test(key)) continue   // must match a triage-signal keyword
       const val = row[key]?.trim()
       if (!val || isNoisyValue(val)) continue
-      extras.push(`${key}: ${val.slice(0, 200)}`)
+      extras.push(`${key}: ${val.slice(0, 150)}`)
+      if (extras.length >= 8) break               // hard cap — keeps input lean
     }
     if (extras.length > 0) bug.extra_context = extras.join(' | ')
 
@@ -272,48 +281,46 @@ BUGS TO PRIORITIZE
 ${bugsJson}`
 }
 
-function cleanJsonResponse(text: string): string {
-  // Strip markdown code fences if present
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-  if (fenced) return fenced[1].trim()
-  return text.trim()
-}
-
-// Bugs are split into smaller batches so each Claude response fits comfortably
-// within the output token budget. Static instructions live in SYSTEM_PROMPT so
-// the user message only carries KB context + bug data — this keeps input tokens
-// low and enables Anthropic prompt caching across batches.
+// Bugs are split into smaller batches to keep each request well within the
+// output token budget. Using gpt-4o with JSON mode guarantees structurally
+// valid JSON — no markdown fences, no truncated arrays.
 // BATCH_SIZE: 15 bugs × ~430 output tokens each ≈ 6 450 tokens — well under 16 000.
 const BATCH_SIZE = 15
-// Max concurrent Claude calls — prevents rate-limit spikes on large uploads.
+// Max concurrent OpenAI calls — stays within typical rate limits.
 const MAX_CONCURRENT_BATCHES = 3
 
-async function callClaudeBatch(
-  anthropic: Anthropic,
+async function callOpenAIBatch(
   kbData: Record<string, string>,
   retrievedChunks: string,
   batch: BugRow[]
 ): Promise<Record<string, unknown>[]> {
   const userPrompt = buildUserPrompt(kbData, retrievedChunks, JSON.stringify(batch, null, 2))
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    response_format: { type: 'json_object' },
     max_tokens: 16000,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }],
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user',   content: userPrompt    },
+    ],
   })
-  const raw = message.content[0].type === 'text' ? message.content[0].text : ''
-  const cleaned = cleanJsonResponse(raw)
+
+  // Warn if the model hit the token limit mid-response
+  const finishReason = response.choices[0]?.finish_reason
+  if (finishReason === 'length') {
+    throw new Error('AI response was cut off (output token limit reached). Try uploading fewer bugs per run.')
+  }
+
+  const raw = response.choices[0]?.message?.content ?? ''
   try {
-    const parsed = JSON.parse(cleaned)
-    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array from the LLM but got a different type')
-    return parsed as Record<string, unknown>[]
+    const parsed = JSON.parse(raw)
+    // Model returns { "results": [...] } per the system prompt
+    const arr = Array.isArray(parsed) ? parsed : (parsed.results ?? parsed.bugs ?? null)
+    if (!Array.isArray(arr)) throw new Error('Expected a results array from the AI but got a different type')
+    return arr as Record<string, unknown>[]
   } catch (e) {
-    console.error('[triage] Failed to parse batch LLM response:', cleaned)
-    throw new Error(
-      e instanceof SyntaxError
-        ? 'The AI returned a malformed response. Please try again.'
-        : e instanceof Error ? e.message : 'Unexpected response format from the AI.'
-    )
+    console.error('[triage] Failed to parse batch LLM response:', raw.slice(0, 500))
+    throw new Error(e instanceof Error ? e.message : 'Unexpected response format from the AI.')
   }
 }
 
@@ -337,15 +344,13 @@ async function runWithConcurrencyLimit<T>(
   return results
 }
 
-async function callClaude(
+async function callOpenAI(
   kb: Record<string, string> | null,
   retrievedChunks: string,
   bugsForLlm: BugRow[]
 ): Promise<Record<string, unknown>[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set in environment variables')
+  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set in environment variables')
 
-  const anthropic = new Anthropic({ apiKey })
   const kbData = kb ?? { product_overview: '', critical_flows: '', product_areas: '' }
 
   // Split into batches and run with concurrency limit
@@ -355,7 +360,7 @@ async function callClaude(
   }
 
   const batchResults = await runWithConcurrencyLimit(
-    batches.map((batch) => () => callClaudeBatch(anthropic, kbData, retrievedChunks, batch)),
+    batches.map((batch) => () => callOpenAIBatch(kbData, retrievedChunks, batch)),
     MAX_CONCURRENT_BATCHES
   )
   const allResults = batchResults.flat()
@@ -624,7 +629,7 @@ export async function POST(request: NextRequest) {
   let crossRunDupWarning: string | null = null
   try {
     ;[llmResults, crossRunDupWarning] = await Promise.all([
-      callClaude(kb, retrievedChunks, bugsForLlm),
+      callOpenAI(kb, retrievedChunks, bugsForLlm),
       crossRunDupPromise,
     ])
   } catch (e) {
