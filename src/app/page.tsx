@@ -29,6 +29,9 @@ export default function LandingPage() {
           SENSEBUG AI
         </div>
         <div className="flex items-center gap-6">
+          <Link href="/blog" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
+            Blog
+          </Link>
           <Link href="/pricing" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
             Pricing
           </Link>
@@ -376,6 +379,7 @@ export default function LandingPage() {
           SENSEBUG AI
         </div>
         <div className="flex items-center gap-6 text-sm text-black/35">
+          <Link href="/blog" className="hover:text-black transition-colors duration-150">Blog</Link>
           <Link href="/privacy" className="hover:text-black transition-colors duration-150">Privacy</Link>
           <Link href="/terms" className="hover:text-black transition-colors duration-150">Terms</Link>
           <a href="mailto:contact@sensebug.com" className="hover:text-black transition-colors duration-150">Contact</a>
