@@ -78,7 +78,7 @@ export default function HistoryRunPage() {
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tighter" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Run History</h1>
-          <p className="text-xs text-black/40 mt-1 font-mono" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{runs.length} total run{runs.length !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-black/60 mt-1 font-mono" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{runs.length} total run{runs.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-3">
           {selectedIds.size > 0 && (
@@ -104,7 +104,7 @@ export default function HistoryRunPage() {
 
       {filteredRuns.length === 0 ? (
         <div className="border border-dashed border-gray-200 py-16 text-center">
-          <p className="text-sm text-black/35">{search ? 'No runs match your search.' : 'No triage runs yet.'}</p>
+          <p className="text-sm text-black/55">{search ? 'No runs match your search.' : 'No triage runs yet.'}</p>
           {!search && (
             <Link href="/dashboard" className="mt-3 inline-block text-sm text-black underline hover:no-underline">Upload your first CSV</Link>
           )}
@@ -134,10 +134,10 @@ export default function HistoryRunPage() {
                     {run.filename}<ChevronRight className="w-3 h-3 text-black/30" />
                   </Link>
                 </td>
-                <td className="py-3 pr-4 text-black/50">
+                <td className="py-3 pr-4 text-black/65">
                   <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" />{new Date(run.run_at).toLocaleDateString()}</span>
                 </td>
-                <td className="py-3 pr-4 text-center font-mono text-xs text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{run.bug_count}</td>
+                <td className="py-3 pr-4 text-center font-mono text-xs text-black/65" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{run.bug_count}</td>
                 <td className="py-3 pr-4 hidden sm:table-cell">
                   {run.bug_count > 0 ? (() => {
                     const reviewed = run.reviewed_count ?? 0
@@ -152,7 +152,7 @@ export default function HistoryRunPage() {
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <span className={`text-xs font-mono tabular-nums ${done ? 'text-green-600' : 'text-black/40'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                        <span className={`text-xs font-mono tabular-nums ${done ? 'text-green-600' : 'text-black/60'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
                           {reviewed}/{total}
                         </span>
                       </div>

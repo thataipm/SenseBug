@@ -157,7 +157,7 @@ function SettingsContent() {
       <section>
         <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Uploaded documents</p>
         {docs.length === 0 ? (
-          <p className="text-sm text-black/40 mb-4">No documents uploaded yet.</p>
+          <p className="text-sm text-black/60 mb-4">No documents uploaded yet.</p>
         ) : (
           <div className="border border-gray-200 divide-y divide-gray-100 mb-4">
             {docs.map((doc) => (
@@ -165,7 +165,7 @@ function SettingsContent() {
                 <FileText className="w-4 h-4 text-black/30 flex-shrink-0" strokeWidth={1.5} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{doc.filename}</p>
-                  <p className="text-xs text-black/35">{new Date(doc.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-black/55">{new Date(doc.created_at).toLocaleDateString()}</p>
                 </div>
                 <button data-testid={`delete-doc-${doc.id}`} onClick={() => handleDeleteDoc(doc.id, doc.filename)} className="text-black/30 hover:text-red-500 transition-colors duration-150 p-1">
                   <Trash2 className="w-4 h-4" strokeWidth={1.5} />
@@ -184,7 +184,7 @@ function SettingsContent() {
             {docUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" strokeWidth={1.5} />}
             Upload document
           </button>
-          <span className="text-xs text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+          <span className="text-xs text-black/55" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
             PDF, Word (.docx), .txt, .md · 10MB max · Pro &amp; Max only
           </span>
         </div>

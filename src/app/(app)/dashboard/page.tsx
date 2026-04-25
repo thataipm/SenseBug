@@ -40,7 +40,7 @@ function RunChartTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   return (
     <div className="border border-gray-200 bg-white px-3 py-2 text-xs shadow-sm" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-      <p className="text-black/45 mb-0.5 max-w-[180px] truncate">{payload[0]?.payload?.label}</p>
+      <p className="text-black/60 mb-0.5 max-w-[180px] truncate">{payload[0]?.payload?.label}</p>
       <p className="font-semibold text-black">{payload[0]?.payload?.bugs} bugs</p>
     </div>
   )
@@ -156,7 +156,7 @@ function DashboardContent() {
             <span className="text-black/60 truncate">
               Pick up where you left off —{' '}
               <span className="font-medium text-black">{runs[0].filename}</span>
-              <span className="text-black/40 ml-1.5 font-mono text-xs" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+              <span className="text-black/60 ml-1.5 font-mono text-xs" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
                 {runs[0].reviewed_count}/{runs[0].bug_count} reviewed
               </span>
             </span>
@@ -217,20 +217,20 @@ function DashboardContent() {
                   <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-1.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Monthly bug quota</p>
                   <div className="flex items-baseline gap-2 mb-3">
                     <span className="text-3xl font-black tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{bugsAnalyzed}</span>
-                    <span className="text-sm text-black/40">analysed of {monthlyBugLimit}</span>
+                    <span className="text-sm text-black/60">analysed of {monthlyBugLimit}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="flex items-center gap-1.5 text-xs text-black/55">
+                    <span className="flex items-center gap-1.5 text-xs text-black/70">
                       <span className={`w-2 h-2 inline-block flex-shrink-0 ${atLimit ? 'bg-red-400' : usagePct > 80 ? 'bg-orange-400' : 'bg-black'}`} />
                       {bugsAnalyzed} used
                     </span>
                     <span className="text-black/20 text-xs">·</span>
-                    <span className="flex items-center gap-1.5 text-xs text-black/55">
+                    <span className="flex items-center gap-1.5 text-xs text-black/70">
                       <span className="w-2 h-2 inline-block flex-shrink-0 bg-gray-200" />
                       {Math.max(0, monthlyBugLimit - bugsAnalyzed)} remaining
                     </span>
                     <span className="text-black/20 text-xs hidden sm:inline">·</span>
-                    <span className="text-xs font-mono text-black/35 hidden sm:inline" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                    <span className="text-xs font-mono text-black/55 hidden sm:inline" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
                       up to {plan.bugs_per_run_limit}/run
                     </span>
                   </div>
@@ -238,7 +238,7 @@ function DashboardContent() {
                 {plan?.plan === 'starter' && (
                   <Link
                     href="/pricing"
-                    className="text-xs font-mono text-black/50 hover:text-black border border-gray-300 hover:border-black px-3 py-1.5 transition-colors duration-150 whitespace-nowrap flex-shrink-0"
+                    className="text-xs font-mono text-black/65 hover:text-black border border-gray-300 hover:border-black px-3 py-1.5 transition-colors duration-150 whitespace-nowrap flex-shrink-0"
                     style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
                   >
                     Upgrade →
@@ -251,7 +251,7 @@ function DashboardContent() {
                   <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Bugs analysed this month</p>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-black tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{bugsAnalyzed}</span>
-                    <span className="text-sm text-black/40">bugs · up to {plan.bugs_per_run_limit} per run · unlimited</span>
+                    <span className="text-sm text-black/60">bugs · up to {plan.bugs_per_run_limit} per run · unlimited</span>
                   </div>
                 </div>
               </div>
@@ -276,8 +276,8 @@ function DashboardContent() {
               <Upload className="w-8 h-8 text-black/20 group-hover:text-black/40 transition-colors duration-300" strokeWidth={1.5} />
             </div>
             <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Upload your first bug backlog</h2>
-            <p className="text-sm text-black/40 mb-1">Export a CSV from Jira, Linear, or any tracker and drop it here.</p>
-            <p className="text-xs text-black/30 mb-8">Needs id, title, and priority columns. Add description and comments for sharper rankings.</p>
+            <p className="text-sm text-black/60 mb-1">Export a CSV from Jira, Linear, or any tracker and drop it here.</p>
+            <p className="text-xs text-black/50 mb-8">Needs id, title, and priority columns. Add description and comments for sharper rankings.</p>
             <span className="bg-black text-white px-6 py-2.5 text-sm font-semibold inline-flex items-center gap-2 group-hover:bg-black/80 transition-colors duration-150">
               <Upload className="w-4 h-4" />Choose CSV file
             </span>
@@ -288,13 +288,13 @@ function DashboardContent() {
             <div data-testid="last-run-card" className="border border-black p-6 mb-6">
               <div className="flex items-start justify-between mb-3">
                 <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Most recent</p>
-                <Link href={`/results/${runs[0].id}`} className="text-xs text-black/50 hover:text-black transition-colors flex items-center gap-1">
+                <Link href={`/results/${runs[0].id}`} className="text-xs text-black/65 hover:text-black transition-colors flex items-center gap-1">
                   View results <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
               <h2 className="text-lg font-bold mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{runs[0].filename}</h2>
               <div className="flex items-center gap-6 text-sm mb-5">
-                <span className="flex items-center gap-1.5 text-black/50"><Clock className="w-3.5 h-3.5" />{new Date(runs[0].run_at).toLocaleDateString()}</span>
+                <span className="flex items-center gap-1.5 text-black/65"><Clock className="w-3.5 h-3.5" />{new Date(runs[0].run_at).toLocaleDateString()}</span>
                 <span className="font-mono text-xs font-semibold bg-gray-100 px-2 py-0.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{runs[0].bug_count} bugs</span>
               </div>
               {runs[0].priority_counts && (
@@ -334,7 +334,7 @@ function DashboardContent() {
                         <td className="py-3 pr-4">
                           <Link href={`/results/${run.id}`} className="hover:underline font-medium">{run.filename}</Link>
                         </td>
-                        <td className="py-3 pr-4 text-black/40 text-xs">{new Date(run.run_at).toLocaleDateString()}</td>
+                        <td className="py-3 pr-4 text-black/60 text-xs">{new Date(run.run_at).toLocaleDateString()}</td>
                         <td className="py-3 pr-4">
                           {run.priority_counts && (() => {
                             const pc = run.priority_counts!
@@ -351,7 +351,7 @@ function DashboardContent() {
                           })()}
                         </td>
                         <td className="py-3 pr-4 text-right">
-                          <span className="font-mono text-xs text-black/40" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{run.bug_count} bugs</span>
+                          <span className="font-mono text-xs text-black/60" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{run.bug_count} bugs</span>
                         </td>
                         <td className="py-3 text-right w-10">
                           {deletingId === run.id

@@ -167,7 +167,7 @@ function AccountContent() {
           <Loader2 className="w-5 h-5 text-black/35 animate-spin flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold text-black/70" style={HEADING}>Verifying payment…</p>
-            <p className="text-xs text-black/40">Confirming your plan upgrade — this usually takes a few seconds.</p>
+            <p className="text-xs text-black/60">Confirming your plan upgrade — this usually takes a few seconds.</p>
           </div>
         </div>
       )}
@@ -195,10 +195,10 @@ function AccountContent() {
           </form>
           <div className="border-t border-gray-100 pt-4 space-y-3">
             <div>
-              <p className="text-xs font-mono text-black/40 mb-1" style={MONO}>Email</p>
+              <p className="text-xs font-mono text-black/55 mb-1" style={MONO}>Email</p>
               <p className="text-sm font-medium" data-testid="account-email">{user?.email}</p>
             </div>
-            <Link href="/forgot-password" className="text-sm text-black/50 hover:text-black transition-colors duration-150 inline-flex items-center gap-1">
+            <Link href="/forgot-password" className="text-sm text-black/65 hover:text-black transition-colors duration-150 inline-flex items-center gap-1">
               Change password <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
@@ -228,17 +228,17 @@ function AccountContent() {
           {plan && (
             <div className="grid grid-cols-3 gap-4 border-t border-gray-100 pt-5">
               <div>
-                <p className="text-xs font-mono text-black/40 mb-1" style={MONO}>Bugs / month</p>
+                <p className="text-xs font-mono text-black/55 mb-1" style={MONO}>Bugs / month</p>
                 <p className="text-sm font-medium" data-testid="account-bugs-month">
                   {plan.monthly_bug_limit === -1 ? 'Unlimited' : `${plan.bugs_analyzed_this_month} / ${plan.monthly_bug_limit}`}
                 </p>
               </div>
               <div>
-                <p className="text-xs font-mono text-black/40 mb-1" style={MONO}>Bugs / run</p>
+                <p className="text-xs font-mono text-black/55 mb-1" style={MONO}>Bugs / run</p>
                 <p className="text-sm font-medium">Up to {plan.bugs_per_run_limit}</p>
               </div>
               <div>
-                <p className="text-xs font-mono text-black/40 mb-1" style={MONO}>Doc uploads</p>
+                <p className="text-xs font-mono text-black/55 mb-1" style={MONO}>Doc uploads</p>
                 <p className="text-sm font-medium">{isPaid ? 'Included' : 'Not included'}</p>
               </div>
             </div>
@@ -255,7 +255,7 @@ function AccountContent() {
             {/* Manage billing */}
             <div className="px-6 py-5">
               <p className="text-sm font-medium mb-1">Invoices &amp; payment method</p>
-              <p className="text-xs text-black/45 mb-4" style={MONO}>View past invoices, download receipts, or update your payment method.</p>
+              <p className="text-xs text-black/60 mb-4" style={MONO}>View past invoices, download receipts, or update your payment method.</p>
               {portalError && <p className="text-xs text-red-600 mb-3">{portalError}</p>}
               <button
                 onClick={handleManageBilling}
@@ -270,7 +270,7 @@ function AccountContent() {
             {/* Cancel subscription */}
             <div className="px-6 py-5">
               <p className="text-sm font-medium mb-1">Cancel subscription</p>
-              <p className="text-xs text-black/45 mb-4" style={MONO}>
+              <p className="text-xs text-black/60 mb-4" style={MONO}>
                 Your {PLAN_LABELS[plan?.plan ?? '']} plan stays active through the end of the current billing period, then reverts to Starter (50 bugs / month).
               </p>
 
@@ -318,7 +318,7 @@ function AccountContent() {
                   <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
                   <div>
                     <p className="text-sm font-semibold" style={HEADING}>Subscription cancelled</p>
-                    <p className="text-xs text-black/50 mt-0.5">
+                    <p className="text-xs text-black/65 mt-0.5">
                       {cancelEndsAt
                         ? `Your ${PLAN_LABELS[plan?.plan ?? '']} plan remains active until ${new Date(cancelEndsAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.`
                         : `Your ${PLAN_LABELS[plan?.plan ?? '']} plan remains active until the end of the current billing period.`}

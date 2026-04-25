@@ -236,7 +236,7 @@ function SignalMeters({ flags }: { flags: string[] }) {
       <div className="space-y-2.5">
         {signals.map(s => (
           <div key={s.label} className="flex items-center justify-between gap-2">
-            <span className="text-xs text-black/45">{s.label}</span>
+            <span className="text-xs text-black/60">{s.label}</span>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
               <span className={`text-xs font-mono font-medium ${s.text}`} style={MONO}>{s.value}</span>
@@ -308,7 +308,7 @@ function SessionSnapshot({ results }: { results: TriageResult[] }) {
       <div className="space-y-3">
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-black/45">Reviewed</span>
+            <span className="text-xs text-black/60">Reviewed</span>
             <span className="text-xs font-mono font-semibold tabular-nums" style={MONO}>{reviewed}/{total}</span>
           </div>
           <div className="w-full h-1 bg-gray-100 overflow-hidden">
@@ -321,7 +321,7 @@ function SessionSnapshot({ results }: { results: TriageResult[] }) {
             <p className="text-[10px] font-mono text-black/30 mt-0.5" style={MONO}>Approved</p>
           </div>
           <div>
-            <p className="text-base font-black text-black/50" style={HEADING}>{pending}</p>
+            <p className="text-base font-black text-black/65" style={HEADING}>{pending}</p>
             <p className="text-[10px] font-mono text-black/30 mt-0.5" style={MONO}>Pending</p>
           </div>
           <div>
@@ -668,8 +668,8 @@ export default function ResultsPage() {
               ))}
             </div>
             {sevSegs.map(s => (
-              <span key={s.label} className="text-xs font-mono text-black/50 flex-shrink-0 tabular-nums" style={MONO}>
-                {s.count} <span className="text-black/30">{s.label}</span>
+              <span key={s.label} className="text-xs font-mono text-black/65 flex-shrink-0 tabular-nums" style={MONO}>
+                {s.count} <span className="text-black/45">{s.label}</span>
               </span>
             ))}
           </div>
@@ -684,7 +684,7 @@ export default function ResultsPage() {
             <div className="w-20 h-1.5 bg-gray-200 overflow-hidden" style={{ borderRadius: 1 }}>
               <div className="h-full bg-black transition-all duration-300" style={{ width: `${reviewPct}%` }} />
             </div>
-            <span className="text-xs font-mono text-black/50 tabular-nums" style={MONO}>{reviewed}/{results.length}</span>
+            <span className="text-xs font-mono text-black/65 tabular-nums" style={MONO}>{reviewed}/{results.length}</span>
           </div>
         </div>
       )}
@@ -774,7 +774,7 @@ export default function ResultsPage() {
                     <span className="text-xs font-mono text-black/30 w-6 flex-shrink-0 mt-0.5 tabular-nums" style={MONO}>{r.rank}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{r.bug_id}</span>
+                        <span className="text-xs font-mono text-black/65 font-medium" style={MONO}>{r.bug_id}</span>
                         <PriorityBadge p={r.pm_action === 'edited' && r.edited_priority ? r.edited_priority : r.priority} />
                         <SeverityBadge s={r.pm_action === 'edited' && r.edited_severity ? r.edited_severity : r.severity} />
                         <ConfidenceDots flags={r.gap_flags ?? []} />
@@ -823,7 +823,7 @@ export default function ResultsPage() {
                 <div className="px-6 md:px-8 py-5 border-b border-gray-100">
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <span className="text-xs font-mono text-black/30 border border-gray-200 px-1.5 py-0.5 tabular-nums" style={MONO}>#{selected.rank}</span>
-                    <span className="text-xs font-mono text-black/50 font-medium" style={MONO}>{selected.bug_id}</span>
+                    <span className="text-xs font-mono text-black/65 font-medium" style={MONO}>{selected.bug_id}</span>
                     <PriorityBadge p={displayPriority} />
                     <SeverityBadge s={displaySeverity} />
                     {selected.pm_action && (
@@ -865,7 +865,7 @@ export default function ResultsPage() {
                   {/* SenseBug AI Analysis */}
                   <div>
                     <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug AI Analysis</p>
-                    <p className="text-sm text-black/65 leading-relaxed">{selected.rationale}</p>
+                    <p className="text-sm text-black/80 leading-relaxed">{selected.rationale}</p>
                   </div>
 
                   {/* Suggested Rewrite (only for tickets with quality issues) */}
@@ -898,7 +898,7 @@ export default function ResultsPage() {
                               }
                             </button>
                           </div>
-                          <p className="px-4 pb-4 text-sm text-black/70 leading-relaxed whitespace-pre-line">{selected.improved_description}</p>
+                          <p className="px-4 pb-4 text-sm text-black/80 leading-relaxed whitespace-pre-line">{selected.improved_description}</p>
                         </div>
                       )}
                     </div>
@@ -926,7 +926,7 @@ export default function ResultsPage() {
                     {showOriginal && (
                       <div className="px-4 py-4 border-t border-gray-100 max-h-64 overflow-y-auto">
                         {hasOriginalDesc ? (
-                          <p className="text-sm text-black/70 leading-relaxed whitespace-pre-line">{selected.original_description}</p>
+                          <p className="text-sm text-black/80 leading-relaxed whitespace-pre-line">{selected.original_description}</p>
                         ) : isMissingDescFlag ? (
                           <p className="text-sm text-black/35 italic">No description was provided in this ticket.</p>
                         ) : (
@@ -951,7 +951,7 @@ export default function ResultsPage() {
                       </button>
                       {showComments && (
                         <div className="px-4 py-4 border-t border-gray-100 max-h-56 overflow-y-auto">
-                          <p className="text-sm text-black/70 leading-relaxed whitespace-pre-line">{selected.original_comments}</p>
+                          <p className="text-sm text-black/80 leading-relaxed whitespace-pre-line">{selected.original_comments}</p>
                         </div>
                       )}
                     </div>
@@ -963,7 +963,7 @@ export default function ResultsPage() {
                       <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>Adjust priority &amp; severity</p>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-mono text-black/50 mb-1.5" style={MONO}>Priority</label>
+                          <label className="block text-xs font-mono text-black/65 mb-1.5" style={MONO}>Priority</label>
                           <select
                             data-testid="edit-priority-select"
                             value={editPriority}
@@ -974,7 +974,7 @@ export default function ResultsPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-mono text-black/50 mb-1.5" style={MONO}>Severity</label>
+                          <label className="block text-xs font-mono text-black/65 mb-1.5" style={MONO}>Severity</label>
                           <select
                             data-testid="edit-severity-select"
                             value={editSeverity}
@@ -1032,7 +1032,7 @@ export default function ResultsPage() {
                   {/* Action buttons */}
                   {!editMode && !rejectMode && (
                     <div data-testid="action-buttons" className="pt-5 border-t border-gray-100">
-                      <p className="text-xs text-black/35 mb-4">Your call — approve it, adjust the priority, or dismiss it entirely.</p>
+                      <p className="text-xs text-black/55 mb-4">Your call — approve it, adjust the priority, or dismiss it entirely.</p>
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
                           data-testid="approve-button"
