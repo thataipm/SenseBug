@@ -1,6 +1,23 @@
-'use client'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'SenseBug AI — AI Bug Prioritization for Product Managers',
+  description: 'Upload your Jira or Linear bug backlog and get an AI-ranked list by business impact in under 60 seconds. Reporter bias removed. Free for up to 50 bugs.',
+  openGraph: {
+    title: 'SenseBug AI — AI Bug Prioritization for Product Managers',
+    description: 'Upload your Jira or Linear bug backlog and get an AI-ranked list by business impact in under 60 seconds. Free for up to 50 bugs.',
+    url: 'https://www.sensebug.ai',
+    siteName: 'SenseBug AI',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SenseBug AI — AI Bug Prioritization for Product Managers',
+    description: 'Upload your bug backlog and get an AI-ranked list by business impact in under 60 seconds. Free for up to 50 bugs.',
+  },
+}
 
 export default function LandingPage() {
   return (
@@ -217,7 +234,7 @@ export default function LandingPage() {
             What you actually get
           </p>
           <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            Sprint planning in 5 minutes.<br />Not 5 hours.
+            Bug triage in 5 minutes.<br />Not 5 hours.
           </h2>
           <p className="text-base text-black/45 mb-14 max-w-xl">
             SenseBug AI doesn&apos;t just rank bugs — it gives you the reasoning to defend every call in the room.
