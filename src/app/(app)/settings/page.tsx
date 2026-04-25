@@ -120,15 +120,15 @@ function SettingsContent() {
           {kbError && <div className="border border-red-200 bg-red-50 text-red-600 text-sm px-4 py-3">{kbError}</div>}
           <div>
             <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Product overview</label>
-            <textarea data-testid="settings-product-overview" value={productOverview} onChange={(e) => setProductOverview(e.target.value)} rows={3} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-none" />
+            <textarea data-testid="settings-product-overview" value={productOverview} onChange={(e) => setProductOverview(e.target.value)} rows={7} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-y" />
           </div>
           <div>
             <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Critical user flows</label>
-            <textarea data-testid="settings-critical-flows" value={criticalFlows} onChange={(e) => setCriticalFlows(e.target.value)} rows={3} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-none" />
+            <textarea data-testid="settings-critical-flows" value={criticalFlows} onChange={(e) => setCriticalFlows(e.target.value)} rows={7} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-y" />
           </div>
           <div>
             <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Product areas / modules</label>
-            <textarea data-testid="settings-product-areas" value={productAreas} onChange={(e) => setProductAreas(e.target.value)} rows={2} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-none" />
+            <textarea data-testid="settings-product-areas" value={productAreas} onChange={(e) => setProductAreas(e.target.value)} rows={4} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-y" />
           </div>
           <div className="flex items-center gap-4 flex-wrap">
             <button data-testid="settings-save-kb-button" type="submit" disabled={kbSaving} className="bg-black text-white px-6 py-2.5 text-sm font-semibold hover:bg-black/90 transition-colors duration-150 disabled:opacity-50 flex items-center gap-2">

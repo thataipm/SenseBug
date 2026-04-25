@@ -330,7 +330,7 @@ export default function ResultsPage() {
   const wellWrittenPct = results.length > 0 ? Math.round((wellWritten / results.length) * 100) : 0
 
   return (
-    <div className="min-h-screen bg-white flex flex-col" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
+    <div className="h-screen bg-white flex flex-col" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
 
       {/* ── Top bar ── */}
       <header className="border-b border-gray-200 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0">

@@ -5,6 +5,7 @@ import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
 import { checkRateLimit } from '@/lib/rate-limit'
 import Papa from 'papaparse'
 import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 
 export const maxDuration = 300
 
@@ -15,7 +16,7 @@ const SYSTEM_PROMPT = `You are an expert Product Manager specialising in bug tri
 CRITICAL RULE — REPORTER BIAS REMOVAL:
 The priority or severity label already on a ticket was assigned by the reporter, who has a vested interest in their own bugs being fixed first. Treat those existing labels as unreliable signals. You must derive severity and priority independently from the actual ticket content — description, reproduction steps, environment, comments, and KB context — not from what the reporter labelled it. If a reporter marked something P1 but the content describes a minor cosmetic issue, your output should reflect the true impact, not the reporter's label.
 
-You must respond with a JSON object containing a single key "results" whose value is the array of bug objects. No preamble, no explanation, no markdown. If a ticket has insufficient information to rank meaningfully, still include it but flag it in gap_flags and place it at the bottom of the ranking.
+You must respond with a valid JSON array only. No preamble, no explanation, no markdown fences. Just the raw JSON array. If a ticket has insufficient information to rank meaningfully, still include it but flag it in gap_flags and place it at the bottom of the ranking.
 
 INSTRUCTIONS
 For each bug, analyse it against the product knowledge base and return a JSON object with these exact fields:
@@ -95,7 +96,7 @@ ABSOLUTE RULE — NO TIES: Every bug must have a unique rank integer. The final 
 When to use 'Likely over-prioritised' in gap_flags:
 Add this flag when a bug has a high reporter-assigned priority OR significant comment noise (many comments, strong language, escalations) BUT the actual content describes low real-world impact — cosmetic issues, edge cases affecting very few users, or problems with easy workarounds. This is the most politically useful signal you can give a PM.
 
-Return a JSON object with a single key "results" containing the array. No other text.`
+Return only the JSON array. No other text.`
 
 // ─── Helper: column finder ───────────────────────────────────────────────────
 
@@ -282,45 +283,50 @@ ${bugsJson}`
 }
 
 // Bugs are split into smaller batches to keep each request well within the
-// output token budget. Using gpt-4o with JSON mode guarantees structurally
-// valid JSON — no markdown fences, no truncated arrays.
+// output token budget. Static instructions in SYSTEM_PROMPT enable Anthropic
+// prompt caching — batch 2+ reuse the cached system prompt, cutting latency.
+// Prefill forces Claude to start its response with '[' so we get guaranteed
+// JSON array output without any preamble.
 // BATCH_SIZE: 15 bugs × ~430 output tokens each ≈ 6 450 tokens — well under 16 000.
 const BATCH_SIZE = 15
-// Max concurrent OpenAI calls — stays within typical rate limits.
+// Max concurrent Claude calls — stays within typical rate limits.
 const MAX_CONCURRENT_BATCHES = 3
 
-async function callOpenAIBatch(
+async function callClaudeBatch(
+  anthropic: Anthropic,
   kbData: Record<string, string>,
   retrievedChunks: string,
   batch: BugRow[]
 ): Promise<Record<string, unknown>[]> {
   const userPrompt = buildUserPrompt(kbData, retrievedChunks, JSON.stringify(batch, null, 2))
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    response_format: { type: 'json_object' },
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-5',
     max_tokens: 16000,
+    system: SYSTEM_PROMPT,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user',   content: userPrompt    },
+      { role: 'user',      content: userPrompt },
+      { role: 'assistant', content: '['        }, // prefill — forces output to start as a JSON array
     ],
   })
 
-  // Warn if the model hit the token limit mid-response
-  const finishReason = response.choices[0]?.finish_reason
-  if (finishReason === 'length') {
+  // Detect output truncation before attempting parse
+  if (message.stop_reason === 'max_tokens') {
     throw new Error('AI response was cut off (output token limit reached). Try uploading fewer bugs per run.')
   }
 
-  const raw = response.choices[0]?.message?.content ?? ''
+  // Claude continues from the '[' prefill, so we prepend it back
+  const raw = '[' + (message.content[0].type === 'text' ? message.content[0].text : '')
   try {
     const parsed = JSON.parse(raw)
-    // Model returns { "results": [...] } per the system prompt
-    const arr = Array.isArray(parsed) ? parsed : (parsed.results ?? parsed.bugs ?? null)
-    if (!Array.isArray(arr)) throw new Error('Expected a results array from the AI but got a different type')
-    return arr as Record<string, unknown>[]
+    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array from the AI but got a different type')
+    return parsed as Record<string, unknown>[]
   } catch (e) {
-    console.error('[triage] Failed to parse batch LLM response:', raw.slice(0, 500))
-    throw new Error(e instanceof Error ? e.message : 'Unexpected response format from the AI.')
+    console.error('[triage] Failed to parse batch response:', raw.slice(0, 500))
+    throw new Error(
+      e instanceof SyntaxError
+        ? 'The AI returned a malformed response. Please try again.'
+        : e instanceof Error ? e.message : 'Unexpected response format from the AI.'
+    )
   }
 }
 
@@ -344,13 +350,15 @@ async function runWithConcurrencyLimit<T>(
   return results
 }
 
-async function callOpenAI(
+async function callClaude(
   kb: Record<string, string> | null,
   retrievedChunks: string,
   bugsForLlm: BugRow[]
 ): Promise<Record<string, unknown>[]> {
-  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set in environment variables')
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set in environment variables')
 
+  const anthropic = new Anthropic({ apiKey })
   const kbData = kb ?? { product_overview: '', critical_flows: '', product_areas: '' }
 
   // Split into batches and run with concurrency limit
@@ -360,7 +368,7 @@ async function callOpenAI(
   }
 
   const batchResults = await runWithConcurrencyLimit(
-    batches.map((batch) => () => callOpenAIBatch(kbData, retrievedChunks, batch)),
+    batches.map((batch) => () => callClaudeBatch(anthropic, kbData, retrievedChunks, batch)),
     MAX_CONCURRENT_BATCHES
   )
   const allResults = batchResults.flat()
@@ -629,7 +637,7 @@ export async function POST(request: NextRequest) {
   let crossRunDupWarning: string | null = null
   try {
     ;[llmResults, crossRunDupWarning] = await Promise.all([
-      callOpenAI(kb, retrievedChunks, bugsForLlm),
+      callClaude(kb, retrievedChunks, bugsForLlm),
       crossRunDupPromise,
     ])
   } catch (e) {
