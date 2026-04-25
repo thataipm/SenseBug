@@ -42,6 +42,7 @@ export interface TriageResult {
   edited_severity: string | null
   rejection_reason: string | null
   original_description: string | null
+  original_comments: string | null
   reporter_priority: string | null
   improved_description: string | null
 }

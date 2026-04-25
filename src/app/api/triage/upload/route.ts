@@ -300,8 +300,9 @@ async function callClaudeBatch(
   batch: BugRow[]
 ): Promise<Record<string, unknown>[]> {
   const userPrompt = buildUserPrompt(kbData, retrievedChunks, JSON.stringify(batch, null, 2))
+  const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-20241022'
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
+    model,
     max_tokens: 16000,
     system: SYSTEM_PROMPT,
     messages: [
@@ -396,7 +397,8 @@ async function storeTriage(
   userId: string,
   filename: string,
   llmResults: Record<string, unknown>[],
-  originalBugs: BugRow[]
+  originalBugs: BugRow[],
+  rawDataMap?: Map<string, { description: string; comments: string }>
 ) {
   // Filter out any LLM results with empty bug_id before storing
   const validResults = llmResults.filter((r) => r.bug_id && String(r.bug_id).trim() !== '')
@@ -413,11 +415,17 @@ async function storeTriage(
   if (runError || !run) throw new Error(`Failed to create triage run${runError ? ': ' + runError.message : ''}`)
 
   const toInsert = validResults.map((r) => {
-    const orig = bugMap.get(String(r.bug_id || ''))
-    const rawDesc = orig?.description
+    const bugId = String(r.bug_id || '')
+    const orig    = bugMap.get(bugId)
+    const rawData = rawDataMap?.get(bugId)
+
+    // Prefer full raw description (pre-truncation) over the LLM-payload version
+    const fullDesc = rawData?.description
+      || (orig?.description !== '[No description provided]' ? orig?.description : null)
+
     return {
       run_id: run.id,
-      bug_id: String(r.bug_id || ''),
+      bug_id: bugId,
       title: String(r.title || ''),
       rank: Number(r.rank) || 999,
       priority: String(r.priority || 'P4'),
@@ -425,7 +433,8 @@ async function storeTriage(
       business_impact: String(r.business_impact || ''),
       rationale: String(r.rationale || ''),
       gap_flags: Array.isArray(r.gap_flags) ? r.gap_flags : [],
-      original_description: rawDesc && rawDesc !== '[No description provided]' ? rawDesc : null,
+      original_description: fullDesc || null,
+      original_comments:    rawData?.comments || null,
       reporter_priority: orig?.priority || null,
       improved_description: r.improved_description ? String(r.improved_description) : null,
     }
@@ -454,12 +463,13 @@ async function storeTriageWithRetry(
   filename: string,
   llmResults: Record<string, unknown>[],
   originalBugs: BugRow[],
+  rawDataMap?: Map<string, { description: string; comments: string }>,
   maxAttempts = 3
 ) {
   let lastError: unknown
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      return await storeTriage(supabase, userId, filename, llmResults, originalBugs)
+      return await storeTriage(supabase, userId, filename, llmResults, originalBugs, rawDataMap)
     } catch (e) {
       lastError = e
       if (attempt < maxAttempts) {
@@ -541,6 +551,26 @@ export async function POST(request: NextRequest) {
     seenIds.add(id)
     return true
   })
+
+  // Build raw data map for full-fidelity storage — captures description and comments
+  // BEFORE the LLM payload truncation (2000/1500 char limits).
+  // Requires DB migration: ALTER TABLE triage_results ADD COLUMN IF NOT EXISTS original_comments text;
+  const csvKeys = Object.keys(rows[0])
+  const commentColForStorage = findCol(csvKeys, [
+    'comments', 'comment', 'notes', 'note', 'additional_notes',
+    'user_notes', 'internal_notes', 'feedback', 'discussion',
+  ])
+  const rawDataMap = new Map(
+    dedupedRows.map((row) => {
+      const id         = String(row[cols.idCol]?.trim() || '')
+      const fullDesc   = cols.descCol ? (row[cols.descCol] || '') : ''
+      const fullComments = commentColForStorage ? (row[commentColForStorage] || '') : ''
+      return [id, {
+        description: fullDesc.slice(0, 8000),     // store up to 8k chars
+        comments:    fullComments.slice(0, 4000),  // store up to 4k chars
+      }]
+    })
+  )
   if (!dedupedRows.length) {
     return NextResponse.json({ error: 'No valid bug IDs found in this file.' }, { status: 400 })
   }
@@ -655,7 +685,7 @@ export async function POST(request: NextRequest) {
   // the already-completed (and paid-for) Claude API call.
   let run, results
   try {
-    ;({ run, results } = await storeTriageWithRetry(supabase, user.id, file.name, llmResults, bugsForLlm))
+    ;({ run, results } = await storeTriageWithRetry(supabase, user.id, file.name, llmResults, bugsForLlm, rawDataMap))
   } catch (e) {
     console.error('[triage] storeTriage failed after retries:', e)
     const msg = e instanceof Error ? e.message : 'Failed to save results.'

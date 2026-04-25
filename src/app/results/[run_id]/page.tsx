@@ -415,7 +415,8 @@ export default function ResultsPage() {
   const [rejectReason, setRejectReason]   = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [copied, setCopied]               = useState(false)
-  const [showOriginal, setShowOriginal]   = useState(false)
+  const [showOriginal, setShowOriginal]   = useState(true)
+  const [showComments, setShowComments]   = useState(true)
   const [showRewrite, setShowRewrite]     = useState(true)
 
   // List state
@@ -454,7 +455,8 @@ export default function ResultsPage() {
     setRejectMode(false)
     setRejectReason('')
     setEditMode(false)
-    setShowOriginal(false)
+    setShowOriginal(true)
+    setShowComments(true)
     setShowRewrite(true)
   }, [selected?.id])
 
@@ -902,13 +904,13 @@ export default function ResultsPage() {
                     </div>
                   )}
 
-                  {/* Original Ticket */}
+                  {/* Original Ticket — description */}
                   <div className="border border-gray-200 overflow-hidden">
                     <button
                       onClick={() => setShowOriginal(v => !v)}
                       className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
-                      <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>Original Ticket</p>
+                      <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>Original Description</p>
                       <div className="flex items-center gap-2">
                         {selected.reporter_priority && (
                           <span className="text-xs font-mono border border-gray-200 bg-white px-1.5 py-0.5 text-black/40" style={MONO}>
@@ -922,7 +924,7 @@ export default function ResultsPage() {
                       </div>
                     </button>
                     {showOriginal && (
-                      <div className="px-4 py-4 border-t border-gray-100">
+                      <div className="px-4 py-4 border-t border-gray-100 max-h-64 overflow-y-auto">
                         {hasOriginalDesc ? (
                           <p className="text-sm text-black/70 leading-relaxed whitespace-pre-line">{selected.original_description}</p>
                         ) : isMissingDescFlag ? (
@@ -933,6 +935,27 @@ export default function ResultsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Original Ticket — comments */}
+                  {selected.original_comments && (
+                    <div className="border border-gray-200 overflow-hidden">
+                      <button
+                        onClick={() => setShowComments(v => !v)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>Comments</p>
+                        {showComments
+                          ? <ChevronDown  className="w-3.5 h-3.5 text-black/30" strokeWidth={2} />
+                          : <ChevronRight className="w-3.5 h-3.5 text-black/30" strokeWidth={2} />
+                        }
+                      </button>
+                      {showComments && (
+                        <div className="px-4 py-4 border-t border-gray-100 max-h-56 overflow-y-auto">
+                          <p className="text-sm text-black/70 leading-relaxed whitespace-pre-line">{selected.original_comments}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Edit mode */}
                   {editMode && (
