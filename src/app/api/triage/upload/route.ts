@@ -300,7 +300,7 @@ async function callClaudeBatch(
   batch: BugRow[]
 ): Promise<Record<string, unknown>[]> {
   const userPrompt = buildUserPrompt(kbData, retrievedChunks, JSON.stringify(batch, null, 2))
-  const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-20241022'
+  const model = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5'
   const message = await anthropic.messages.create({
     model,
     max_tokens: 16000,
