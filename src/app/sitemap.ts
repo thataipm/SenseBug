@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://www.sensebug.ai'
+  const base = 'https://www.sensebug.com'
 
   return [
     {

@@ -18,6 +18,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://www.sensebug.ai/sitemap.xml',
+    sitemap: 'https://www.sensebug.com/sitemap.xml',
   }
 }

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'SenseBug AI — AI Bug Prioritization for Product Managers',
     description: 'Upload your Jira or Linear bug backlog and get an AI-ranked list by business impact in under 60 seconds. Free for up to 50 bugs.',
-    url: 'https://www.sensebug.ai',
+    url: 'https://www.sensebug.com',
     siteName: 'SenseBug AI',
     type: 'website',
   },
