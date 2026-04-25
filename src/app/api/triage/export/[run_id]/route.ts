@@ -76,7 +76,11 @@ export async function GET(
   })
 
   const csv = [headers.join(','), ...rows].join('\n')
-  const filename = `sensebug-${run.filename.replace('.csv', '')}-ranked.csv`
+  const safeBase = run.filename
+    .replace(/\.(csv|xlsx?|tsv|txt)$/i, '')
+    .replace(/[^a-z0-9._-]/gi, '_')
+    .slice(0, 60)
+  const filename = `sensebug-${safeBase}-ranked.csv`
 
   return new NextResponse(csv, {
     headers: {

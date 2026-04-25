@@ -81,8 +81,8 @@ export async function ensureUserPlan(
   const lastReset = new Date(currentPlan.last_reset_at)
   const now = new Date()
   if (
-    lastReset.getMonth() !== now.getMonth() ||
-    lastReset.getFullYear() !== now.getFullYear()
+    lastReset.getUTCMonth() !== now.getUTCMonth() ||
+    lastReset.getUTCFullYear() !== now.getUTCFullYear()
   ) {
     updates.monthly_runs_count = 0
     updates.monthly_bugs_consumed = 0

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
+import { isValidOrigin } from '@/lib/csrf'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -41,6 +42,7 @@ async function extractText(file: File): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isValidOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

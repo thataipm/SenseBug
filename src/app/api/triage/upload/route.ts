@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { isValidOrigin } from '@/lib/csrf'
 import Papa from 'papaparse'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
@@ -474,6 +475,7 @@ async function storeTriageWithRetry(
 // ─── Main route handler ───────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  if (!isValidOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
