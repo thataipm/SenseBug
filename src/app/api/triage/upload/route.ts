@@ -4,6 +4,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidOrigin } from '@/lib/csrf'
+import { stripJiraMarkup } from '@/lib/jira'
 import Papa from 'papaparse'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
@@ -147,39 +148,7 @@ type BugRow = Record<string, string>
 // ServiceNow, etc. with 400+ columns) don't flood the prompt with noise.
 const USEFUL_SIGNAL_RE = /\b(severity|impact|revenue|customer|escalat|reproducib|repro|steps|environ|browser|device|os|actual|expected|workaround|urgency|urgence|accept|root.?cause|resolution.?note|user.?impact|business|criticali|blocker|blocking|complaint|sentiment|churn|arr|priority|feedback|effort|risk|affected|scope)\b/i
 
-// ─── Helper: strip Jira / Confluence wiki markup ─────────────────────────────
-// Jira exports embed wiki markup in Description and Comment fields. Passing it
-// raw wastes tokens AND occasionally causes Claude to reproduce unescaped
-// characters (quotes, backslashes) that break the JSON output.
-function stripJiraMarkup(text: string): string {
-  return text
-    // Remove image macros: !filename.png! or !filename.png|width=100!
-    .replace(/![^|\n!]+(\|[^!\n]*)!/g, '')
-    // [text|url] → text
-    .replace(/\[([^\|]{1,120})\|https?:\/\/[^\]]{1,300}\]/g, '$1')
-    // bare [url] links → remove
-    .replace(/\[https?:\/\/[^\]]{1,300}\]/g, '')
-    // {code}...{code} and {noformat}...{noformat} → [code block]
-    .replace(/\{code[^}]*\}[\s\S]{0,3000}?\{code\}/gi, '[code block]')
-    .replace(/\{noformat[^}]*\}[\s\S]{0,3000}?\{noformat\}/gi, '[formatted text]')
-    // {color:x}text{color} → text
-    .replace(/\{color[^}]*\}([\s\S]{0,500}?)\{color\}/gi, '$1')
-    // other {macros} → remove
-    .replace(/\{[a-zA-Z][^}]{0,60}\}/g, '')
-    // ||table headers|| → spaces
-    .replace(/\|\|/g, ' ')
-    // |table cells|
-    .replace(/\|/g, ' ')
-    // heading markers: h1. h2. etc
-    .replace(/^h[1-6]\.\s*/gim, '')
-    // *bold* → bold, _italic_ → italic, +underline+, -strikethrough-, ^super^
-    .replace(/[*_+\-^]([^*_+\-^\n]{1,100})[*_+\-^]/g, '$1')
-    // horizontal rules
-    .replace(/^-{4,}$/gm, '')
-    // collapse 3+ blank lines → 2
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-}
+// stripJiraMarkup is imported from @/lib/jira (shared with the results page UI)
 
 // Value-level noise: ISO dates, plain numbers, URLs, UUIDs / Atlassian
 // account IDs — no signal for triage.
@@ -353,12 +322,12 @@ ${bugsJson}`
 // the cached prompt, cutting per-call latency by 60-70%.
 // Prefill forces Claude to start its response with '[' for guaranteed JSON array output.
 //
-// BATCH_SIZE: 25 bugs × ~500 output tokens ≈ 12 500 tokens — well under 16 000.
-// MAX_CONCURRENT_BATCHES: 5 concurrent calls means 270 bugs (11 batches) complete
-// in ~3 rounds instead of 6, cutting wall-clock time roughly in half.
-const BATCH_SIZE = 25
-// Max concurrent Claude calls — haiku rate limits are generous; 5 is safe.
-const MAX_CONCURRENT_BATCHES = 5
+// BATCH_SIZE: 15 bugs × ~500 output tokens ≈ 7 500 tokens per batch (~50s on haiku).
+// MAX_CONCURRENT_BATCHES: 6 concurrent → 270 bugs (18 batches) = 3 rounds × 50s ≈ 90s total.
+// Smaller batches finish faster individually; more concurrency keeps total rounds low.
+const BATCH_SIZE = 15
+// Max concurrent Claude calls — haiku rate limits are generous; 6 is safe.
+const MAX_CONCURRENT_BATCHES = 6
 
 async function callClaudeBatch(
   anthropic: Anthropic,

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
 import { TriageResult, TriageRun } from '@/types'
+import { stripJiraMarkup } from '@/lib/jira'
 import {
   Check, X, Edit2, Download, ChevronLeft, ChevronDown, ChevronRight,
   Flag, Loader2, Copy, CheckCheck, Search, AlertCircle,
@@ -926,7 +927,7 @@ export default function ResultsPage() {
                     {showOriginal && (
                       <div className="px-4 py-4 border-t border-gray-100 max-h-64 overflow-y-auto">
                         {hasOriginalDesc ? (
-                          <p className="text-sm text-black/80 leading-relaxed whitespace-pre-line">{selected.original_description}</p>
+                          <p className="text-sm text-black/80 leading-relaxed whitespace-pre-line">{stripJiraMarkup(selected.original_description ?? '')}</p>
                         ) : isMissingDescFlag ? (
                           <p className="text-sm text-black/35 italic">No description was provided in this ticket.</p>
                         ) : (
@@ -951,7 +952,7 @@ export default function ResultsPage() {
                       </button>
                       {showComments && (
                         <div className="px-4 py-4 border-t border-gray-100 max-h-56 overflow-y-auto">
-                          <p className="text-sm text-black/80 leading-relaxed whitespace-pre-line">{selected.original_comments}</p>
+                          <p className="text-sm text-black/80 leading-relaxed whitespace-pre-line">{stripJiraMarkup(selected.original_comments ?? '')}</p>
                         </div>
                       )}
                     </div>
