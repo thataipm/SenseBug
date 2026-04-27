@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
+import { GoogleAnalytics } from '@/components/GoogleAnalytics'
 import './globals.css'
 
 const spaceGrotesk = Space_Grotesk({
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}
       >
         {children}
+        <GoogleAnalytics />
       </body>
     </html>
   )
