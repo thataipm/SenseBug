@@ -147,6 +147,40 @@ type BugRow = Record<string, string>
 // ServiceNow, etc. with 400+ columns) don't flood the prompt with noise.
 const USEFUL_SIGNAL_RE = /\b(severity|impact|revenue|customer|escalat|reproducib|repro|steps|environ|browser|device|os|actual|expected|workaround|urgency|urgence|accept|root.?cause|resolution.?note|user.?impact|business|criticali|blocker|blocking|complaint|sentiment|churn|arr|priority|feedback|effort|risk|affected|scope)\b/i
 
+// ─── Helper: strip Jira / Confluence wiki markup ─────────────────────────────
+// Jira exports embed wiki markup in Description and Comment fields. Passing it
+// raw wastes tokens AND occasionally causes Claude to reproduce unescaped
+// characters (quotes, backslashes) that break the JSON output.
+function stripJiraMarkup(text: string): string {
+  return text
+    // Remove image macros: !filename.png! or !filename.png|width=100!
+    .replace(/![^|\n!]+(\|[^!\n]*)!/g, '')
+    // [text|url] → text
+    .replace(/\[([^\|]{1,120})\|https?:\/\/[^\]]{1,300}\]/g, '$1')
+    // bare [url] links → remove
+    .replace(/\[https?:\/\/[^\]]{1,300}\]/g, '')
+    // {code}...{code} and {noformat}...{noformat} → [code block]
+    .replace(/\{code[^}]*\}[\s\S]{0,3000}?\{code\}/gi, '[code block]')
+    .replace(/\{noformat[^}]*\}[\s\S]{0,3000}?\{noformat\}/gi, '[formatted text]')
+    // {color:x}text{color} → text
+    .replace(/\{color[^}]*\}([\s\S]{0,500}?)\{color\}/gi, '$1')
+    // other {macros} → remove
+    .replace(/\{[a-zA-Z][^}]{0,60}\}/g, '')
+    // ||table headers|| → spaces
+    .replace(/\|\|/g, ' ')
+    // |table cells|
+    .replace(/\|/g, ' ')
+    // heading markers: h1. h2. etc
+    .replace(/^h[1-6]\.\s*/gim, '')
+    // *bold* → bold, _italic_ → italic, +underline+, -strikethrough-, ^super^
+    .replace(/[*_+\-^]([^*_+\-^\n]{1,100})[*_+\-^]/g, '$1')
+    // horizontal rules
+    .replace(/^-{4,}$/gm, '')
+    // collapse 3+ blank lines → 2
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 // Value-level noise: ISO dates, plain numbers, URLs, UUIDs / Atlassian
 // account IDs — no signal for triage.
 function isNoisyValue(v: string): boolean {
@@ -187,10 +221,11 @@ function buildBugsForLlm(bugs: BugRow[], cols: Columns, keys: string[]): BugRow[
 
   return bugs.map((row) => {
     const rawDesc = cols.descCol ? row[cols.descCol] || '' : ''
+    const cleanDesc = rawDesc ? stripJiraMarkup(rawDesc) : ''
     const bug: BugRow = {
       bug_id:      row[cols.idCol] || '',
       title:       row[cols.titleCol] || '',
-      description: rawDesc ? rawDesc.slice(0, 2000) : '[No description provided]',
+      description: cleanDesc ? cleanDesc.slice(0, 1500) : '[No description provided]',
       priority:    cols.priorityCol ? row[cols.priorityCol] || '' : '',
     }
 
@@ -203,7 +238,7 @@ function buildBugsForLlm(bugs: BugRow[], cols: Columns, keys: string[]): BugRow[
     if (componentCol&& row[componentCol])bug.component          = row[componentCol]
     if (versionCol  && row[versionCol])  bug.version            = row[versionCol]
     if (epicCol     && row[epicCol])     bug.epic               = row[epicCol]
-    if (commentCol  && row[commentCol])  bug.comments           = row[commentCol].slice(0, 1500)
+    if (commentCol  && row[commentCol])  bug.comments           = stripJiraMarkup(row[commentCol]).slice(0, 1000)
     if (reporterCol && row[reporterCol]) bug.reporter           = row[reporterCol]
     if (assigneeCol && row[assigneeCol]) bug.assignee           = row[assigneeCol]
     if (labelsCol   && row[labelsCol])   bug.labels             = row[labelsCol]
@@ -266,6 +301,36 @@ async function getKBContext(
     .join('\n\n')
 }
 
+// ─── Helper: robust JSON array parser with auto-repair ───────────────────────
+// Claude occasionally returns a truncated or slightly malformed JSON array
+// (e.g. cut off before the closing `]`, or last object missing closing `}`).
+// We try three progressively more aggressive repair strategies before giving up.
+function tryParseJsonArray(raw: string): Record<string, unknown>[] {
+  // 1. Direct parse — works for well-formed responses
+  try {
+    const p = JSON.parse(raw)
+    if (Array.isArray(p)) return p as Record<string, unknown>[]
+  } catch {}
+
+  // 2. Append `]` — handles responses truncated just before the closing bracket
+  try {
+    const p = JSON.parse(raw + ']')
+    if (Array.isArray(p)) return p as Record<string, unknown>[]
+  } catch {}
+
+  // 3. Find the last complete `}` and close the array there.
+  //    Handles the case where the last object is partially written.
+  const lastBrace = raw.lastIndexOf('}')
+  if (lastBrace > 0) {
+    try {
+      const p = JSON.parse(raw.slice(0, lastBrace + 1) + ']')
+      if (Array.isArray(p)) return p as Record<string, unknown>[]
+    } catch {}
+  }
+
+  throw new SyntaxError('AI response could not be parsed as a JSON array')
+}
+
 // ─── Helper: build and call Claude via Python LLM endpoint ──────────────────
 
 function buildUserPrompt(
@@ -299,37 +364,65 @@ async function callClaudeBatch(
   retrievedChunks: string,
   batch: BugRow[]
 ): Promise<Record<string, unknown>[]> {
-  const userPrompt = buildUserPrompt(kbData, retrievedChunks, JSON.stringify(batch, null, 2))
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001'
-  const message = await anthropic.messages.create({
-    model,
-    max_tokens: 16000,
-    system: SYSTEM_PROMPT,
-    messages: [
-      { role: 'user',      content: userPrompt },
-      { role: 'assistant', content: '['        }, // prefill — forces output to start as a JSON array
-    ],
-  })
 
-  // Detect output truncation before attempting parse
-  if (message.stop_reason === 'max_tokens') {
-    throw new Error('AI response was cut off (output token limit reached). Try uploading fewer bugs per run.')
+  // Attempt up to 2 times. On the second attempt we slim down descriptions so
+  // the output fits comfortably within the token budget.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const batchToSend = attempt === 1 ? batch : batch.map((b) => ({
+      ...b,
+      description:    b.description ? b.description.slice(0, 400) : b.description,
+      comments:       b.comments    ? b.comments.slice(0, 200)    : b.comments,
+      extra_context:  undefined,   // drop extra context on retry
+    }))
+
+    const userPrompt = buildUserPrompt(kbData, retrievedChunks, JSON.stringify(batchToSend, null, 2))
+
+    let message: Awaited<ReturnType<typeof anthropic.messages.create>>
+    try {
+      message = await anthropic.messages.create({
+        model,
+        max_tokens: 16000,
+        system: SYSTEM_PROMPT,
+        messages: [
+          { role: 'user',      content: userPrompt },
+          { role: 'assistant', content: '['        }, // prefill — forces JSON array output
+        ],
+      })
+    } catch (apiErr) {
+      if (attempt < 2) {
+        console.warn(`[triage] Claude API error on attempt ${attempt}, retrying:`, apiErr)
+        continue
+      }
+      throw apiErr
+    }
+
+    // Detect hard truncation
+    if (message.stop_reason === 'max_tokens') {
+      if (attempt < 2) {
+        console.warn('[triage] max_tokens hit on attempt 1, retrying with slimmed content')
+        continue
+      }
+      throw new Error('AI response was cut off (output token limit reached). Try uploading fewer bugs per run.')
+    }
+
+    // Claude continues from the '[' prefill — prepend it back
+    const raw = '[' + (message.content[0].type === 'text' ? message.content[0].text : '')
+
+    try {
+      return tryParseJsonArray(raw)
+    } catch (parseErr) {
+      console.error(`[triage] JSON parse failed on attempt ${attempt}:`, raw.slice(0, 300))
+      if (attempt < 2) {
+        console.warn('[triage] Retrying batch with reduced content...')
+        continue
+      }
+      throw new Error('The AI returned a malformed response after 2 attempts. Please try again.')
+    }
   }
 
-  // Claude continues from the '[' prefill, so we prepend it back
-  const raw = '[' + (message.content[0].type === 'text' ? message.content[0].text : '')
-  try {
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array from the AI but got a different type')
-    return parsed as Record<string, unknown>[]
-  } catch (e) {
-    console.error('[triage] Failed to parse batch response:', raw.slice(0, 500))
-    throw new Error(
-      e instanceof SyntaxError
-        ? 'The AI returned a malformed response. Please try again.'
-        : e instanceof Error ? e.message : 'Unexpected response format from the AI.'
-    )
-  }
+  // TypeScript needs this — unreachable in practice
+  throw new Error('Unexpected end of callClaudeBatch')
 }
 
 // Run an array of async tasks with a maximum concurrency limit.
