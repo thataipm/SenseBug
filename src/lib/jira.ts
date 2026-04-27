@@ -29,7 +29,8 @@ export function stripJiraMarkup(text: string): string {
     .replace(/\*([^*\n]{1,200})\*/g, '$1')
     .replace(/_([^_\n]{1,200})_/g, '$1')
     .replace(/\+([^+\n]{1,200})\+/g, '$1')
-    // ~~strikethrough~~ or -strikethrough-
+    // ~~strikethrough~~ — Jira's dash-form (-text-) is intentionally NOT
+    // matched because it would eat negative numbers and hyphens in identifiers.
     .replace(/~~([^~\n]{1,200})~~/g, '$1')
     // horizontal rules
     .replace(/^-{4,}$/gm, '')

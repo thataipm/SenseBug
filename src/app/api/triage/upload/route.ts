@@ -342,12 +342,17 @@ async function callClaudeBatch(
   // Attempt up to 2 times. On the second attempt we slim down descriptions so
   // the output fits comfortably within the token budget.
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const batchToSend = attempt === 1 ? batch : batch.map((b) => ({
-      ...b,
-      description:    b.description ? b.description.slice(0, 400) : b.description,
-      comments:       b.comments    ? b.comments.slice(0, 200)    : b.comments,
-      extra_context:  undefined,   // drop extra context on retry
-    }))
+    const batchToSend = attempt === 1 ? batch : batch.map((b) => {
+      // Drop extra_context entirely on retry — destructure is type-clean
+      // (vs. assigning undefined to a Record<string, string> field).
+      const { extra_context: _drop, ...rest } = b
+      void _drop
+      return {
+        ...rest,
+        description: rest.description ? rest.description.slice(0, 400) : rest.description,
+        comments:    rest.comments    ? rest.comments.slice(0, 200)    : rest.comments,
+      }
+    })
 
     const userPrompt = buildUserPrompt(kbData, retrievedChunks, JSON.stringify(batchToSend, null, 2))
 
@@ -618,6 +623,14 @@ export async function POST(request: NextRequest) {
   } else {
     const parsed = Papa.parse<BugRow>(await file.text(), { header: true, skipEmptyLines: true })
     rows = parsed.data
+    // Surface (but don't fail on) parser warnings — silent partial parses make
+    // missing-bug bugs hard to diagnose later.
+    if (parsed.errors && parsed.errors.length > 0) {
+      console.warn(
+        `[triage] PapaParse reported ${parsed.errors.length} warning(s):`,
+        parsed.errors.slice(0, 3)
+      )
+    }
   }
 
   if (!rows?.length) return NextResponse.json({ error: 'No data rows found in this file.' }, { status: 400 })
