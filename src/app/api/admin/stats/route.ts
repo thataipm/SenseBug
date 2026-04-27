@@ -29,6 +29,7 @@ export async function GET() {
     { data: plans },
     { data: recentRunsData },
     { data: allRunsData },
+    { data: recentFeedbackData },
   ] = await Promise.all([
     admin.auth.admin.listUsers({ perPage: 1000, page: 1 }),
     admin.from('user_plans').select('user_id, plan'),
@@ -38,6 +39,11 @@ export async function GET() {
       .gte('run_at', (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString() })())
       .order('run_at', { ascending: false }),
     admin.from('triage_runs').select('bug_count'),
+    admin
+      .from('feedback')
+      .select('id, email, type, subject, message, created_at')
+      .order('created_at', { ascending: false })
+      .limit(15),
   ])
 
   const users   = authData?.users ?? []
@@ -105,6 +111,15 @@ export async function GET() {
     }
   })
 
+  // ── Recent feedback (latest 15) ──────────────────────────────────────────────
+  const recentFeedback = (recentFeedbackData ?? []).map(f => ({
+    email:      f.email ?? '—',
+    type:       f.type,
+    subject:    f.subject,
+    message:    f.message,
+    created_at: f.created_at,
+  }))
+
   return NextResponse.json({
     totalUsers,
     newThisMonth,
@@ -118,5 +133,6 @@ export async function GET() {
     chartData,
     recentSignups,
     recentRuns,
+    recentFeedback,
   })
 }

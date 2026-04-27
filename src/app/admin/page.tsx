@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Loader2, Users, TrendingUp, CreditCard, DollarSign, ArrowUpRight,
+  Loader2, Users, TrendingUp, CreditCard, DollarSign, ArrowUpRight, MessageSquare,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
@@ -37,6 +37,7 @@ interface AdminStats {
   chartData:         { date: string; signups: number; runs: number }[]
   recentSignups:     { email: string; created_at: string; plan: string }[]
   recentRuns:        { email: string; filename: string; bug_count: number; run_at: string }[]
+  recentFeedback:    { email: string; type: string; subject: string; message: string; created_at: string }[]
 }
 
 function fmtDate(iso: string) {
@@ -310,6 +311,48 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* ── Recent feedback ── */}
+        <div className="border border-gray-200">
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+            <MessageSquare className="w-3.5 h-3.5 text-black/30" strokeWidth={1.5} />
+            <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>User Feedback</p>
+          </div>
+          {stats.recentFeedback.length === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-black/35">No feedback yet</p>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {stats.recentFeedback.map((f, i) => {
+                const TYPE_BADGE: Record<string, string> = {
+                  bug:     'text-red-700 border-red-200 bg-red-50',
+                  feature: 'text-blue-700 border-blue-200 bg-blue-50',
+                  general: 'text-gray-600 border-gray-200 bg-gray-50',
+                }
+                const TYPE_LABEL: Record<string, string> = {
+                  bug: 'Bug', feature: 'Feature', general: 'Feedback',
+                }
+                return (
+                  <div key={i} className="px-5 py-4">
+                    <div className="flex items-start justify-between gap-3 mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`text-xs font-mono border px-1.5 py-0.5 flex-shrink-0 ${TYPE_BADGE[f.type] ?? TYPE_BADGE.general}`}
+                          style={MONO}
+                        >
+                          {TYPE_LABEL[f.type] ?? f.type}
+                        </span>
+                        <p className="text-sm font-medium text-black/80 truncate">{f.subject}</p>
+                      </div>
+                      <p className="text-xs text-black/40 whitespace-nowrap flex-shrink-0" style={MONO}>{fmtDate(f.created_at)}</p>
+                    </div>
+                    <p className="text-xs text-black/55 leading-relaxed line-clamp-2 mb-1" style={MONO}>{f.message}</p>
+                    <p className="text-xs text-black/35" style={MONO}>{f.email}</p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
       </div>
