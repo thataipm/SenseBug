@@ -14,7 +14,7 @@ const NAV = [
 ]
 
 const PLAN_LABEL: Record<string, string> = {
-  starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max',
+  starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max', admin: 'Admin',
 }
 
 interface PlanInfo {

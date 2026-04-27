@@ -15,7 +15,7 @@ interface PlanInfo {
   bugs_analyzed_this_month: number
 }
 
-const PLAN_LABELS: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max' }
+const PLAN_LABELS: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max', admin: 'Admin' }
 const MONO = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
 const HEADING = { fontFamily: 'var(--font-space-grotesk), sans-serif' }
 
@@ -145,7 +145,8 @@ function AccountContent() {
     </div>
   )
 
-  const isPaid = plan?.plan === 'pro' || plan?.plan === 'max' || plan?.plan === 'team'
+  const isAdmin = plan?.plan === 'admin'
+  const isPaid  = !isAdmin && (plan?.plan === 'pro' || plan?.plan === 'max' || plan?.plan === 'team')
 
   return (
     <div className="px-6 md:px-10 py-10 max-w-2xl mx-auto space-y-10" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
@@ -215,7 +216,7 @@ function AccountContent() {
                 {plan ? PLAN_LABELS[plan.plan] : '—'}
               </p>
             </div>
-            {plan?.plan === 'starter' && (
+            {plan?.plan === 'starter' && !isAdmin && (
               <Link
                 href="/pricing"
                 data-testid="account-upgrade-btn"

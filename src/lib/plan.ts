@@ -25,9 +25,11 @@ export function getPlanLimits(plan: string): PlanLimits {
       return { monthlyBugLimit: 250, maxBugsPerRun: 100, docUpload: true  }
     case 'team': // legacy identifier — kept for existing DB rows
     case 'max':
-      return { monthlyBugLimit: 500, maxBugsPerRun: 250, docUpload: true  }
+      return { monthlyBugLimit: 500,      maxBugsPerRun: 250,  docUpload: true  }
+    case 'admin':
+      return { monthlyBugLimit: Infinity, maxBugsPerRun: 1000, docUpload: true  }
     default:
-      return { monthlyBugLimit: 50,  maxBugsPerRun: 50,  docUpload: false }
+      return { monthlyBugLimit: 50,       maxBugsPerRun: 50,   docUpload: false }
   }
 }
 
@@ -37,6 +39,7 @@ export function getPlanDisplayName(plan: string): string {
     case 'pro':     return 'Pro'
     case 'team':    // legacy
     case 'max':     return 'Max'
+    case 'admin':   return 'Admin'
     default:        return 'Starter'
   }
 }
