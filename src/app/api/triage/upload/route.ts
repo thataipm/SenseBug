@@ -322,12 +322,14 @@ ${bugsJson}`
 // the cached prompt, cutting per-call latency by 60-70%.
 // Prefill forces Claude to start its response with '[' for guaranteed JSON array output.
 //
-// BATCH_SIZE: 15 bugs × ~500 output tokens ≈ 7 500 tokens per batch (~50s on haiku).
-// MAX_CONCURRENT_BATCHES: 6 concurrent → 270 bugs (18 batches) = 3 rounds × 50s ≈ 90s total.
-// Smaller batches finish faster individually; more concurrency keeps total rounds low.
-const BATCH_SIZE = 15
-// Max concurrent Claude calls — haiku rate limits are generous; 6 is safe.
-const MAX_CONCURRENT_BATCHES = 6
+// Empirical timing on real Jira data: haiku generates ~75 output tokens/sec with
+// complex JSON. Each bug produces ~500 output tokens → 6.7s per bug of generation.
+//
+// BATCH_SIZE=8  → ~4 000 output tokens → ~53s per batch
+// MAX_CONCURRENT=10 → 250 bugs (32 batches) = ceil(32/10)=4 rounds × 53s ≈ 212s
+// That leaves a comfortable 90-second buffer inside Vercel's 300s limit.
+const BATCH_SIZE = 8
+const MAX_CONCURRENT_BATCHES = 10
 
 async function callClaudeBatch(
   anthropic: Anthropic,
