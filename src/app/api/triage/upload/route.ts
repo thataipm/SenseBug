@@ -383,6 +383,7 @@ async function callClaudeBatch(
       message = await anthropic.messages.create({
         model,
         max_tokens: 16000,
+        temperature: 0,   // deterministic output — prevents Claude inserting commentary between JSON objects
         system: SYSTEM_PROMPT,
         messages: [
           { role: 'user',      content: userPrompt },
@@ -449,21 +450,36 @@ async function callClaude(
   kb: Record<string, string> | null,
   retrievedChunks: string,
   bugsForLlm: BugRow[]
-): Promise<Record<string, unknown>[]> {
+): Promise<{ results: Record<string, unknown>[]; failedBatches: number }> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set in environment variables')
 
   const anthropic = new Anthropic({ apiKey })
   const kbData = kb ?? { product_overview: '', critical_flows: '', product_areas: '' }
 
-  // Split into batches and run with concurrency limit
+  // Split into batches
   const batches: BugRow[][] = []
   for (let i = 0; i < bugsForLlm.length; i += BATCH_SIZE) {
     batches.push(bugsForLlm.slice(i, i + BATCH_SIZE))
   }
 
+  // Fault-tolerant batch execution: a failed batch logs a warning and returns []
+  // instead of aborting the entire run. With 18 batches a single bad response
+  // would otherwise discard all results.
+  let failedBatches = 0
   const batchResults = await runWithConcurrencyLimit(
-    batches.map((batch) => () => callClaudeBatch(anthropic, kbData, retrievedChunks, batch)),
+    batches.map((batch, batchIdx) => async () => {
+      try {
+        return await callClaudeBatch(anthropic, kbData, retrievedChunks, batch)
+      } catch (e) {
+        failedBatches++
+        console.error(
+          `[triage] Batch ${batchIdx + 1}/${batches.length} failed permanently:`,
+          e instanceof Error ? e.message : e
+        )
+        return [] as Record<string, unknown>[]
+      }
+    }),
     MAX_CONCURRENT_BATCHES
   )
   const allResults = batchResults.flat()
@@ -480,7 +496,7 @@ async function callClaude(
     return sa - sb
   })
 
-  return allResults.map((r, i) => ({ ...r, rank: i + 1 }))
+  return { results: allResults.map((r, i) => ({ ...r, rank: i + 1 })), failedBatches }
 }
 
 // ─── Helper: store triage run and results ─────────────────────────────────────
@@ -761,15 +777,33 @@ export async function POST(request: NextRequest) {
   let llmResults: Record<string, unknown>[] = []
   let crossRunDupWarning: string | null = null
   try {
-    ;[llmResults, crossRunDupWarning] = await Promise.all([
+    const [claudeResult, dupWarning] = await Promise.all([
       callClaude(kb, retrievedChunks, bugsForLlm),
       crossRunDupPromise,
     ])
+    llmResults        = claudeResult.results
+    crossRunDupWarning = dupWarning
+
+    // Surface partial-results warning when some batches failed but others succeeded
+    if (claudeResult.failedBatches > 0) {
+      const skipped = claudeResult.failedBatches * BATCH_SIZE
+      const partialMsg = `${claudeResult.failedBatches} batch${claudeResult.failedBatches > 1 ? 'es' : ''} could not be analysed — up to ${skipped} bugs may be missing from results.`
+      trimmedWarning = trimmedWarning ? `${trimmedWarning} ${partialMsg}` : partialMsg
+    }
   } catch (e) {
     console.error('[triage] callClaude failed:', e)
     const msg = e instanceof Error ? e.message : 'Analysis failed. Please try again.'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
+
+  // If every single batch failed there's nothing to save — surface a hard error
+  if (llmResults.length === 0) {
+    return NextResponse.json(
+      { error: 'Analysis failed — the AI could not process any bugs. Please try again.' },
+      { status: 500 }
+    )
+  }
+
   if (crossRunDupWarning) {
     trimmedWarning = trimmedWarning ? `${trimmedWarning} ${crossRunDupWarning}` : crossRunDupWarning
   }
