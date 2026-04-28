@@ -34,8 +34,14 @@ export interface TriageResult {
   rank: number
   priority: 'P1' | 'P2' | 'P3' | 'P4'
   severity: 'Critical' | 'High' | 'Medium' | 'Low'
-  business_impact: string
-  rationale: string
+  // Two-pass: quick_reason is always populated by Pass 1; the long-form
+  // business_impact / rationale / improved_description are populated lazily
+  // by /api/triage/detail when the user opens the bug.
+  quick_reason: string | null
+  business_impact: string | null
+  rationale: string | null
+  improved_description: string | null
+  detail_generated_at: string | null
   gap_flags: string[]
   pm_action: 'approved' | 'edited' | 'rejected' | null
   edited_priority: string | null
@@ -44,7 +50,6 @@ export interface TriageResult {
   original_description: string | null
   original_comments: string | null
   reporter_priority: string | null
-  improved_description: string | null
 }
 
 export interface RunWithResults extends TriageRun {

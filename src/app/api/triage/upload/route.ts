@@ -5,6 +5,7 @@ import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidOrigin } from '@/lib/csrf'
 import { stripJiraMarkup } from '@/lib/jira'
+import { RANK_SYSTEM_PROMPT } from '@/lib/triage-prompts'
 import Papa from 'papaparse'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
@@ -13,92 +14,8 @@ export const maxDuration = 300
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const SYSTEM_PROMPT = `You are an expert Product Manager specialising in bug triage and prioritization. Your job is to analyse a list of bug tickets against a product knowledge base and produce a prioritized ranked list with plain-English reasoning.
-
-CRITICAL RULE — REPORTER BIAS REMOVAL:
-The priority or severity label already on a ticket was assigned by the reporter, who has a vested interest in their own bugs being fixed first. Treat those existing labels as unreliable signals. You must derive severity and priority independently from the actual ticket content — description, reproduction steps, environment, comments, and KB context — not from what the reporter labelled it. If a reporter marked something P1 but the content describes a minor cosmetic issue, your output should reflect the true impact, not the reporter's label.
-
-You must respond with a valid JSON array only. No preamble, no explanation, no markdown fences. Just the raw JSON array. If a ticket has insufficient information to rank meaningfully, still include it but flag it in gap_flags and place it at the bottom of the ranking.
-
-INSTRUCTIONS
-For each bug, analyse it against the product knowledge base and return a JSON object with these exact fields:
-bug_id: string — the issue key from the input
-title: string — bug title from the input
-rank: number — 1 = fix first, no ties allowed
-priority: string — one of: P1, P2, P3, P4
-severity: string — one of: Critical, High, Medium, Low
-business_impact: string — 2-3 sentences, max 75 words. Sentence 1: state precisely what breaks and for whom. Sentence 2: quantify or characterise the scope (e.g. "Affects all users who..." or "Triggers on every attempt to..."). Sentence 3 (if applicable): state the downstream operational or revenue consequence. Be specific — no vague phrases like "negatively affects users" or "impacts the user experience".
-rationale: string — 3-4 sentences, max 120 words total. Sentence 1: name the specific KB field, critical flow, or uploaded document that influenced this rank — quote it by name (e.g. "This directly affects the 'User authentication' critical flow") or state "No KB context relevant". Sentence 2: explain why this rank position is correct — what about this bug makes it more or less urgent than its neighbours. Sentence 3: if your assigned severity differs from the reporter's original label, explain exactly why (e.g. "Reporter labelled Critical but no data loss or blocking behaviour is present — High is accurate"). Sentence 4 (if applicable): call out any escalation signals, ARR mentions, or recency signals from the ticket comments that reinforced the ranking.
-gap_flags: string[] — empty array if none. Use these exact string values when applicable:
-'Missing description', 'No reproduction steps', 'Missing environment info', 'Vague impact statement', 'Likely over-prioritised', 'Possible duplicate', 'Unknown reporter context'
-Note: 'Missing description', 'No reproduction steps', and 'Missing environment info' are quality flags that directly affect ticket actionability. Apply them strictly per the Gap Rules below — err on the side of flagging. Most real-world tickets are missing at least one of these.
-improved_description: string | null — When gap_flags contains at least one quality flag (Missing description, No reproduction steps, Missing environment info, or Vague impact statement): write an improved description a developer can act on immediately, structured as: (1) What is broken and what the visible symptom is. (2) Steps to reproduce (numbered if inferable, or "Steps unknown — reporter should clarify"). (3) Expected vs actual behaviour. Max 80 words. Return null ONLY if gap_flags has zero quality flags AND the ticket has explicit repro steps, environment info, and a clear description. Most tickets will NOT return null.
-
-GAP IDENTIFICATION RULES — apply these precisely when populating gap_flags. These rules are STRICT. When in doubt, flag. A false-positive flag is far less harmful than missing a real quality gap.
-
-Gap Rule 1 — Missing description:
-If the description field is absent, empty, or fewer than 10 words in total, flag as 'Missing description'. Additionally, rank this ticket LAST within its priority tier — it cannot be actioned without more information, regardless of how alarming the title sounds. A one-line title like "App is slow" with no description is ranked at the bottom of whichever tier its title suggests.
-
-Gap Rule 2 — No reproduction steps:
-Flag as 'No reproduction steps' unless the ticket contains EXPLICIT, SEQUENTIAL reproduction instructions that a developer could follow without any prior knowledge of the bug. The threshold is intentionally strict — apply this flag in ALL of the following cases:
-- No numbered or bulleted steps (e.g. "1. Go to X, 2. Click Y, 3. See error")
-- No clear trigger-action-result pattern (e.g. "When I do [specific action] on [specific screen/state], [exact failure] occurs")
-- Description only states the symptom or outcome ("Login is broken", "Payment fails", "The dashboard shows wrong data") without describing HOW to reach the failure state
-- Description uses vague triggers like "sometimes", "occasionally", "randomly", "intermittently" without a specific reproduction path
-- The description reads like a complaint or observation rather than a reproducible procedure
-
-The ONLY exception (self-evident): Do NOT flag if any developer could reproduce the bug in under 10 seconds purely from the title alone, with zero ambiguity — examples: "404 on /pricing page", "Typo: 'recieve' on signup button". If there is any ambiguity about environment, user state, data state, or navigation path, it is NOT self-evident — flag it.
-
-Gap Rule 3 — Missing environment info:
-Flag as 'Missing environment info' if the bug is plausibly environment-specific AND no environment details are provided. A bug is plausibly environment-specific if it involves: UI rendering, browser behaviour, mobile vs desktop, OS-specific paths, network conditions, account types, or subscription tiers. If the ticket has no mention of browser, OS, device, app version, environment (staging/prod), or account type — and the bug is not purely backend/data logic — flag it. Do not flag for purely backend bugs (e.g. "Payment webhook fails" does not need browser info).
-
-Gap Rule 4 — Possible duplicate:
-Compare every ticket title in the batch against every other. If two tickets have titles that are more than 70% similar in wording or describe the same failure mode in different words — flag both with 'Possible duplicate'. In the rationale for each, explicitly name the other ticket key (e.g. "Possible duplicate of FD-123"). Do not silently skip duplicates — flag both even if one appears more detailed.
-
-Gap Rule 5 — Unknown reporter context:
-If the reporter email is a personal address (e.g. gmail.com, yahoo.com, hotmail.com, outlook.com) or a clearly generic/non-company address — flag as 'Unknown reporter context' and note in the rationale that the reporter's organisational context is unknown, which reduces confidence in the severity assessment. Do not penalise the rank heavily for this alone, but do note the reduced confidence.
-
-EXPLICIT SCORING OVERRIDES — apply these before general scoring priorities. They are not guidelines; they are hard rules:
-
-Rule 1 — Security exploit hierarchy:
-Actively exploitable security vulnerabilities (authentication bypass, unauthorized data access, permission escalation, session hijacking) must ALWAYS rank above configuration or access management issues — even when both carry Critical severity. A bug that lets an attacker bypass 2FA or access other users' data is categorically more urgent than an admin losing their own access. Within security bugs, rank by exploitability: externally triggerable > requires account > requires physical access.
-For every security bug, the rationale field MUST answer three specific questions: (1) What data or capability is exposed — be precise, e.g. "exposes all project data for any workspace the guest has been invited to, including private roadmaps and client communications"; (2) Who could exploit it and how — e.g. "any guest user who knows or can guess a project URL, requiring no special tools or privileges"; (3) What is the blast radius — e.g. "affects all workspaces with guest users, estimated N% of enterprise accounts based on the ticket comments". Do not write generic security language — answer all three questions using content from the ticket.
-
-Rule 2 — Financial data integrity:
-Any bug that causes financial data corruption, incorrect calculations affecting audited statements, loss of billable hours records, or payroll errors must be treated as Critical severity regardless of how it was labelled by the reporter or in Jira. Silent data loss is worse than visible errors. If money figures or billing records are silently deleted or miscalculated, that is Critical.
-
-Rule 3 — Recency and escalation velocity:
-A bug reported weeks ago with zero escalation, no follow-up comments, and no customer mentions should rank lower than an otherwise identical bug reported recently with active customer impact. Recency alone is a weak signal, but recency combined with growing support volume, active escalation, or new customer mentions in comments is a strong signal. Check the created date and comments carefully.
-
-Rule 4 — ARR and churn signals in comments:
-When the comments field explicitly mentions: a customer name alongside an ARR value, a churn threat, a cancellation warning, a formal escalation from account management, or a specific dollar amount at risk — extract that signal and weight it explicitly in the business_impact field. Call it out by name (e.g. "Customer X ($Y ARR) has threatened cancellation"). Do not bury it in general phrasing.
-
-Rule 5 — Billing history vs. current period:
-Billing and invoicing bugs that affect only historical records (e.g. broken download of invoices older than 12 months, incorrect historical reporting) should rank Medium or lower. They cause friction but do not block current operations. Only elevate to High or above if the bug affects the current billing period, blocks payment processing, or prevents customers from paying or being paid today.
-
-General scoring priorities (apply after overrides above, in order of weight):
-1. Does this bug affect a critical user flow listed in the KB? If yes, rank higher.
-2. How severely does it break functionality — crash or data loss outranks degraded outranks cosmetic.
-3. Stakeholder urgency signals — a bug escalated by customer success from a paying customer carries more weight than an internal dev report.
-4. Sentiment signals in descriptions and comments — phrases like "blocking", "losing customers", "client escalation", "can't use", "very annoyed", "revenue impact" indicate real urgency. Weight these into impact scoring.
-5. How many users are affected — infer from description and comments.
-6. Ticket quality — vague tickets with no description rank lower.
-
-TIEBREAKER HIERARCHY — when two or more bugs reach the same composite score, resolve the tie using these rules in strict order. Move to the next rule only if the current rule still produces a tie:
-
-1. More users affected: whichever bug demonstrably affects a larger number of users (explicit counts, percentages, or "all users" language in description or comments) ranks higher. If one ticket says "affects 30% of mobile users" and another says "one customer reported", the first ranks higher.
-2. More recent created date: if user counts are equal or uninferable, the bug with the more recent created date ranks higher. Recency signals an active, unresolved issue.
-3. Active customer escalation in comments: if created dates are equal or absent, rank higher whichever has explicit escalation language in comments — account manager escalation, customer success flag, formal incident report request, or SLA credit demand.
-4. Higher ARR customer in comments: if escalation signals are equal, rank higher whichever mentions a larger ARR value or a larger seat count for the affected customer.
-
-If all four tiebreaker rules are exhausted and a tie still cannot be broken, use alphabetical order of bug_id as a final deterministic fallback — but this should be extremely rare.
-
-ABSOLUTE RULE — NO TIES: Every bug must have a unique rank integer. The final ranked list must be a strict ordering from 1 to N with no two bugs sharing the same rank number. Before returning your response, verify that all rank values are unique.
-
-When to use 'Likely over-prioritised' in gap_flags:
-Add this flag when a bug has a high reporter-assigned priority OR significant comment noise (many comments, strong language, escalations) BUT the actual content describes low real-world impact — cosmetic issues, edge cases affecting very few users, or problems with easy workarounds. This is the most politically useful signal you can give a PM.
-
-Return only the JSON array. No other text.`
+// Pass 1 system prompt is imported from @/lib/triage-prompts
+// Pass 2 (detail) lives in src/app/api/triage/detail/[bug_id]/route.ts
 
 // ─── Helper: column finder ───────────────────────────────────────────────────
 
@@ -317,19 +234,15 @@ BUGS TO PRIORITIZE
 ${bugsJson}`
 }
 
-// Bugs are split into batches to stay within the output token budget.
-// Anthropic prompt caching is enabled on the system prompt — batch 2+ reuse
-// the cached prompt, cutting per-call latency by 60-70%.
-// Prefill forces Claude to start its response with '[' for guaranteed JSON array output.
+// Two-pass architecture — Pass 1 (this route) only emits rank/priority/severity/
+// quick_reason/gap_flags. That's ~80 output tokens per bug instead of ~500, so
+// we can run much larger batches without hitting the time budget.
 //
-// Empirical timing on real Jira data: haiku generates ~75 output tokens/sec with
-// complex JSON. Each bug produces ~500 output tokens → 6.7s per bug of generation.
-//
-// BATCH_SIZE=8  → ~4 000 output tokens → ~53s per batch
-// MAX_CONCURRENT=10 → 250 bugs (32 batches) = ceil(32/10)=4 rounds × 53s ≈ 212s
-// That leaves a comfortable 90-second buffer inside Vercel's 300s limit.
-const BATCH_SIZE = 8
-const MAX_CONCURRENT_BATCHES = 10
+// BATCH_SIZE=25 → 25 × 80 = ~2 000 output tokens → ~27s per batch on haiku
+// MAX_CONCURRENT=5 → 250 bugs (10 batches) = ceil(10/5) = 2 rounds × 27s ≈ 55s
+// That's well under Vercel's 300s limit and ~5× faster than today's full-detail run.
+const BATCH_SIZE = 25
+const MAX_CONCURRENT_BATCHES = 5
 
 async function callClaudeBatch(
   anthropic: Anthropic,
@@ -365,7 +278,7 @@ async function callClaudeBatch(
         // cache_control on the system prompt: Anthropic caches the first 5 min
         // of identical prompts. Batch 1 warms the cache; batches 2-N pay only
         // for the per-batch user content, cutting per-call latency 60-70%.
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+        system: [{ type: 'text', text: RANK_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
         messages: [
           { role: 'user',      content: userPrompt },
           { role: 'assistant', content: '['        }, // prefill — forces JSON array output
@@ -514,19 +427,26 @@ async function storeTriage(
       || (orig?.description !== '[No description provided]' ? orig?.description : null)
 
     return {
-      run_id: run.id,
-      bug_id: bugId,
-      title: String(r.title || ''),
-      rank: Number(r.rank) || 999,
-      priority: String(r.priority || 'P4'),
-      severity: String(r.severity || 'Low'),
-      business_impact: String(r.business_impact || ''),
-      rationale: String(r.rationale || ''),
-      gap_flags: Array.isArray(r.gap_flags) ? r.gap_flags : [],
+      run_id:               run.id,
+      bug_id:               bugId,
+      title:                String(r.title || ''),
+      rank:                 Number(r.rank) || 999,
+      priority:             String(r.priority || 'P4'),
+      severity:             String(r.severity || 'Low'),
+      // NEW: short reason rendered in the main results list (Pass 1 output)
+      quick_reason:         r.quick_reason ? String(r.quick_reason) : null,
+      gap_flags:            Array.isArray(r.gap_flags) ? r.gap_flags : [],
+      // Detail fields stay NULL — they're populated lazily by /api/triage/detail
+      // when the user opens a bug in the results panel. detail_generated_at = NULL
+      // signals "not yet generated".
+      business_impact:      null,
+      rationale:            null,
+      improved_description: null,
+      detail_generated_at:  null,
+      // Original ticket data captured at upload time (preserved across runs)
       original_description: fullDesc || null,
       original_comments:    rawData?.comments || null,
-      reporter_priority: orig?.priority || null,
-      improved_description: r.improved_description ? String(r.improved_description) : null,
+      reporter_priority:    orig?.priority || null,
     }
   })
 

@@ -408,6 +408,15 @@ export default function ResultsPage() {
   const [loading, setLoading]   = useState(true)
   const [trimmedRows, setTrimmedRows] = useState<Record<string, string>[] | null>(null)
 
+  // Two-pass: tracks which bug_ids are currently fetching their long-form
+  // detail (business_impact / rationale / improved_description). A bug is in
+  // this set only while its POST /api/triage/detail call is in flight; once
+  // resolved the result is merged into `results` and `selected`.
+  const [detailLoading, setDetailLoading] = useState<Set<string>>(new Set())
+  // Bugs we've already requested in this session — prevents duplicate calls
+  // if the user clicks the same bug twice while it's still in flight.
+  const detailRequestedRef = useRef<Set<string>>(new Set())
+
   // Detail-pane state
   const [editMode, setEditMode]           = useState(false)
   const [editPriority, setEditPriority]   = useState('')
@@ -439,6 +448,63 @@ export default function ResultsPage() {
   }, [run_id])
 
   useEffect(() => { fetchRun() }, [fetchRun])
+
+  // ── Two-pass: lazy detail fetcher ────────────────────────────────────────
+  // Calls POST /api/triage/detail/[bug_id]; merges the response into both the
+  // `results` list and the live `selected` reference (if still that bug). Old
+  // runs have business_impact populated already and skip this entirely.
+  const fetchDetail = useCallback(async (bugId: string) => {
+    if (detailRequestedRef.current.has(bugId)) return
+    detailRequestedRef.current.add(bugId)
+    setDetailLoading(prev => { const next = new Set(prev); next.add(bugId); return next })
+    try {
+      const res = await fetch(`/api/triage/detail/${encodeURIComponent(bugId)}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ run_id }),
+      })
+      if (!res.ok) {
+        // Allow a retry on next click — clear from requested set
+        detailRequestedRef.current.delete(bugId)
+        return
+      }
+      const detail = await res.json() as {
+        business_impact:      string | null
+        rationale:            string | null
+        improved_description: string | null
+      }
+      const patch = {
+        business_impact:      detail.business_impact,
+        rationale:            detail.rationale,
+        improved_description: detail.improved_description,
+        detail_generated_at:  new Date().toISOString(),
+      }
+      setResults(prev => prev.map(r => r.bug_id === bugId ? { ...r, ...patch } : r))
+      setSelected(prev => prev && prev.bug_id === bugId ? { ...prev, ...patch } : prev)
+    } catch {
+      detailRequestedRef.current.delete(bugId)
+    } finally {
+      setDetailLoading(prev => { const next = new Set(prev); next.delete(bugId); return next })
+    }
+  }, [run_id])
+
+  // Auto-fetch detail when a bug is selected and its long-form fields are NULL.
+  // Old runs have business_impact populated already → skip.
+  useEffect(() => {
+    if (!selected) return
+    if (selected.business_impact != null) return  // already have detail (old run or cached)
+    fetchDetail(selected.bug_id)
+  }, [selected, fetchDetail])
+
+  // Prefetch detail for the top 5 bugs on first load — by the time the PM
+  // scans the list and clicks bug #1, its detail is usually already loaded.
+  useEffect(() => {
+    if (results.length === 0) return
+    const top = results.slice(0, 5).filter(r => r.business_impact == null)
+    top.forEach(r => fetchDetail(r.bug_id))
+    // Run only when the result set first loads — not on every state change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results.length > 0])
 
   useEffect(() => {
     if (!run_id || trimmedCount <= 0) return
@@ -788,6 +854,11 @@ export default function ResultsPage() {
                       <p className={`text-sm leading-tight ${r.pm_action === 'rejected' ? 'line-through text-black/30' : ''}`}>
                         {r.title}
                       </p>
+                      {r.quick_reason && (
+                        <p className="text-xs text-black/50 leading-snug mt-1 truncate">
+                          {r.quick_reason}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -860,13 +931,33 @@ export default function ResultsPage() {
                   {/* Business Impact */}
                   <div className="border border-gray-100 bg-gray-50 px-4 py-4">
                     <p className="text-xs font-mono uppercase tracking-widest text-black/35 mb-2" style={MONO}>Business Impact</p>
-                    <p className="text-sm text-black/90 leading-relaxed font-medium">{selected.business_impact}</p>
+                    {selected.business_impact != null ? (
+                      <p className="text-sm text-black/90 leading-relaxed font-medium">{selected.business_impact}</p>
+                    ) : detailLoading.has(selected.bug_id) ? (
+                      <div className="flex items-center gap-2 py-1">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-black/30" />
+                        <span className="text-sm text-black/40">Generating detail{selected.quick_reason ? `… (${selected.quick_reason})` : '…'}</span>
+                      </div>
+                    ) : (
+                      // Failed silently or not yet requested — show quick_reason as fallback
+                      <p className="text-sm text-black/60 leading-relaxed italic">{selected.quick_reason ?? 'Detail unavailable.'}</p>
+                    )}
                   </div>
 
                   {/* SenseBug AI Analysis */}
                   <div>
                     <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug AI Analysis</p>
-                    <p className="text-sm text-black/80 leading-relaxed">{selected.rationale}</p>
+                    {selected.rationale != null ? (
+                      <p className="text-sm text-black/80 leading-relaxed">{selected.rationale}</p>
+                    ) : detailLoading.has(selected.bug_id) ? (
+                      <div className="space-y-2 animate-pulse">
+                        <div className="h-3 bg-gray-100 w-full"></div>
+                        <div className="h-3 bg-gray-100 w-11/12"></div>
+                        <div className="h-3 bg-gray-100 w-3/4"></div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-black/40 italic">Open this bug to generate the full analysis.</p>
+                    )}
                   </div>
 
                   {/* Suggested Rewrite (only for tickets with quality issues) */}
