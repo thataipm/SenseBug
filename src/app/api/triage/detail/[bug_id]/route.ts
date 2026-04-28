@@ -2,72 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidOrigin } from '@/lib/csrf'
-import { stripJiraMarkup } from '@/lib/jira'
-import { DETAIL_SYSTEM_PROMPT } from '@/lib/triage-prompts'
+import { generateDetailForBug } from '@/lib/triage-detail'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const maxDuration = 60
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-// ── Helper: build the user prompt for the detail call ────────────────────────
-function buildDetailPrompt(args: {
-  kb: Record<string, string>
-  retrievedChunks: string
-  bug: {
-    bug_id: string
-    title: string
-    rank: number
-    priority: string
-    severity: string
-    quick_reason: string | null
-    gap_flags: string[]
-    reporter_priority: string | null
-    description: string
-    comments: string | null
-  }
-}): string {
-  const { kb, retrievedChunks, bug } = args
-  return `PRODUCT KNOWLEDGE BASE
-Product overview: ${kb.product_overview}
-Critical user flows: ${kb.critical_flows}
-Product areas / modules: ${kb.product_areas}
-Relevant documentation: ${retrievedChunks}
-
-BUG TICKET
-Bug ID: ${bug.bug_id}
-Title: ${bug.title}
-Reporter priority: ${bug.reporter_priority ?? 'N/A'}
-Description: ${bug.description || '[No description provided]'}
-${bug.comments ? `Comments: ${bug.comments}` : ''}
-
-ASSIGNED RANKING (from previous pass — do not re-derive, explain why this is correct)
-Rank: ${bug.rank}
-Priority: ${bug.priority}
-Severity: ${bug.severity}
-Quick reason: ${bug.quick_reason ?? ''}
-Gap flags: ${bug.gap_flags.length > 0 ? bug.gap_flags.join(', ') : 'none'}
-
-Generate the detail (business_impact, rationale, improved_description) for this single bug.`
-}
-
-// ── Helper: tolerant JSON object parser ──────────────────────────────────────
-function parseDetailJson(raw: string): {
-  business_impact?: string
-  rationale?: string
-  improved_description?: string | null
-} {
-  try { return JSON.parse(raw) } catch {}
-  // Append closing brace — handles responses truncated before '}'
-  try { return JSON.parse(raw + '}') } catch {}
-  // Find the last quote-comma and close the object after it
-  const lastBrace = raw.lastIndexOf('}')
-  if (lastBrace > 0) {
-    try { return JSON.parse(raw.slice(0, lastBrace + 1)) } catch {}
-  }
-  throw new SyntaxError('Detail response was not valid JSON')
-}
 
 export async function POST(
   request: NextRequest,
@@ -162,73 +103,45 @@ export async function POST(
     // Non-fatal — proceed without vector context
   }
 
-  // ── Strip Jira markup from stored raw text before sending to Claude ────────
-  const cleanDesc     = result.original_description ? stripJiraMarkup(result.original_description).slice(0, 4000) : ''
-  const cleanComments = result.original_comments    ? stripJiraMarkup(result.original_comments).slice(0, 2000)    : ''
-
-  const userPrompt = buildDetailPrompt({
-    kb: kbData,
-    retrievedChunks,
-    bug: {
-      bug_id:            result.bug_id,
-      title:             result.title,
-      rank:              result.rank,
-      priority:          result.priority,
-      severity:          result.severity,
-      quick_reason:      result.quick_reason,
-      gap_flags:         Array.isArray(result.gap_flags) ? result.gap_flags : [],
-      reporter_priority: result.reporter_priority,
-      description:       cleanDesc,
-      comments:          cleanComments || null,
-    },
-  })
-
   // ── Call Sonnet (high quality) for the detail ──────────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'AI not configured' }, { status: 500 })
 
   const anthropic = new Anthropic({ apiKey })
-  // Sonnet by default for detail; can be overridden per-env if cost is a concern.
+  // Sonnet by default for on-demand detail; bulk export-fill uses Haiku via
+  // ANTHROPIC_DETAIL_BULK_MODEL.
   const model = process.env.ANTHROPIC_DETAIL_MODEL ?? 'claude-sonnet-4-5-20250929'
 
-  let message: Awaited<ReturnType<typeof anthropic.messages.create>>
+  let detail
   try {
-    message = await anthropic.messages.create({
+    detail = await generateDetailForBug({
+      anthropic,
       model,
-      max_tokens:  1500,
-      temperature: 0,
-      // Cache the system prompt — when a user opens 5 bugs in a row, batches
-      // 2-5 reuse the cached prompt (~75% input-token saving on those calls).
-      system:   [{ type: 'text', text: DETAIL_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-      messages: [
-        { role: 'user',      content: userPrompt },
-        { role: 'assistant', content: '{'        }, // prefill — forces JSON object output
-      ],
+      kb: kbData,
+      retrievedChunks,
+      bug: {
+        bug_id:               result.bug_id,
+        title:                result.title,
+        rank:                 result.rank,
+        priority:             result.priority,
+        severity:             result.severity,
+        quick_reason:         result.quick_reason,
+        gap_flags:            Array.isArray(result.gap_flags) ? result.gap_flags : [],
+        reporter_priority:    result.reporter_priority,
+        original_description: result.original_description,
+        original_comments:    result.original_comments,
+      },
     })
-  } catch (apiErr) {
-    console.error('[detail] Claude API error:', apiErr instanceof Error ? apiErr.message : apiErr)
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      console.error('[detail] JSON parse failed for bug', bug_id, ':', e.message)
+      return NextResponse.json({ error: 'AI returned a malformed response. Please try again.' }, { status: 500 })
+    }
+    console.error('[detail] Claude API error:', e instanceof Error ? e.message : e)
     return NextResponse.json({ error: 'AI request failed. Please try again.' }, { status: 500 })
   }
 
-  if (message.stop_reason === 'max_tokens') {
-    console.warn('[detail] Sonnet output hit max_tokens for bug', bug_id)
-  }
-
-  const raw = '{' + (message.content[0].type === 'text' ? message.content[0].text : '')
-
-  let parsed: { business_impact?: string; rationale?: string; improved_description?: string | null }
-  try {
-    parsed = parseDetailJson(raw)
-  } catch (parseErr) {
-    console.error('[detail] JSON parse failed:', raw.slice(0, 300), parseErr)
-    return NextResponse.json({ error: 'AI returned a malformed response. Please try again.' }, { status: 500 })
-  }
-
-  const business_impact      = String(parsed.business_impact ?? '')
-  const rationale            = String(parsed.rationale ?? '')
-  const improved_description = parsed.improved_description == null
-    ? null
-    : String(parsed.improved_description)
+  const { business_impact, rationale, improved_description } = detail
 
   // ── Persist for cache hits on subsequent opens ─────────────────────────────
   const { error: updateErr } = await supabase
