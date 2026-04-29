@@ -430,6 +430,7 @@ export default function ResultsPage() {
   const [showRewrite, setShowRewrite]     = useState(true)
 
   // List state
+  const [exportLoading, setExportLoading]       = useState(false)
   const [bulkLoading, setBulkLoading]           = useState(false)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
   const [search, setSearch]                     = useState('')
@@ -549,7 +550,28 @@ export default function ResultsPage() {
     setActionLoading(false)
   }
 
-  const handleDownload = () => { window.open(`/api/triage/export/${run_id}`, '_blank') }
+  const handleDownload = async () => {
+    if (exportLoading) return
+    setExportLoading(true)
+    try {
+      const res = await fetch(`/api/triage/export/${run_id}`)
+      if (!res.ok) return
+      const blob = await res.blob()
+      const disposition = res.headers.get('Content-Disposition') ?? ''
+      const match = disposition.match(/filename="([^"]+)"/)
+      const filename = match ? match[1] : `sensebug-export-${run_id}.csv`
+      const url = URL.createObjectURL(blob)
+      const a   = document.createElement('a')
+      a.href     = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      // Non-fatal — user can retry
+    } finally {
+      setExportLoading(false)
+    }
+  }
 
   const handleDownloadTrimmed = () => {
     if (!trimmedRows?.length) return
@@ -688,10 +710,14 @@ export default function ResultsPage() {
           <button
             data-testid="download-csv-button"
             onClick={handleDownload}
-            className="flex items-center gap-2 border border-black px-4 py-2 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150"
+            disabled={exportLoading}
+            className="flex items-center gap-2 border border-black px-4 py-2 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Download className="w-4 h-4" strokeWidth={2} />
-            Download CSV
+            {exportLoading
+              ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
+              : <Download className="w-4 h-4" strokeWidth={2} />
+            }
+            {exportLoading ? 'Exporting…' : 'Download CSV'}
           </button>
         </div>
       </header>
