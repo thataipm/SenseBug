@@ -3,9 +3,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { BacklogEntry } from '@/types'
 import { stripJiraMarkup } from '@/lib/jira'
+import { createClient } from '@/lib/supabase/client'
 import {
   Check, X, Edit2, ChevronLeft, ChevronDown, ChevronRight,
-  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox,
+  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox, Zap,
 } from 'lucide-react'
 
 const MONO    = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
@@ -142,6 +143,7 @@ export default function BacklogPage() {
   const [entries, setEntries]   = useState<BacklogEntry[]>([])
   const [selected, setSelected] = useState<BacklogEntry | null>(null)
   const [loading, setLoading]   = useState(true)
+  const [newBugToast, setNewBugToast] = useState<BacklogEntry | null>(null)
 
   // Detail loading — same pattern as results page
   const [detailLoading, setDetailLoading] = useState<Set<string>>(new Set())
@@ -175,6 +177,48 @@ export default function BacklogPage() {
   }, [selected])
 
   useEffect(() => { fetchEntries() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Supabase Realtime — prepend bugs arriving via Jira webhook ─────────────
+  useEffect(() => {
+    const supabase = createClient()
+    // Get the current user's ID so the Realtime filter matches only their rows.
+    supabase.auth.getUser().then(({ data }) => {
+      const userId = data.user?.id
+      if (!userId) return
+
+      const channel = supabase
+        .channel('backlog-inserts')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'backlog', filter: `user_id=eq.${userId}` },
+          (payload) => {
+            const newEntry = payload.new as BacklogEntry
+            setEntries(prev => {
+              // Deduplicate — the initial fetch may have already included this row
+              if (prev.some(e => e.id === newEntry.id)) return prev
+              // Insert at the position matching its priority (keep list sorted)
+              const PRIO: Record<string, number> = { P1: 0, P2: 1, P3: 2, P4: 3 }
+              const np = PRIO[newEntry.priority ?? ''] ?? 9
+              const idx = prev.findIndex(e => (PRIO[e.priority ?? ''] ?? 9) > np)
+              const next = [...prev]
+              next.splice(idx === -1 ? next.length : idx, 0, newEntry)
+              return next
+            })
+            setNewBugToast(newEntry)
+          }
+        )
+        .subscribe()
+
+      return () => { supabase.removeChannel(channel) }
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-dismiss toast after 6 seconds
+  useEffect(() => {
+    if (!newBugToast) return
+    const t = setTimeout(() => setNewBugToast(null), 6000)
+    return () => clearTimeout(t)
+  }, [newBugToast])
 
   // ── Lazy detail fetching — identical to results page logic ─────────────────
   const fetchDetail = useCallback(async (entry: BacklogEntry) => {
@@ -291,6 +335,20 @@ export default function BacklogPage() {
 
   return (
     <div className="h-screen bg-white flex flex-col" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
+
+      {/* ── Realtime new-bug toast ── */}
+      {newBugToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-start gap-3 bg-black text-white px-4 py-3 shadow-lg max-w-sm animate-in slide-in-from-bottom-4 duration-300">
+          <Zap className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-mono uppercase tracking-widest text-white/50 mb-0.5" style={MONO}>New bug — {newBugToast.priority}</p>
+            <p className="text-sm font-medium truncate">{newBugToast.title}</p>
+          </div>
+          <button onClick={() => setNewBugToast(null)} className="text-white/40 hover:text-white flex-shrink-0 ml-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <header className="border-b border-gray-200 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0">

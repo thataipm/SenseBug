@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { isValidOrigin } from '@/lib/csrf'
+import { updateJiraPriority } from '@/lib/jira-api'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,9 +66,8 @@ export async function GET(request: NextRequest) {
 }
 
 // PATCH /api/backlog
-// Updates a backlog entry — handles both PM verdicts and detail caching.
-// Body: { id, action?, edited_priority?, edited_severity?, rejection_reason?,
-//         business_impact?, rationale?, improved_description?, detail_generated_at? }
+// Updates a backlog entry — handles PM verdicts.
+// Body: { id, action, edited_priority?, edited_severity?, rejection_reason? }
 export async function PATCH(request: NextRequest) {
   if (!isValidOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -80,10 +80,10 @@ export async function PATCH(request: NextRequest) {
 
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
 
-  // Verify ownership
+  // Verify ownership and fetch fields needed for Jira write-back
   const { data: entry } = await supabase
     .from('backlog')
-    .select('id')
+    .select('id, bug_id, priority')
     .eq('id', id)
     .eq('user_id', user.id)
     .single()
@@ -113,5 +113,38 @@ export async function PATCH(request: NextRequest) {
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Jira write-back — fire-and-forget on approve/edit.
+  // Only fires when a Jira integration exists for this user.
+  if (action === 'approved' || action === 'edited') {
+    const effectivePriority = action === 'edited' && edited_priority
+      ? String(edited_priority)
+      : String(entry.priority ?? '')
+
+    supabase
+      .from('integrations')
+      .select('site_url, email, api_token, project_key')
+      .eq('user_id', user.id)
+      .eq('provider', 'jira')
+      .single()
+      .then(({ data: integration }) => {
+        if (!integration) return
+
+        // If a project_key filter is set, only write back if bug_id starts with that key
+        if (integration.project_key) {
+          const prefix = String(integration.project_key).toUpperCase()
+          if (!String(entry.bug_id).toUpperCase().startsWith(prefix + '-')) return
+        }
+
+        updateJiraPriority(
+          integration.site_url,
+          integration.email,
+          integration.api_token,
+          entry.bug_id,
+          effectivePriority
+        ).catch(e => console.error('[backlog] Jira write-back failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
+      })
+  }
+
   return NextResponse.json({ success: true })
 }

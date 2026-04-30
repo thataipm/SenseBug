@@ -62,6 +62,17 @@ export interface UserPlanInfo {
   runs_limit: number
 }
 
+export interface Integration {
+  id: string
+  user_id: string
+  provider: 'jira'
+  site_url: string
+  email: string
+  project_key: string | null
+  webhook_secret: string
+  created_at: string
+}
+
 export interface BacklogEntry {
   id: string
   user_id: string

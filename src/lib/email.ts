@@ -280,7 +280,39 @@ export async function sendWeeklyDigestEmail(params: {
   }
 }
 
-// ─── 6. Renewal reminder (sent by cron 3 days before next_billing_date) ───────
+// ─── 6. P1 bug alert (sent when Jira webhook delivers a P1-ranked bug) ──────────
+
+export async function sendP1AlertEmail(params: {
+  to: string
+  bugId: string
+  title: string
+  quickReason: string | null
+  severity: string
+}) {
+  const { to, bugId, title, quickReason, severity } = params
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: `P1 bug arrived: ${bugId} — action required`,
+      html: emailShell(`
+        <div style="background: #fff1f2; border: 1px solid #fecaca; padding: 14px 20px; margin-bottom: 24px;">
+          <span style="font-size: 11px; font-family: monospace; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.08em;">P1 · ${severity}</span>
+        </div>
+        <h1 style="font-size: 20px; font-weight: 800; margin: 0 0 8px; line-height: 1.3;">${title}</h1>
+        <p style="font-size: 11px; font-family: monospace; color: #999; margin: 0 0 20px;">${bugId}</p>
+        ${quickReason ? `
+        <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 28px;">${quickReason}</p>
+        ` : ''}
+        ${ctaButton(`${APP_URL}/backlog`, 'Review in backlog →')}
+      `),
+    })
+  } catch (err) {
+    console.error('[email] sendP1AlertEmail error:', err instanceof Error ? err.message : err)
+  }
+}
+
+// ─── 7. Renewal reminder (sent by cron 3 days before next_billing_date) ───────
 
 export async function sendRenewalReminderEmail(params: {
   to: string
