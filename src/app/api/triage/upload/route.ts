@@ -6,6 +6,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidOrigin } from '@/lib/csrf'
 import { stripJiraMarkup } from '@/lib/jira'
 import { RANK_SYSTEM_PROMPT } from '@/lib/triage-prompts'
+import { computeHealthScore, metricsFromResults } from '@/lib/health-score'
 import Papa from 'papaparse'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
@@ -743,6 +744,37 @@ export async function POST(request: NextRequest) {
       .then(({ error }) => {
         if (error) console.error('[triage] Failed to update usage counters:', error)
       })
+
+    // Health snapshot — fire-and-forget. Computed from the in-memory results so
+    // we don't need an extra DB round-trip. Failures are logged but never surfaced
+    // to the user.
+    ;(async () => {
+      try {
+        const metrics = metricsFromResults(results)
+        const scored  = computeHealthScore(metrics)
+        const { error: snapErr } = await supabase
+          .from('backlog_health_snapshots')
+          .insert({
+            user_id:             user.id,
+            run_id:              run.id,
+            score:               scored.score,
+            total_bugs:          scored.total_bugs,
+            p1_count:            scored.p1_count,
+            p2_count:            scored.p2_count,
+            critical_count:      scored.critical_count,
+            flagged_count:       scored.flagged_count,
+            missing_repro_count: scored.missing_repro_count,
+            duplicate_count:     scored.duplicate_count,
+            over_pri_count:      scored.over_pri_count,
+            p1_rate:             scored.p1_rate,
+            quality_flag_rate:   scored.quality_flag_rate,
+            noise_rate:          scored.noise_rate,
+          })
+        if (snapErr) console.error('[triage] Failed to store health snapshot:', snapErr.message)
+      } catch (e) {
+        console.error('[triage] Health snapshot error:', e instanceof Error ? e.message : e)
+      }
+    })()
   }
 
   return NextResponse.json({

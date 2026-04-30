@@ -208,7 +208,79 @@ export async function sendPaymentFailedEmail(params: {
   }
 }
 
-// ─── 5. Renewal reminder (sent by cron 3 days before next_billing_date) ───────
+// ─── 5. Weekly backlog digest (sent every Monday 08:00 UTC by cron) ──────────
+
+export async function sendWeeklyDigestEmail(params: {
+  to: string
+  score: number
+  scoreDelta: number | null    // null if no previous snapshot to compare
+  totalBugs: number
+  p1Count: number
+  p2Count: number
+  qualityFlagRate: number      // integer %
+  topP1Bugs: Array<{ bug_id: string; title: string; quick_reason: string | null }>
+  weekLabel: string            // e.g. "April 28, 2026"
+}) {
+  const { to, score, scoreDelta, totalBugs, p1Count, p2Count, qualityFlagRate, topP1Bugs, weekLabel } = params
+
+  const scoreColor = score >= 70 ? '#16a34a' : score >= 40 ? '#d97706' : '#dc2626'
+  const scoreWord  = score >= 70 ? 'Healthy' : score >= 40 ? 'Needs attention' : 'At risk'
+
+  const deltaHtml = scoreDelta !== null
+    ? `<span style="font-size: 13px; color: ${scoreDelta >= 0 ? '#16a34a' : '#dc2626'}; margin-left: 8px;">${scoreDelta >= 0 ? '▲' : '▼'} ${Math.abs(scoreDelta)} vs last week</span>`
+    : ''
+
+  const p1SectionHtml = topP1Bugs.length > 0
+    ? `<p style="color:#555; font-size:14px; font-weight:600; margin: 24px 0 10px;">Top unreviewed P1s</p>
+       <div style="border:1px solid #e5e5e5; background:#fff9f9;">
+         ${topP1Bugs.map(b => `
+           <div style="padding:12px 16px; border-bottom:1px solid #f0f0f0;">
+             <span style="font-size:11px; font-family:monospace; color:#dc2626; font-weight:700;">P1 · ${b.bug_id}</span>
+             <p style="margin:4px 0 0; font-size:14px; font-weight:600; color:#111;">${b.title}</p>
+             ${b.quick_reason ? `<p style="margin:3px 0 0; font-size:13px; color:#777;">${b.quick_reason}</p>` : ''}
+           </div>`).join('')}
+       </div>`
+    : ''
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: `Your SenseBug weekly — ${score}/100 · ${weekLabel}`,
+      html: emailShell(`
+        <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 4px;">Weekly backlog digest.</h1>
+        <p style="color: #777; font-size: 13px; margin: 0 0 24px;">${weekLabel}</p>
+
+        <div style="background: #f9f9f9; border: 1px solid #e5e5e5; padding: 20px 24px; margin-bottom: 24px;">
+          <p style="margin: 0 0 6px; font-size: 11px; font-family: monospace; text-transform: uppercase; letter-spacing: 0.08em; color: #999;">Backlog health</p>
+          <div style="display: flex; align-items: baseline; gap: 0;">
+            <span style="font-size: 48px; font-weight: 900; color: ${scoreColor}; line-height: 1;">${score}</span>
+            <span style="font-size: 20px; font-weight: 600; color: ${scoreColor}; margin-left: 2px;">/100</span>
+            ${deltaHtml}
+          </div>
+          <p style="margin: 6px 0 0; font-size: 13px; color: ${scoreColor}; font-weight: 600;">${scoreWord}</p>
+        </div>
+
+        ${receiptTable([
+          { label: 'Bugs in last run',   value: String(totalBugs) },
+          { label: 'P1 bugs',            value: String(p1Count) },
+          { label: 'P2 bugs',            value: String(p2Count) },
+          { label: 'Quality flag rate',  value: `${qualityFlagRate}%` },
+        ])}
+
+        ${p1SectionHtml}
+
+        <div style="margin-top: 28px;">
+          ${ctaButton(`${APP_URL}/insights`, 'See full breakdown →')}
+        </div>
+      `),
+    })
+  } catch (err) {
+    console.error('[email] sendWeeklyDigestEmail error:', err instanceof Error ? err.message : err)
+  }
+}
+
+// ─── 6. Renewal reminder (sent by cron 3 days before next_billing_date) ───────
 
 export async function sendRenewalReminderEmail(params: {
   to: string

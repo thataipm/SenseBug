@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { setPendingFile } from '@/lib/pending-upload'
 import { TriageRun } from '@/types'
-import { Upload, Loader2, Clock, ChevronRight, AlertTriangle, Trash2, Sparkles } from 'lucide-react'
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { Upload, Loader2, Clock, ChevronRight, AlertTriangle, Trash2, Sparkles, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
+import { scoreLabel, scoreColor } from '@/lib/health-score'
 
 function PriorityBar({ counts }: { counts: { P1: number; P2: number; P3: number; P4: number } }) {
   const total = counts.P1 + counts.P2 + counts.P3 + counts.P4
@@ -54,9 +55,21 @@ interface PlanInfo {
   bugs_analyzed_this_month: number
 }
 
+interface HealthSnapshot {
+  score: number
+  computed_at: string
+  p1_rate: number
+  quality_flag_rate: number
+  noise_rate: number
+  total_bugs: number
+  p1_count: number
+  flagged_count: number
+}
+
 function DashboardContent() {
   const [runs, setRuns] = useState<TriageRun[]>([])
   const [plan, setPlan] = useState<PlanInfo | null>(null)
+  const [healthSnapshots, setHealthSnapshots] = useState<HealthSnapshot[]>([])
   const [kbEmpty, setKbEmpty] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -68,10 +81,11 @@ function DashboardContent() {
   const kbSkipped = searchParams.get('kb_skipped') === '1'
 
   const fetchData = useCallback(async () => {
-    const [runsRes, planRes, kbRes] = await Promise.all([
+    const [runsRes, planRes, kbRes, healthRes] = await Promise.all([
       fetch('/api/triage/runs'),
       fetch('/api/plan'),
       fetch('/api/kb'),
+      fetch('/api/health-score'),
     ])
     if (kbRes.ok) {
       const kb = await kbRes.json()
@@ -80,6 +94,7 @@ function DashboardContent() {
     }
     if (runsRes.ok) setRuns(await runsRes.json())
     if (planRes.ok) setPlan(await planRes.json())
+    if (healthRes.ok) setHealthSnapshots(await healthRes.json())
     setLoading(false)
   }, [router])
 
@@ -187,6 +202,73 @@ function DashboardContent() {
           </button>
           <input ref={fileRef} type="file" accept=".csv,.tsv,.xlsx,.xls,.txt" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
         </div>
+
+        {/* Health Score card — only shown once there's at least one snapshot */}
+        {healthSnapshots.length > 0 && (() => {
+          const current  = healthSnapshots[0]
+          const previous = healthSnapshots[1] ?? null
+          const delta    = previous ? current.score - previous.score : null
+          const colors   = scoreColor(current.score)
+          const label    = scoreLabel(current.score)
+          const sparkData = [...healthSnapshots].reverse().map((s, i) => ({ i, score: s.score }))
+
+          return (
+            <div className={`border ${colors.border} ${colors.bg} px-5 py-5 mb-6 flex items-center gap-6 flex-wrap sm:flex-nowrap`}>
+              {/* Score */}
+              <div className="flex-shrink-0">
+                <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Backlog health</p>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-4xl font-black tracking-tight ${colors.text}`} style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{current.score}</span>
+                  <span className="text-base text-black/40">/100</span>
+                  {delta !== null && (
+                    <span className={`flex items-center gap-0.5 text-xs font-mono font-semibold ${delta > 0 ? 'text-green-600' : delta < 0 ? 'text-red-600' : 'text-black/40'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                      {delta > 0 ? <TrendingUp className="w-3 h-3" strokeWidth={2.5} /> : delta < 0 ? <TrendingDown className="w-3 h-3" strokeWidth={2.5} /> : <Minus className="w-3 h-3" strokeWidth={2.5} />}
+                      {delta > 0 ? '+' : ''}{delta}
+                    </span>
+                  )}
+                </div>
+                <p className={`text-xs font-mono font-semibold mt-0.5 ${colors.text}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{label}</p>
+              </div>
+
+              {/* Breakdown pills */}
+              <div className="flex-1 min-w-0 space-y-1.5">
+                {[
+                  { label: 'P1 concentration', pct: current.p1_rate,          warn: current.p1_rate > 15 },
+                  { label: 'Quality flags',    pct: current.quality_flag_rate, warn: current.quality_flag_rate > 40 },
+                  { label: 'Noise rate',       pct: current.noise_rate,        warn: current.noise_rate > 20 },
+                ].map(m => (
+                  <div key={m.label} className="flex items-center gap-2">
+                    <span className="text-xs text-black/50 w-32 flex-shrink-0">{m.label}</span>
+                    <div className="flex-1 h-1 bg-black/10 overflow-hidden">
+                      <div className={`h-full ${m.warn ? 'bg-red-400' : 'bg-black/30'}`} style={{ width: `${Math.min(100, m.pct)}%` }} />
+                    </div>
+                    <span className={`text-xs font-mono tabular-nums flex-shrink-0 ${m.warn ? 'text-red-600' : 'text-black/50'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{m.pct}%</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Sparkline */}
+              {sparkData.length >= 2 && (
+                <div className="flex-shrink-0 hidden sm:block">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Trend</p>
+                  <ResponsiveContainer width={80} height={40}>
+                    <LineChart data={sparkData}>
+                      <Line type="monotone" dataKey="score" stroke={current.score >= 70 ? '#16a34a' : current.score >= 40 ? '#d97706' : '#dc2626'} strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              <Link
+                href="/insights"
+                className="text-xs font-mono text-black/55 hover:text-black border border-black/20 hover:border-black px-3 py-1.5 transition-colors duration-150 whitespace-nowrap flex-shrink-0"
+                style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+              >
+                Full breakdown →
+              </Link>
+            </div>
+          )
+        })()}
 
         {/* Usage meter */}
         {plan && (

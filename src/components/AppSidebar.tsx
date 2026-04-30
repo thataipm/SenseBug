@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, Clock, BookOpen, User, LifeBuoy, LogOut, Zap } from 'lucide-react'
+import { LayoutDashboard, Clock, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2 } from 'lucide-react'
 
 const NAV = [
   { href: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard'       },
+  { href: '/insights',    icon: BarChart2,       label: 'Insights'         },
   { href: '/historyRun',  icon: Clock,           label: 'History'          },
   { href: '/settings',    icon: BookOpen,        label: 'Knowledge Base'   },
   { href: '/account',     icon: User,            label: 'Account'          },
