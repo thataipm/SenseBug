@@ -160,6 +160,23 @@ export async function POST(
     console.error('[detail] Failed to cache detail in DB:', updateErr.message)
   }
 
+  // Keep the backlog row in sync — fire-and-forget.
+  // Works for detail triggered from both the results page and the backlog page.
+  // If no backlog row exists yet (pre-Phase 2 run), this is a silent no-op.
+  supabase
+    .from('backlog')
+    .update({
+      business_impact,
+      rationale,
+      improved_description,
+      detail_generated_at: new Date().toISOString(),
+    })
+    .eq('user_id', user.id)
+    .eq('bug_id', bug_id)
+    .then(({ error: bErr }) => {
+      if (bErr) console.error('[detail] backlog sync error:', bErr.message)
+    })
+
   return NextResponse.json({
     business_impact,
     rationale,

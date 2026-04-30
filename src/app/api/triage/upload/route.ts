@@ -775,6 +775,48 @@ export async function POST(request: NextRequest) {
         console.error('[triage] Health snapshot error:', e instanceof Error ? e.message : e)
       }
     })()
+
+    // Backlog upsert — fire-and-forget. Deduplicates bugs by user_id+bug_id across runs.
+    // On conflict we update triage fields only — pm_action, detail, and first_seen_at
+    // are intentionally excluded so PM verdicts and cached detail survive re-uploads.
+    ;(async () => {
+      try {
+        const now = new Date().toISOString()
+        const backlogRows = results.map((r: {
+          bug_id: string; title: string; rank: number; priority: string; severity: string
+          quick_reason: string | null; gap_flags: string[]
+          original_description: string | null; original_comments: string | null
+          reporter_priority: string | null
+        }) => ({
+          user_id:             user.id,
+          bug_id:              r.bug_id,
+          title:               r.title,
+          rank:                r.rank,
+          priority:            r.priority,
+          severity:            r.severity,
+          quick_reason:        r.quick_reason,
+          gap_flags:           r.gap_flags ?? [],
+          original_description: r.original_description,
+          original_comments:   r.original_comments,
+          reporter_priority:   r.reporter_priority,
+          source_run_id:       run.id,
+          last_seen_at:        now,
+          // first_seen_at is set by the DB default on INSERT and not touched on UPDATE
+        }))
+
+        // Supabase upsert only updates the columns present in the row object on conflict.
+        // Fields not listed here (pm_action, edited_*, rejection_reason, business_impact,
+        // rationale, improved_description, detail_generated_at, first_seen_at) are preserved.
+        const { error: upsertErr } = await supabase
+          .from('backlog')
+          .upsert(backlogRows, { onConflict: 'user_id,bug_id', ignoreDuplicates: false })
+
+        if (upsertErr) console.error('[triage] Backlog upsert error:', upsertErr.message)
+        else console.log(`[triage] Backlog upserted ${backlogRows.length} bugs for run ${run.id}`)
+      } catch (e) {
+        console.error('[triage] Backlog upsert failed:', e instanceof Error ? e.message : e)
+      }
+    })()
   }
 
   return NextResponse.json({

@@ -29,10 +29,10 @@ export async function PATCH(request: NextRequest) {
     update.rejection_reason = rejection_reason
   }
 
-  // Verify ownership via run
+  // Verify ownership via run — also fetch bug_id so we can sync the backlog
   const { data: result } = await supabase
     .from('triage_results')
-    .select('id, run_id')
+    .select('id, run_id, bug_id')
     .eq('id', result_id)
     .single()
 
@@ -54,5 +54,17 @@ export async function PATCH(request: NextRequest) {
     .eq('id', result_id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Keep backlog in sync — fire-and-forget so a missing backlog row (pre-Phase 2
+  // runs) doesn't cause a user-visible error.
+  supabase
+    .from('backlog')
+    .update(update)
+    .eq('user_id', user.id)
+    .eq('bug_id', result.bug_id)
+    .then(({ error: bErr }) => {
+      if (bErr) console.error('[verdict] backlog sync error:', bErr.message)
+    })
+
   return NextResponse.json({ success: true })
 }

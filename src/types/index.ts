@@ -61,3 +61,29 @@ export interface UserPlanInfo {
   monthly_runs_count: number
   runs_limit: number
 }
+
+export interface BacklogEntry {
+  id: string
+  user_id: string
+  bug_id: string
+  title: string
+  rank: number | null
+  priority: 'P1' | 'P2' | 'P3' | 'P4' | null
+  severity: 'Critical' | 'High' | 'Medium' | 'Low' | null
+  quick_reason: string | null
+  gap_flags: string[]
+  business_impact: string | null
+  rationale: string | null
+  improved_description: string | null
+  detail_generated_at: string | null
+  original_description: string | null
+  original_comments: string | null
+  reporter_priority: string | null
+  pm_action: 'approved' | 'edited' | 'rejected' | null
+  edited_priority: string | null
+  edited_severity: string | null
+  rejection_reason: string | null
+  source_run_id: string | null
+  first_seen_at: string
+  last_seen_at: string
+}
