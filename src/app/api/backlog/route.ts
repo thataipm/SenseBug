@@ -11,18 +11,31 @@ const PRIORITY_ORDER: Record<string, number> = { P1: 0, P2: 1, P3: 2, P4: 3 }
 // GET /api/backlog
 // Returns all backlog entries for the user ordered by priority → rank.
 // Query params:
-//   priority   — filter to a single priority (P1 / P2 / P3 / P4)
-//   status     — 'unreviewed' | 'approved' | 'rejected' | 'edited' | 'all' (default all)
-//   search     — substring match against bug_id and title (case-insensitive, server-side)
+//   priority    — filter to a single priority (P1 / P2 / P3 / P4)
+//   status      — 'unreviewed' | 'approved' | 'rejected' | 'edited' | 'all' (default all)
+//   search      — substring match against bug_id and title (case-insensitive, server-side)
+//   count_only  — if 'true', returns { count: N } without fetching full rows (used by sidebar badge)
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
-  const priority = searchParams.get('priority')
-  const status   = searchParams.get('status') ?? 'all'
-  const search   = searchParams.get('search') ?? ''
+  const priority   = searchParams.get('priority')
+  const status     = searchParams.get('status') ?? 'all'
+  const search     = searchParams.get('search') ?? ''
+  const countOnly  = searchParams.get('count_only') === 'true'
+
+  // Lightweight count path — used by the sidebar badge to avoid fetching all rows
+  if (countOnly) {
+    let countQuery = supabase
+      .from('backlog')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+    if (status === 'unreviewed') countQuery = countQuery.is('pm_action', null)
+    const { count } = await countQuery
+    return NextResponse.json({ count: count ?? 0 })
+  }
 
   let query = supabase
     .from('backlog')

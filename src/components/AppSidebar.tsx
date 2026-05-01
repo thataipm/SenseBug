@@ -3,17 +3,16 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, Clock, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug } from 'lucide-react'
+import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug } from 'lucide-react'
 
 const NAV = [
-  { href: '/dashboard',              icon: LayoutDashboard, label: 'Dashboard'       },
-  { href: '/backlog',                icon: Inbox,           label: 'Backlog'          },
-  { href: '/insights',               icon: BarChart2,       label: 'Insights'         },
-  { href: '/historyRun',             icon: Clock,           label: 'History'          },
-  { href: '/settings',               icon: BookOpen,        label: 'Knowledge Base'   },
-  { href: '/settings/integrations',  icon: Plug,            label: 'Integrations'     },
-  { href: '/account',                icon: User,            label: 'Account'          },
-  { href: '/help',                   icon: LifeBuoy,        label: 'Help'             },
+  { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard'    },
+  { href: '/backlog',               icon: Inbox,           label: 'Backlog'       },
+  { href: '/insights',              icon: BarChart2,       label: 'Insights'      },
+  { href: '/settings',              icon: BookOpen,        label: 'Knowledge Base'},
+  { href: '/settings/integrations', icon: Plug,            label: 'Integrations'  },
+  { href: '/account',               icon: User,            label: 'Account'       },
+  { href: '/help',                  icon: LifeBuoy,        label: 'Help'          },
 ]
 
 const PLAN_LABEL: Record<string, string> = {
@@ -29,9 +28,10 @@ interface PlanInfo {
 export function AppSidebar() {
   const pathname  = usePathname()
   const router    = useRouter()
-  const [email, setEmail]       = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [plan, setPlan]         = useState<PlanInfo | null>(null)
+  const [email, setEmail]               = useState('')
+  const [displayName, setDisplayName]   = useState('')
+  const [plan, setPlan]                 = useState<PlanInfo | null>(null)
+  const [unreviewedCount, setUnreviewed] = useState(0)
 
   useEffect(() => {
     const supabase = createClient()
@@ -44,6 +44,9 @@ export function AppSidebar() {
       }
     })
     fetch('/api/plan').then(r => r.ok ? r.json() : null).then(d => d && setPlan(d))
+    fetch('/api/backlog?count_only=true&status=unreviewed')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setUnreviewed(d.count ?? 0))
   }, [])
 
   const handleSignOut = async () => {
@@ -78,6 +81,7 @@ export function AppSidebar() {
       <nav className="flex-1 px-2 py-3 overflow-y-auto">
         {NAV.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+          const isBacklog = href === '/backlog'
           return (
             <Link
               key={href}
@@ -89,7 +93,14 @@ export function AppSidebar() {
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={active ? 2.5 : 1.5} />
-              {label}
+              <span className="flex-1">{label}</span>
+              {isBacklog && unreviewedCount > 0 && (
+                <span className={`text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm font-semibold leading-none ${
+                  active ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'
+                }`}>
+                  {unreviewedCount > 99 ? '99+' : unreviewedCount}
+                </span>
+              )}
             </Link>
           )
         })}

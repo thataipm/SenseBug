@@ -3,19 +3,19 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'SenseBug AI — AI Bug Prioritization for Product Managers',
-  description: 'Upload your Jira or Linear bug backlog and get an AI-ranked list by business impact in under 60 seconds. Reporter bias removed. Free for up to 50 bugs.',
+  title: 'SenseBug AI — AI Bug Triage for Product Managers',
+  description: 'Connect Jira and let AI rank every bug by business impact the moment it\'s filed. Reporter bias removed. Learns your judgment over time. Free for up to 50 bugs.',
   openGraph: {
-    title: 'SenseBug AI — AI Bug Prioritization for Product Managers',
-    description: 'Upload your Jira or Linear bug backlog and get an AI-ranked list by business impact in under 60 seconds. Free for up to 50 bugs.',
+    title: 'SenseBug AI — AI Bug Triage for Product Managers',
+    description: 'Connect Jira and let AI rank every bug by business impact the moment it\'s filed. Reporter bias removed. Learns your judgment over time.',
     url: 'https://www.sensebug.com',
     siteName: 'SenseBug AI',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SenseBug AI — AI Bug Prioritization for Product Managers',
-    description: 'Upload your bug backlog and get an AI-ranked list by business impact in under 60 seconds. Free for up to 50 bugs.',
+    title: 'SenseBug AI — AI Bug Triage for Product Managers',
+    description: 'Connect Jira and let AI rank every bug by business impact the moment it\'s filed. Reporter bias removed. Free for up to 50 bugs.',
   },
 }
 
@@ -67,7 +67,7 @@ export default function LandingPage() {
             SenseBug AI ignores the noise and ranks by what actually matters — business impact.
           </p>
           <p className="text-base text-black/40 max-w-xl mb-12 leading-relaxed">
-            Drop a CSV from Jira, Linear, or any tracker. In under a minute you&apos;ll have a ranked list with the reasoning behind every call — ready to defend in the next sprint planning.
+            Connect Jira and bugs are triaged the moment they&apos;re filed — no CSV exports, no manual work. The AI ranks against your product&apos;s critical flows, removes reporter bias, and gets more accurate with every verdict you make.
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link
@@ -187,27 +187,36 @@ export default function LandingPage() {
           <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-12" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
             How it works
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 border border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 border border-gray-200">
             {[
               {
                 step: '01',
-                title: 'Connect your backlog',
-                desc: 'Export from Jira, Linear, or any tracker as a CSV. No integrations, no IT tickets, no waiting. If it has bug IDs and titles, it works.',
+                title: 'Connect Jira — or upload a CSV',
+                desc: 'Link your Jira workspace in 60 seconds. From that point, every new bug is automatically triaged as it\'s filed. Or drop a CSV from any tracker if you prefer — no integrations required.',
               },
               {
                 step: '02',
-                title: 'AI strips the bias',
-                desc: 'The AI reads every ticket and scores priority independently — ignoring reporter labels, scanning for escalation signals, and ranking against your product\'s critical flows.',
+                title: 'AI ranks by business impact',
+                desc: 'The AI reads every ticket against your product\'s critical flows and scores priority independently — ignoring reporter labels, detecting escalation signals, and flagging vague or over-prioritised bugs.',
               },
               {
                 step: '03',
-                title: 'Walk in ready',
-                desc: 'Ranked list, SenseBug\'s full analysis per bug, and explicit flags for over-prioritised tickets. Approve, adjust, or dismiss each verdict. Export when done.',
+                title: 'Review in your inbox',
+                desc: 'Your persistent backlog surfaces the bugs that matter most. Approve the AI\'s call, adjust priority, or reject with a reason. P1s trigger an immediate email alert.',
+              },
+              {
+                step: '04',
+                title: 'It gets smarter over time',
+                desc: 'After 30 verdicts, SenseBug learns your judgment — which P2s you always escalate, which gap flags you always reject — and injects that pattern into every future ranking. No configuration needed.',
               },
             ].map((item, i) => (
               <div
                 key={item.step}
-                className={`p-8 bg-white ${i < 2 ? 'md:border-r border-b md:border-b-0 border-gray-200' : ''}`}
+                className={`p-8 bg-white ${
+                  i === 0 ? 'md:border-r border-b border-gray-200' :
+                  i === 1 ? 'border-b border-gray-200' :
+                  i === 2 ? 'md:border-r border-gray-200' : ''
+                }`}
               >
                 <div className="text-xs font-mono text-black/25 mb-6" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{item.step}</div>
                 <h3 className="text-xl font-bold mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{item.title}</h3>
@@ -262,8 +271,8 @@ export default function LandingPage() {
               },
               {
                 n: '04',
-                heading: 'Consistent triage, every time',
-                body: 'Same scoring rules, every sprint. No mood dependencies. No memory of last quarter\'s argument. The kind of consistent prioritization that builds credibility with your engineering team.',
+                heading: 'An AI that learns how you think',
+                body: 'After 30 verdicts, SenseBug calibrates to your judgment — which priority tiers you trust, which gap flags you always reject, how you weight customer escalations. Future rankings reflect that, automatically.',
               },
             ].map((item, i) => (
               <div
@@ -307,6 +316,10 @@ export default function LandingPage() {
 
           <div className="space-y-0 divide-y divide-gray-100">
             {[
+              {
+                q: 'Does SenseBug connect directly to Jira?',
+                a: 'Yes. Connect your Jira workspace under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule — once set up, every new bug is triaged automatically as it\'s filed, no exports needed. P1 bugs trigger an immediate email alert. When you approve a verdict, SenseBug writes the AI-assigned priority back to Jira.',
+              },
               {
                 q: 'What CSV format does SenseBug AI need?',
                 a: 'Required columns: id (or key / issue_key), title (or summary), and priority. Optional but recommended: description, comments, reporter, labels. More context = more accurate rankings. Jira and Linear exports work out of the box.',
