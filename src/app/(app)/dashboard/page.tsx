@@ -71,6 +71,7 @@ function DashboardContent() {
   const [plan, setPlan] = useState<PlanInfo | null>(null)
   const [healthSnapshots, setHealthSnapshots] = useState<HealthSnapshot[]>([])
   const [kbEmpty, setKbEmpty] = useState(false)
+  const [jiraConnected, setJiraConnected] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
@@ -81,11 +82,12 @@ function DashboardContent() {
   const kbSkipped = searchParams.get('kb_skipped') === '1'
 
   const fetchData = useCallback(async () => {
-    const [runsRes, planRes, kbRes, healthRes] = await Promise.all([
+    const [runsRes, planRes, kbRes, healthRes, integrationRes] = await Promise.all([
       fetch('/api/triage/runs'),
       fetch('/api/plan'),
       fetch('/api/kb'),
       fetch('/api/health-score'),
+      fetch('/api/integrations/jira'),
     ])
     if (kbRes.ok) {
       const kb = await kbRes.json()
@@ -95,6 +97,10 @@ function DashboardContent() {
     if (runsRes.ok) setRuns(await runsRes.json())
     if (planRes.ok) setPlan(await planRes.json())
     if (healthRes.ok) setHealthSnapshots(await healthRes.json())
+    if (integrationRes.ok) {
+      const integration = await integrationRes.json()
+      setJiraConnected(!!integration)
+    }
     setLoading(false)
   }, [router])
 
@@ -201,13 +207,15 @@ function DashboardContent() {
               <Upload className="w-4 h-4" strokeWidth={2} />
               Upload bugs
             </button>
-            <Link
-              href="/settings/integrations"
-              className="text-xs text-black/45 hover:text-black transition-colors duration-150"
-              style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
-            >
-              or connect Jira →
-            </Link>
+            {!jiraConnected && (
+              <Link
+                href="/settings/integrations"
+                className="text-xs text-black/45 hover:text-black transition-colors duration-150"
+                style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+              >
+                or connect Jira →
+              </Link>
+            )}
           </div>
           <input ref={fileRef} type="file" accept=".csv,.tsv,.xlsx,.xls,.txt" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
         </div>
@@ -366,19 +374,25 @@ function DashboardContent() {
             <div className="animate-float-slow inline-block mb-4">
               <Upload className="w-8 h-8 text-black/20 group-hover:text-black/40 transition-colors duration-300" strokeWidth={1.5} />
             </div>
-            <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Make sense of your bug backlog</h2>
-            <p className="text-sm text-black/60 mb-1">Export a CSV from Jira, Linear, or any tracker and drop it here.</p>
+            <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Triage your entire backlog in minutes</h2>
+            <p className="text-sm text-black/60 mb-1">Drop a CSV from Jira, Linear, or any bug tracker. AI re-ranks every bug by real business impact.</p>
             <p className="text-xs text-black/50 mb-8">Needs id, title, and priority columns. Add description and comments for sharper rankings.</p>
             <span className="bg-black text-white px-6 py-2.5 text-sm font-semibold inline-flex items-center gap-2 group-hover:bg-black/80 transition-colors duration-150">
               <Upload className="w-4 h-4" />Choose file
             </span>
-            <p className="text-xs text-black/35 mt-4">
-              Or{' '}
-              <Link href="/settings/integrations" className="underline hover:text-black transition-colors" onClick={e => e.stopPropagation()}>
-                connect Jira
-              </Link>
-              {' '}to analyse bugs the moment they&apos;re filed.
-            </p>
+            {jiraConnected ? (
+              <p className="text-xs text-green-600 mt-4 font-mono" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                ✓ Jira connected — bugs will appear here automatically when filed.
+              </p>
+            ) : (
+              <p className="text-xs text-black/35 mt-4">
+                Or{' '}
+                <Link href="/settings/integrations" className="underline hover:text-black transition-colors" onClick={e => e.stopPropagation()}>
+                  connect Jira
+                </Link>
+                {' '}to analyse bugs the moment they&apos;re filed.
+              </p>
+            )}
           </div>
         ) : (
           <div className="animate-fade-in">

@@ -174,3 +174,27 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ success: true })
 }
+
+// DELETE /api/backlog?id=<uuid>
+// Permanently removes a backlog entry owned by the authenticated user.
+export async function DELETE(request: NextRequest) {
+  if (!isValidOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
+
+  const { error } = await supabase
+    .from('backlog')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id) // ownership check — never delete another user's row
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ success: true })
+}

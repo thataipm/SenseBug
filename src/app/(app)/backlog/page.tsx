@@ -6,7 +6,7 @@ import { stripJiraMarkup } from '@/lib/jira'
 import { createClient } from '@/lib/supabase/client'
 import {
   Check, X, Edit2, ChevronLeft, ChevronDown, ChevronRight,
-  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox, Zap, Download, AlertTriangle,
+  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox, Zap, Download, AlertTriangle, Trash2,
 } from 'lucide-react'
 
 const MONO    = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
@@ -157,6 +157,7 @@ export default function BacklogPage() {
   const [rejectMode, setRejectMode]       = useState(false)
   const [rejectReason, setRejectReason]   = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [copied, setCopied]               = useState(false)
   const [showOriginal, setShowOriginal]   = useState(true)
   const [showComments, setShowComments]   = useState(true)
@@ -328,6 +329,20 @@ export default function BacklogPage() {
       setEditMode(false); setRejectMode(false); setRejectReason('')
     }
     setActionLoading(false)
+  }
+
+  const handleDelete = async (entryId: string) => {
+    if (!window.confirm('Remove this bug from your backlog? This cannot be undone.')) return
+    setDeleteLoading(true)
+    const res = await fetch(`/api/backlog?id=${encodeURIComponent(entryId)}`, { method: 'DELETE' })
+    if (res.ok) {
+      const next = entries.find(e => e.id !== entryId) ?? null
+      setEntries(prev => prev.filter(e => e.id !== entryId))
+      setSelected(next)
+      if (next) setMobileShowDetail(true)
+      else setMobileShowDetail(false)
+    }
+    setDeleteLoading(false)
   }
 
   const filteredEntries = useMemo(() => {
@@ -746,6 +761,17 @@ export default function BacklogPage() {
                           disabled={actionLoading || selected.pm_action === 'rejected'}
                           className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${selected.pm_action === 'rejected' ? 'bg-gray-200 text-black/40 border border-gray-200' : 'border border-gray-300 text-black/60 hover:bg-gray-100 hover:border-gray-400'}`}
                         ><X className="w-4 h-4" strokeWidth={2} />Reject</button>
+                      </div>
+                      {/* Remove from backlog — destructive, kept visually separate */}
+                      <div className="mt-5 pt-4 border-t border-gray-100">
+                        <button
+                          onClick={() => handleDelete(selected.id)}
+                          disabled={deleteLoading || actionLoading}
+                          className="flex items-center gap-1.5 text-xs text-black/35 hover:text-red-600 transition-colors disabled:opacity-40"
+                        >
+                          {deleteLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                          Remove from backlog
+                        </button>
                       </div>
                     </div>
                   )}

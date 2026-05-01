@@ -151,11 +151,19 @@ export default function InsightsPage() {
     return (
       <div className="px-6 md:px-10 py-10 max-w-3xl mx-auto" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
         <h1 className="text-2xl font-black tracking-tighter mb-2" style={HEADING}>Insights</h1>
-        <p className="text-sm text-black/50 mb-8">Upload your first bug CSV to see backlog health metrics.</p>
+        <p className="text-sm text-black/50 mb-8">Backlog health score, ticket quality trends, and AI learning progress — all in one place.</p>
         <div className="border border-dashed border-gray-300 px-8 py-16 text-center">
           <Clock className="w-8 h-8 text-black/20 mx-auto mb-3" strokeWidth={1.5} />
-          <p className="text-sm text-black/50">No data yet — health scores appear after your first analysis run.</p>
-          <Link href="/dashboard" className="mt-4 inline-block text-xs font-mono underline text-black/50 hover:text-black" style={MONO}>Go to dashboard →</Link>
+          <p className="text-sm font-medium text-black/60 mb-1">No health data yet</p>
+          <p className="text-xs text-black/40 mb-6 max-w-xs mx-auto leading-relaxed">
+            Health scores are calculated automatically after each analysis run. Run your first analysis from the dashboard to populate this page.
+          </p>
+          <Link
+            href="/dashboard"
+            className="bg-black text-white px-5 py-2.5 text-sm font-semibold inline-block hover:bg-black/90 transition-colors"
+          >
+            Go to dashboard →
+          </Link>
         </div>
       </div>
     )

@@ -6,10 +6,11 @@ import { Loader2, Copy, CheckCheck, ExternalLink, AlertCircle, CheckCircle2, Tra
 const MONO    = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
 const HEADING = { fontFamily: 'var(--font-space-grotesk), sans-serif' }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.sensebug.com'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sensebug.com'
 
 export default function IntegrationsPage() {
   const [integration, setIntegration] = useState<Integration | null>(null)
+  const [plan, setPlan]               = useState<string | null>(null)
   const [loading, setLoading]         = useState(true)
 
   // Form state
@@ -25,19 +26,19 @@ export default function IntegrationsPage() {
   const [copied,     setCopied]     = useState(false)
 
   useEffect(() => {
-    fetch('/api/integrations/jira')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        setIntegration(d)
-        // Pre-populate non-sensitive fields so the user only needs to re-enter the API token
-        if (d) {
-          setSiteUrl(d.site_url ?? '')
-          setEmail(d.email ?? '')
-          setProjectKey(d.project_key ?? '')
-        }
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
+    Promise.all([
+      fetch('/api/integrations/jira').then(r => r.ok ? r.json() : null),
+      fetch('/api/plan').then(r => r.ok ? r.json() : null),
+    ]).then(([d, p]) => {
+      setIntegration(d)
+      setPlan(p?.plan ?? null)
+      if (d) {
+        setSiteUrl(d.site_url ?? '')
+        setEmail(d.email ?? '')
+        setProjectKey(d.project_key ?? '')
+      }
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [])
 
   const webhookUrl = integration
@@ -96,6 +97,7 @@ export default function IntegrationsPage() {
   )
 
   const isConnected = !!integration
+  const isFree      = plan === 'starter'
 
   return (
     <div className="px-6 md:px-10 py-8 max-w-2xl" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
@@ -106,6 +108,22 @@ export default function IntegrationsPage() {
           Connect Jira to automatically analyse and prioritise bugs as they&apos;re filed — no CSV upload needed.
         </p>
       </div>
+
+      {/* Free-plan upgrade gate */}
+      {isFree && (
+        <div className="border border-gray-200 bg-gray-50 px-5 py-5 mb-8">
+          <p className="text-xs font-mono uppercase tracking-widest text-black/35 mb-2" style={MONO}>Pro feature</p>
+          <p className="text-sm text-black/70 mb-4 leading-relaxed">
+            Jira integration is available on <strong>Pro and Max</strong> plans. Upgrade to automatically analyse every bug the moment it&apos;s filed — no CSV exports needed.
+          </p>
+          <a
+            href="/pricing"
+            className="inline-flex items-center gap-2 bg-black text-white text-sm font-semibold px-5 py-2.5 hover:bg-black/80 transition-colors"
+          >
+            Upgrade to Pro →
+          </a>
+        </div>
+      )}
 
       {/* Connected status banner */}
       {isConnected && (
@@ -126,8 +144,8 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Webhook URL — only shown once connected */}
-      {isConnected && webhookUrl && (
+      {/* Webhook URL — only shown once connected (and not gated) */}
+      {!isFree && isConnected && webhookUrl && (
         <div className="mb-8">
           <p className="text-xs font-medium text-black/70 mb-2">Webhook URL</p>
           <p className="text-xs text-black/50 mb-3">
@@ -157,8 +175,8 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Connection form */}
-      <form onSubmit={handleSave} className="space-y-5">
+      {/* Connection form — hidden for free plan */}
+      {isFree ? null : <form onSubmit={handleSave} className="space-y-5">
         <p className="text-xs font-medium text-black/50 uppercase tracking-widest" style={MONO}>
           {isConnected ? 'Update credentials' : 'Connect Jira'}
         </p>
@@ -244,7 +262,7 @@ export default function IntegrationsPage() {
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           {saving ? 'Verifying connection…' : isConnected ? 'Update credentials' : 'Connect Jira'}
         </button>
-      </form>
+      </form>}
 
       {/* How it works */}
       <div className="mt-12 border-t border-gray-100 pt-8">
