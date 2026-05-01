@@ -99,6 +99,44 @@ export async function updateJiraPriority(
 }
 
 /**
+ * Add a comment to a Jira issue using Atlassian Document Format (ADF).
+ * Used to write AI summary comments back to Jira when a PM approves a verdict.
+ */
+export async function addJiraComment(
+  siteUrl: string,
+  email: string,
+  apiToken: string,
+  issueKey: string,
+  commentText: string
+): Promise<void> {
+  const url = `${siteUrl}/rest/api/3/issue/${issueKey}/comment`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization:  basicAuth(email, apiToken),
+      'Content-Type': 'application/json',
+      Accept:         'application/json',
+    },
+    body: JSON.stringify({
+      body: {
+        type:    'doc',
+        version: 1,
+        content: [
+          {
+            type:    'paragraph',
+            content: [{ type: 'text', text: commentText }],
+          },
+        ],
+      },
+    }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Jira comment failed: ${res.status} ${res.statusText} — ${text.slice(0, 200)}`)
+  }
+}
+
+/**
  * Verify that the credentials can reach the Jira instance.
  * Returns the display name of the authenticated user on success.
  */

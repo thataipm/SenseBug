@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { isValidOrigin } from '@/lib/csrf'
-import { updateJiraPriority } from '@/lib/jira-api'
+import { updateJiraPriority, addJiraComment } from '@/lib/jira-api'
 import { recomputeAndStoreCalibration } from '@/lib/pm-calibration'
 
 export const dynamic = 'force-dynamic'
@@ -94,10 +94,10 @@ export async function PATCH(request: NextRequest) {
 
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
 
-  // Verify ownership and fetch fields needed for Jira write-back
+  // Verify ownership and fetch fields needed for Jira write-back + comment
   const { data: entry } = await supabase
     .from('backlog')
-    .select('id, bug_id, priority')
+    .select('id, bug_id, priority, quick_reason, business_impact')
     .eq('id', id)
     .eq('user_id', user.id)
     .single()
@@ -162,13 +162,36 @@ export async function PATCH(request: NextRequest) {
           if (!String(entry.bug_id).toUpperCase().startsWith(prefix + '-')) return
         }
 
+        // Priority write-back
         updateJiraPriority(
           integration.site_url,
           integration.email,
           integration.api_token,
           entry.bug_id,
           effectivePriority
-        ).catch(e => console.error('[backlog] Jira write-back failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
+        ).catch(e => console.error('[backlog] Jira priority write-back failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
+
+        // AI summary comment — adds context so the Jira team can see why the priority was set
+        const commentLines: string[] = [
+          `✅ SenseBug verdict: ${action === 'approved' ? 'Approved' : 'Adjusted'} — Priority set to ${effectivePriority}`,
+        ]
+        if (entry.business_impact) {
+          commentLines.push('', `Business impact: ${entry.business_impact}`)
+        } else if (entry.quick_reason) {
+          commentLines.push('', `AI reasoning: ${entry.quick_reason}`)
+        }
+        if (action === 'edited' && edited_severity) {
+          commentLines.push(`Severity: ${edited_severity}`)
+        }
+        commentLines.push('', '— Reviewed via SenseBug AI')
+
+        addJiraComment(
+          integration.site_url,
+          integration.email,
+          integration.api_token,
+          entry.bug_id,
+          commentLines.join('\n')
+        ).catch(e => console.error('[backlog] Jira comment failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
       })
   }
 
