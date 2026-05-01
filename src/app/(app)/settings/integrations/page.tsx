@@ -264,23 +264,103 @@ export default function IntegrationsPage() {
         </button>
       </form>}
 
-      {/* How it works */}
-      <div className="mt-12 border-t border-gray-100 pt-8">
-        <p className="text-xs font-medium text-black/50 uppercase tracking-widest mb-4" style={MONO}>How it works</p>
-        <ol className="space-y-3">
-          {[
-            'A bug is created (or updated) in Jira.',
-            'Your Jira Automation rule fires and POSTs the issue payload to the webhook URL above.',
-            'SenseBug analyses and prioritises the bug with AI, then adds it to your Backlog.',
-            'P1 bugs trigger an immediate email alert.',
-            'When you approve a bug, SenseBug writes the AI-assigned priority back to Jira.',
-          ].map((step, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span className="text-[10px] font-mono text-black/30 mt-0.5 w-4 flex-shrink-0" style={MONO}>{i + 1}</span>
-              <span className="text-sm text-black/60">{step}</span>
+      {/* Setup guide */}
+      <div className="mt-12 border-t border-gray-100 pt-8 space-y-8">
+
+        {/* Section 1 — Setup steps */}
+        <div>
+          <p className="text-xs font-medium text-black/50 uppercase tracking-widest mb-5" style={MONO}>Setup guide</p>
+          <ol className="space-y-5">
+            {/* Step 1 */}
+            <li className="flex items-start gap-3">
+              <span className="text-[10px] font-mono text-black/30 mt-0.5 w-4 flex-shrink-0" style={MONO}>1</span>
+              <div>
+                <p className="text-sm font-medium text-black/80 mb-0.5">Get a Jira API token</p>
+                <p className="text-sm text-black/50 leading-relaxed">
+                  Go to{' '}
+                  <a
+                    href="https://id.atlassian.com/manage-profile/security/api-tokens"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-black transition-colors"
+                  >
+                    id.atlassian.com
+                  </a>
+                  {' '}→ Security → API tokens → Create API token. Copy it and paste it in the form above.
+                </p>
+              </div>
             </li>
-          ))}
-        </ol>
+
+            {/* Step 2 */}
+            <li className="flex items-start gap-3">
+              <span className="text-[10px] font-mono text-black/30 mt-0.5 w-4 flex-shrink-0" style={MONO}>2</span>
+              <div>
+                <p className="text-sm font-medium text-black/80 mb-0.5">Connect SenseBug</p>
+                <p className="text-sm text-black/50 leading-relaxed">
+                  Fill in your Jira site URL, account email, and the API token above, then click &ldquo;Connect Jira&rdquo;.
+                  Your unique webhook URL will appear on this page once connected.
+                </p>
+              </div>
+            </li>
+
+            {/* Step 3 */}
+            <li className="flex items-start gap-3">
+              <span className="text-[10px] font-mono text-black/30 mt-0.5 w-4 flex-shrink-0" style={MONO}>3</span>
+              <div>
+                <p className="text-sm font-medium text-black/80 mb-1">Create a Jira Automation rule</p>
+                <p className="text-sm text-black/50 mb-2 leading-relaxed">
+                  In Jira: <span className="font-medium text-black/70">Project settings → Automation → Create rule</span>
+                </p>
+                <ul className="space-y-1.5">
+                  {[
+                    { label: 'Add trigger:', value: 'Work item created' },
+                    { label: 'Add trigger:', value: 'Work item updated (catches new comments and edits)' },
+                    { label: 'Add action:', value: 'Send web request → Method: POST → paste the webhook URL above' },
+                  ].map((row, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <span className="text-black/30 flex-shrink-0 font-mono text-xs mt-0.5" style={MONO}>—</span>
+                      <span className="text-black/50">
+                        <span className="font-medium text-black/65">{row.label}</span>{' '}{row.value}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </li>
+
+            {/* Step 4 */}
+            <li className="flex items-start gap-3">
+              <span className="text-[10px] font-mono text-black/30 mt-0.5 w-4 flex-shrink-0" style={MONO}>4</span>
+              <div>
+                <p className="text-sm font-medium text-black/80 mb-0.5">Test it</p>
+                <p className="text-sm text-black/50 leading-relaxed">
+                  Create a test bug in Jira. It should appear in your{' '}
+                  <a href="/backlog" className="underline hover:text-black transition-colors">Backlog</a>
+                  {' '}within a few seconds with an AI-assigned priority.
+                </p>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        {/* Section 2 — What happens automatically */}
+        <div className="border-t border-gray-100 pt-6">
+          <p className="text-xs font-medium text-black/50 uppercase tracking-widest mb-4" style={MONO}>What happens automatically</p>
+          <ol className="space-y-3">
+            {[
+              'Bug created or updated in Jira → SenseBug analyses it and adds it to your Backlog.',
+              'P1 bugs → you get an immediate email alert.',
+              'New comments added in Jira → re-synced to SenseBug on the next update trigger.',
+              'You approve or adjust a bug → priority is written back to Jira and an AI summary comment is posted on the ticket.',
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="text-[10px] font-mono text-black/30 mt-0.5 w-4 flex-shrink-0" style={MONO}>{i + 1}</span>
+                <span className="text-sm text-black/60 leading-relaxed">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
       </div>
     </div>
   )
