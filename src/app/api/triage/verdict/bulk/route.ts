@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest) {
   // Build query for unreviewed results only
   let query = supabase
     .from('triage_results')
-    .select('id')
+    .select('id, bug_id')
     .eq('run_id', run_id)
     .is('pm_action', null)
 
@@ -51,7 +51,8 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ updated: 0, ids: [] })
   }
 
-  const ids = targets.map((t: { id: string }) => t.id)
+  const ids    = targets.map((t: { id: string; bug_id: string }) => t.id)
+  const bugIds = targets.map((t: { id: string; bug_id: string }) => t.bug_id)
 
   const { error } = await supabase
     .from('triage_results')
@@ -59,5 +60,16 @@ export async function PATCH(request: NextRequest) {
     .in('id', ids)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Keep backlog in sync — fire-and-forget, same pattern as single verdict route.
+  supabase
+    .from('backlog')
+    .update({ pm_action: action })
+    .eq('user_id', user.id)
+    .in('bug_id', bugIds)
+    .then(({ error: bErr }) => {
+      if (bErr) console.error('[verdict/bulk] backlog sync error:', bErr.message)
+    })
+
   return NextResponse.json({ updated: ids.length, ids })
 }

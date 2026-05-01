@@ -1,14 +1,15 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug } from 'lucide-react'
+import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug, Clock } from 'lucide-react'
 
 const NAV = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard'    },
   { href: '/backlog',               icon: Inbox,           label: 'Backlog'       },
   { href: '/insights',              icon: BarChart2,       label: 'Insights'      },
+  { href: '/historyRun',            icon: Clock,           label: 'History'       },
   { href: '/settings',              icon: BookOpen,        label: 'Knowledge Base'},
   { href: '/settings/integrations', icon: Plug,            label: 'Integrations'  },
   { href: '/account',               icon: User,            label: 'Account'       },
@@ -33,6 +34,12 @@ export function AppSidebar() {
   const [plan, setPlan]                 = useState<PlanInfo | null>(null)
   const [unreviewedCount, setUnreviewed] = useState(0)
 
+  const refreshBadge = useCallback(() => {
+    fetch('/api/backlog?count_only=true&status=unreviewed')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setUnreviewed(d.count ?? 0))
+  }, [])
+
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
@@ -44,10 +51,16 @@ export function AppSidebar() {
       }
     })
     fetch('/api/plan').then(r => r.ok ? r.json() : null).then(d => d && setPlan(d))
-    fetch('/api/backlog?count_only=true&status=unreviewed')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setUnreviewed(d.count ?? 0))
-  }, [])
+    refreshBadge()
+  }, [refreshBadge])
+
+  // Re-fetch the unreviewed count whenever the window regains focus —
+  // ensures the badge stays accurate after the user reviews bugs in /backlog
+  // or /results and navigates back.
+  useEffect(() => {
+    window.addEventListener('focus', refreshBadge)
+    return () => window.removeEventListener('focus', refreshBadge)
+  }, [refreshBadge])
 
   const handleSignOut = async () => {
     const supabase = createClient()

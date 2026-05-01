@@ -405,7 +405,10 @@ function DashboardContent() {
             {/* Previous runs */}
             {runs.length > 1 && (
               <div>
-                <h2 className="text-xs font-mono uppercase tracking-widest text-black/40 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Run history</h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-mono uppercase tracking-widest text-black/40" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Run history</h2>
+                  <Link href="/historyRun" className="text-xs font-mono text-black/40 hover:text-black transition-colors duration-150" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>View all →</Link>
+                </div>
                 {runs.length >= 3 && (
                   <div className="border border-gray-200 px-5 pt-4 pb-3 mb-4">
                     <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Bugs analysed per run</p>

@@ -7,7 +7,7 @@ import { stripJiraMarkup } from '@/lib/jira'
 import {
   Check, X, Edit2, Download, ChevronLeft, ChevronDown, ChevronRight,
   Flag, Loader2, Copy, CheckCheck, Search, AlertCircle,
-  LayoutDashboard, Clock, BookOpen, User,
+  LayoutDashboard, Clock, BookOpen, User, Inbox, BarChart2,
 } from 'lucide-react'
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -20,6 +20,8 @@ type BulkFilter = 'all_unreviewed' | 'p1_unreviewed' | 'p2_unreviewed' | 'p3_unr
 
 const NAV_ITEMS = [
   { href: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/backlog',    icon: Inbox,           label: 'Backlog'   },
+  { href: '/insights',   icon: BarChart2,       label: 'Insights'  },
   { href: '/historyRun', icon: Clock,           label: 'History'   },
   { href: '/settings',   icon: BookOpen,        label: 'KB'        },
   { href: '/account',    icon: User,            label: 'Account'   },

@@ -229,7 +229,10 @@ export default function BacklogPage() {
   const fetchDetail = useCallback(async (entry: BacklogEntry) => {
     const key = entry.bug_id
     if (detailRequestedRef.current.has(key)) return
-    if (!entry.source_run_id) return
+    // Webhook bugs have no source_run_id — the detail endpoint requires one, so
+    // we can't generate on-demand detail for them. Mark as requested so we don't
+    // keep retrying on every selection, and let the UI show an appropriate note.
+    if (!entry.source_run_id) { detailRequestedRef.current.add(key); return }
     detailRequestedRef.current.add(key)
     setDetailLoading(prev => { const n = new Set(prev); n.add(key); return n })
     try {
@@ -529,6 +532,10 @@ export default function BacklogPage() {
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-black/30" />
                         <span className="text-sm text-black/40">Generating detail{selected.quick_reason ? `… (${selected.quick_reason})` : '…'}</span>
                       </div>
+                    ) : !selected.source_run_id ? (
+                      <p className="text-sm text-black/45 leading-relaxed italic">
+                        Full AI analysis is generated on-demand for CSV runs. This bug came in via Jira webhook — detailed impact analysis will appear here once processed.
+                      </p>
                     ) : (
                       <p className="text-sm text-black/60 leading-relaxed italic">{selected.quick_reason ?? 'Detail unavailable.'}</p>
                     )}
@@ -543,6 +550,8 @@ export default function BacklogPage() {
                       <div className="space-y-2 animate-pulse">
                         <div className="h-3 bg-gray-100 w-full" /><div className="h-3 bg-gray-100 w-11/12" /><div className="h-3 bg-gray-100 w-3/4" />
                       </div>
+                    ) : !selected.source_run_id ? (
+                      <p className="text-sm text-black/35 italic">Rationale not yet available for this bug.</p>
                     ) : (
                       <p className="text-sm text-black/40 italic">Open this bug to generate the full analysis.</p>
                     )}
