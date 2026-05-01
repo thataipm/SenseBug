@@ -80,7 +80,14 @@ export function AppSidebar() {
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 overflow-y-auto">
         {NAV.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+          // Exact match, or prefix match — but only when no longer nav item is a more-specific prefix.
+          // e.g. on /settings/integrations: '/settings' prefix-matches but '/settings/integrations' is an exact match,
+          // so only the more-specific item should be active.
+          const active = pathname === href || (
+            href !== '/dashboard' &&
+            pathname.startsWith(href + '/') &&
+            !NAV.some(n => n.href !== href && pathname.startsWith(n.href) && n.href.startsWith(href))
+          )
           const isBacklog = href === '/backlog'
           return (
             <Link

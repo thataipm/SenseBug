@@ -181,12 +181,15 @@ export default function BacklogPage() {
   // ── Supabase Realtime — prepend bugs arriving via Jira webhook ─────────────
   useEffect(() => {
     const supabase = createClient()
-    // Get the current user's ID so the Realtime filter matches only their rows.
+    // Keep a ref to the channel so the cleanup function (which runs synchronously
+    // on unmount) can remove it even though the channel is created asynchronously.
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
     supabase.auth.getUser().then(({ data }) => {
       const userId = data.user?.id
       if (!userId) return
 
-      const channel = supabase
+      channel = supabase
         .channel('backlog-inserts')
         .on(
           'postgres_changes',
@@ -208,9 +211,11 @@ export default function BacklogPage() {
           }
         )
         .subscribe()
-
-      return () => { supabase.removeChannel(channel) }
     })
+
+    // Cleanup runs on unmount — if the channel was created before unmount, remove it.
+    // If the component unmounts before getUser() resolves, channel is still null — safe.
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-dismiss toast after 6 seconds
