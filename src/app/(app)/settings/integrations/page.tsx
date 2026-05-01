@@ -14,10 +14,9 @@ export default function IntegrationsPage() {
   const [loading, setLoading]         = useState(true)
 
   // Form state
-  const [siteUrl,    setSiteUrl]    = useState('')
-  const [email,      setEmail]      = useState('')
-  const [apiToken,   setApiToken]   = useState('')
-  const [projectKey, setProjectKey] = useState('')
+  const [siteUrl,  setSiteUrl]  = useState('')
+  const [email,    setEmail]    = useState('')
+  const [apiToken, setApiToken] = useState('')
 
   const [saving,     setSaving]     = useState(false)
   const [deleting,   setDeleting]   = useState(false)
@@ -35,7 +34,6 @@ export default function IntegrationsPage() {
       if (d) {
         setSiteUrl(d.site_url ?? '')
         setEmail(d.email ?? '')
-        setProjectKey(d.project_key ?? '')
       }
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -61,7 +59,7 @@ export default function IntegrationsPage() {
     const res = await fetch('/api/integrations/jira', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ site_url: siteUrl, email, api_token: apiToken, project_key: projectKey }),
+      body:    JSON.stringify({ site_url: siteUrl, email, api_token: apiToken }),
     })
     const data = await res.json()
     setSaving(false)
@@ -85,7 +83,6 @@ export default function IntegrationsPage() {
       setSiteUrl('')
       setEmail('')
       setApiToken('')
-      setProjectKey('')
     }
     setDeleting(false)
   }
@@ -226,20 +223,6 @@ export default function IntegrationsPage() {
           </a>
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-black/70 mb-1.5">
-            Project key <span className="text-black/30 font-normal">(optional)</span>
-          </label>
-          <input
-            type="text"
-            placeholder="BUG"
-            value={projectKey}
-            onChange={e => setProjectKey(e.target.value.toUpperCase())}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
-          />
-          <p className="text-xs text-black/35 mt-1">Filters Jira write-back to this project only.</p>
-        </div>
-
         {error && (
           <div className="flex items-start gap-2 border border-red-200 bg-red-50 px-3 py-2.5">
             <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
@@ -325,6 +308,10 @@ export default function IntegrationsPage() {
                     </li>
                   ))}
                 </ul>
+                <p className="mt-3 text-xs text-black/40 bg-gray-50 border border-gray-200 px-3 py-2 leading-relaxed">
+                  <span className="font-medium text-black/60">Note —</span> SenseBug only analyses <strong>Bug</strong> issue types.
+                  Tasks, stories, epics, and other types are automatically ignored — no extra configuration needed on your side.
+                </p>
               </div>
             </li>
 

@@ -43,6 +43,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No issue key in payload' }, { status: 400 })
   }
 
+  // Only process bug-type issues — tasks, stories, epics etc. are not relevant
+  // for bug triage and should be silently ignored (200 so Jira doesn't retry).
+  const BUG_ISSUE_TYPES = ['bug', 'defect', 'error', 'incident', 'problem']
+  const issueTypeName   = fields.issuetype?.name
+    ? String(fields.issuetype.name).toLowerCase().trim()
+    : null
+  // If the payload includes an issuetype and it's not bug-like, skip it
+  if (issueTypeName && !BUG_ISSUE_TYPES.some(t => issueTypeName.includes(t))) {
+    console.log(`[webhook/jira] Skipping ${issueKey} — issue type '${fields.issuetype?.name}' is not a bug type`)
+    return NextResponse.json({ skipped: true, reason: `Issue type '${fields.issuetype?.name}' is not analysed by SenseBug` })
+  }
+
   const title            = String(fields.summary ?? 'Untitled')
   const description      = extractAdfText(fields.description)
   const reporterPriority = fields.priority?.name ?? null
