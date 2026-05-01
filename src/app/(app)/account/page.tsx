@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
-import { Loader2, Check, ChevronRight } from 'lucide-react'
+import { Loader2, Check, ChevronRight, ExternalLink } from 'lucide-react'
 import { Suspense } from 'react'
 
 interface PlanInfo {
