@@ -9,9 +9,9 @@ const faqs = [
   {
     section: 'Getting Started',
     items: [
-      { q: 'What is SenseBug AI?', a: "SenseBug AI is an AI-powered bug triage tool for Product Managers. You upload a CSV of bug tickets, and the AI ranks them by business impact using your product's Knowledge Base as context." },
+      { q: 'What is SenseBug AI?', a: "SenseBug AI is the AI intelligence layer for your bug backlog. It automatically ranks bugs by business impact, learns your prioritisation judgment over time, and keeps your backlog healthy — all connected to Jira. Upload a CSV or connect Jira to get started." },
       { q: 'How do I get started?', a: 'Sign up, complete the onboarding to set up your Knowledge Base (describe your product, critical flows, and modules), then upload a CSV from your bug tracker.' },
-      { q: 'What happens during a triage run?', a: "SenseBug AI parses your CSV, retrieves relevant context from your Knowledge Base, and sends the bugs to Claude (Anthropic's AI) for prioritization. Results appear in under a minute." },
+      { q: 'What happens when I analyse bugs?', a: "SenseBug AI parses your CSV, retrieves relevant context from your Knowledge Base, and sends the bugs to Claude (Anthropic's AI) for ranking. Results appear in under a minute and are added to your persistent Backlog." },
     ],
   },
   {

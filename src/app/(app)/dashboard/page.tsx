@@ -305,15 +305,15 @@ function DashboardContent() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-1.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Monthly triage quota</p>
+                  <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-1.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Monthly usage quota</p>
                   <div className="flex items-baseline gap-2 mb-3">
                     <span className="text-3xl font-black tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{bugsAnalyzed}</span>
-                    <span className="text-sm text-black/60">triaged of {monthlyBugLimit}</span>
+                    <span className="text-sm text-black/60">analysed of {monthlyBugLimit}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="flex items-center gap-1.5 text-xs text-black/70">
                       <span className={`w-2 h-2 inline-block flex-shrink-0 ${atLimit ? 'bg-red-400' : usagePct > 80 ? 'bg-orange-400' : 'bg-black'}`} />
-                      {bugsAnalyzed} triaged
+                      {bugsAnalyzed} analysed
                     </span>
                     <span className="text-black/20 text-xs">·</span>
                     <span className="flex items-center gap-1.5 text-xs text-black/70">
@@ -339,10 +339,10 @@ function DashboardContent() {
             ) : (
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-1">
-                  <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Bugs triaged this month</p>
+                  <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Bugs analysed this month</p>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-black tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>{bugsAnalyzed}</span>
-                    <span className="text-sm text-black/60">triaged · up to {plan.bugs_per_run_limit} per run · unlimited</span>
+                    <span className="text-sm text-black/60">analysed · up to {plan.bugs_per_run_limit} per run · unlimited</span>
                   </div>
                 </div>
               </div>
@@ -366,7 +366,7 @@ function DashboardContent() {
             <div className="animate-float-slow inline-block mb-4">
               <Upload className="w-8 h-8 text-black/20 group-hover:text-black/40 transition-colors duration-300" strokeWidth={1.5} />
             </div>
-            <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Triage your first batch of bugs</h2>
+            <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Make sense of your bug backlog</h2>
             <p className="text-sm text-black/60 mb-1">Export a CSV from Jira, Linear, or any tracker and drop it here.</p>
             <p className="text-xs text-black/50 mb-8">Needs id, title, and priority columns. Add description and comments for sharper rankings.</p>
             <span className="bg-black text-white px-6 py-2.5 text-sm font-semibold inline-flex items-center gap-2 group-hover:bg-black/80 transition-colors duration-150">
@@ -377,7 +377,7 @@ function DashboardContent() {
               <Link href="/settings/integrations" className="underline hover:text-black transition-colors" onClick={e => e.stopPropagation()}>
                 connect Jira
               </Link>
-              {' '}to triage bugs the moment they&apos;re filed.
+              {' '}to analyse bugs the moment they&apos;re filed.
             </p>
           </div>
         ) : (
@@ -405,10 +405,10 @@ function DashboardContent() {
             {/* Previous runs */}
             {runs.length > 1 && (
               <div>
-                <h2 className="text-xs font-mono uppercase tracking-widest text-black/40 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Triage history</h2>
+                <h2 className="text-xs font-mono uppercase tracking-widest text-black/40 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Run history</h2>
                 {runs.length >= 3 && (
                   <div className="border border-gray-200 px-5 pt-4 pb-3 mb-4">
-                    <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Bugs triaged per run</p>
+                    <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-3" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Bugs analysed per run</p>
                     <ResponsiveContainer width="100%" height={72}>
                       <BarChart
                         data={[...runs].reverse().slice(-12).map(r => ({

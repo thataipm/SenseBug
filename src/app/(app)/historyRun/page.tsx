@@ -104,7 +104,7 @@ export default function HistoryRunPage() {
 
       {filteredRuns.length === 0 ? (
         <div className="border border-dashed border-gray-200 py-16 text-center">
-          <p className="text-sm text-black/55">{search ? 'No runs match your search.' : 'No triage runs yet.'}</p>
+          <p className="text-sm text-black/55">{search ? 'No runs match your search.' : 'No analysis runs yet.'}</p>
           {!search && (
             <Link href="/dashboard" className="mt-3 inline-block text-sm text-black underline hover:no-underline">Upload your first CSV</Link>
           )}

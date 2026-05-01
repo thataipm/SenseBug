@@ -91,7 +91,7 @@ export default function IntegrationsPage() {
         <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-1" style={MONO}>Integrations</p>
         <h1 className="text-2xl font-black tracking-tight" style={HEADING}>Jira</h1>
         <p className="text-sm text-black/50 mt-1">
-          Connect Jira to automatically triage bugs as they&apos;re filed — no CSV upload needed.
+          Connect Jira to automatically analyse and prioritise bugs as they&apos;re filed — no CSV upload needed.
         </p>
       </div>
 
@@ -241,7 +241,7 @@ export default function IntegrationsPage() {
           {[
             'A bug is created (or updated) in Jira.',
             'Your Jira Automation rule fires and POSTs the issue payload to the webhook URL above.',
-            'SenseBug triages the bug with AI and adds it to your Backlog.',
+            'SenseBug analyses and prioritises the bug with AI, then adds it to your Backlog.',
             'P1 bugs trigger an immediate email alert.',
             'When you approve a bug, SenseBug writes the AI-assigned priority back to Jira.',
           ].map((step, i) => (

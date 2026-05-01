@@ -154,7 +154,7 @@ export default function InsightsPage() {
         <p className="text-sm text-black/50 mb-8">Upload your first bug CSV to see backlog health metrics.</p>
         <div className="border border-dashed border-gray-300 px-8 py-16 text-center">
           <Clock className="w-8 h-8 text-black/20 mx-auto mb-3" strokeWidth={1.5} />
-          <p className="text-sm text-black/50">No data yet — health scores appear after your first triage run.</p>
+          <p className="text-sm text-black/50">No data yet — health scores appear after your first analysis run.</p>
           <Link href="/dashboard" className="mt-4 inline-block text-xs font-mono underline text-black/50 hover:text-black" style={MONO}>Go to dashboard →</Link>
         </div>
       </div>
@@ -355,7 +355,7 @@ export default function InsightsPage() {
 
             {/* Generated plain-English summary */}
             <div className="px-6 py-5">
-              <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Applied to future triage</p>
+              <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Applied to future rankings</p>
               <p className="text-xs text-black/50 leading-relaxed whitespace-pre-line">{calibration.prompt_injection}</p>
               <p className="text-[10px] font-mono text-black/25 mt-4" style={MONO}>
                 Last updated {new Date(calibration.computed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -370,7 +370,7 @@ export default function InsightsPage() {
             <p className="text-xs font-mono uppercase tracking-widest text-black/25" style={MONO}>Learned patterns</p>
           </div>
           <p className="text-sm text-black/35">
-            After 30 verdicts, SenseBug learns your triage judgment and automatically adjusts future AI rankings to match — no configuration needed.
+            After 30 verdicts, SenseBug learns your prioritisation judgment and automatically adjusts future AI rankings to match — no configuration needed.
           </p>
           {calibration && (
             <p className="text-xs font-mono text-black/30 mt-2" style={MONO}>

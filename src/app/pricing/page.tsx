@@ -40,7 +40,7 @@ export default function PricingPage() {
               <ul className="text-xs text-black/50 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />50 bugs / month</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />50 bugs per run</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Unlimited triage runs</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Unlimited analysis runs</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />AI ranking + business impact</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />PM verdicts + CSV export</li>
               </ul>
@@ -116,7 +116,7 @@ export default function PricingPage() {
                 {[
                   { label: 'Monthly bug quota', vals: ['50 bugs', '250 bugs', '500 bugs'] },
                   { label: 'Per-run cap',        vals: ['50 / run', '100 / run', '250 / run'] },
-                  { label: 'Triage runs',        vals: ['Unlimited', 'Unlimited', 'Unlimited'] },
+                  { label: 'Analysis runs',      vals: ['Unlimited', 'Unlimited', 'Unlimited'] },
                 ].map(({ label, vals }) => (
                   <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="px-6 py-3.5 text-black/70">{label}</td>

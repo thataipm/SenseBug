@@ -3,19 +3,19 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'SenseBug AI — AI Bug Triage for Product Managers',
-  description: 'Connect Jira and let AI rank every bug by business impact the moment it\'s filed. Reporter bias removed. Learns your judgment over time. Free for up to 50 bugs.',
+  title: 'SenseBug AI — AI Bug Backlog Intelligence for Product Managers',
+  description: 'The AI layer that sits on top of Jira and makes sense of your bug backlog. Ranks every bug by business impact, learns your judgment over time, and keeps your backlog healthy. Free for up to 50 bugs.',
   openGraph: {
-    title: 'SenseBug AI — AI Bug Triage for Product Managers',
-    description: 'Connect Jira and let AI rank every bug by business impact the moment it\'s filed. Reporter bias removed. Learns your judgment over time.',
+    title: 'SenseBug AI — AI Bug Backlog Intelligence for Product Managers',
+    description: 'The AI layer that sits on top of Jira and makes sense of your bug backlog. Ranks by business impact, learns your judgment over time.',
     url: 'https://www.sensebug.com',
     siteName: 'SenseBug AI',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SenseBug AI — AI Bug Triage for Product Managers',
-    description: 'Connect Jira and let AI rank every bug by business impact the moment it\'s filed. Reporter bias removed. Free for up to 50 bugs.',
+    title: 'SenseBug AI — AI Bug Backlog Intelligence for Product Managers',
+    description: 'The AI layer that sits on top of Jira and makes sense of your bug backlog. Ranks by business impact, learns your judgment. Free for up to 50 bugs.',
   },
 }
 
@@ -57,7 +57,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-5xl mx-auto relative z-10">
           <p className="text-sm font-mono uppercase tracking-widest text-black/55 mb-8" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-            AI Bug Triage for Product Managers
+            AI Backlog Intelligence for Product Managers
           </p>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.95] mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
             Your bug backlog<br />is full of opinions.
@@ -67,7 +67,7 @@ export default function LandingPage() {
             SenseBug AI ignores the noise and ranks by what actually matters — business impact.
           </p>
           <p className="text-base text-black/40 max-w-xl mb-12 leading-relaxed">
-            Connect Jira and bugs are triaged the moment they&apos;re filed — no CSV exports, no manual work. The AI ranks against your product&apos;s critical flows, removes reporter bias, and gets more accurate with every verdict you make.
+            Connect Jira and every bug is automatically analysed and prioritised the moment it&apos;s filed — no CSV exports, no manual work. The AI ranks against your product&apos;s critical flows, removes reporter bias, and gets more accurate with every verdict you make.
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link
@@ -75,7 +75,7 @@ export default function LandingPage() {
               data-testid="hero-signup-btn"
               className="bg-black text-white px-8 py-4 font-semibold text-sm flex items-center gap-2 hover:bg-black/90 transition-colors duration-150"
             >
-              Triage my backlog — it&apos;s free <ArrowRight className="w-4 h-4" />
+              Analyse my backlog — it&apos;s free <ArrowRight className="w-4 h-4" />
             </Link>
             <Link href="/login" className="text-sm font-medium text-black/40 hover:text-black transition-colors duration-150">
               Already have an account →
@@ -192,7 +192,7 @@ export default function LandingPage() {
               {
                 step: '01',
                 title: 'Connect Jira — or upload a CSV',
-                desc: 'Link your Jira workspace in 60 seconds. From that point, every new bug is automatically triaged as it\'s filed. Or drop a CSV from any tracker if you prefer — no integrations required.',
+                desc: 'Link your Jira workspace in 60 seconds. From that point, every new bug is automatically analysed and prioritised as it\'s filed. Or drop a CSV from any tracker if you prefer — no integrations required.',
               },
               {
                 step: '02',
@@ -246,7 +246,7 @@ export default function LandingPage() {
             What you actually get
           </p>
           <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            Bug triage in 5 minutes.<br />Not 5 hours.
+            Bug backlog clarity in 5 minutes.<br />Not 5 hours.
           </h2>
           <p className="text-base text-black/45 mb-14 max-w-xl">
             SenseBug AI doesn&apos;t just rank bugs — it gives you the reasoning to defend every call in the room.
@@ -318,7 +318,7 @@ export default function LandingPage() {
             {[
               {
                 q: 'Does SenseBug connect directly to Jira?',
-                a: 'Yes. Connect your Jira workspace under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule — once set up, every new bug is triaged automatically as it\'s filed, no exports needed. P1 bugs trigger an immediate email alert. When you approve a verdict, SenseBug writes the AI-assigned priority back to Jira.',
+                a: 'Yes. Connect your Jira workspace under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule — once set up, every new bug is automatically analysed and prioritised as it\'s filed, no exports needed. P1 bugs trigger an immediate email alert. When you approve a verdict, SenseBug writes the AI-assigned priority back to Jira.',
               },
               {
                 q: 'What CSV format does SenseBug AI need?',
