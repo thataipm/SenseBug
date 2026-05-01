@@ -208,9 +208,12 @@ function OnboardingContent() {
 
           {/* Doc upload — with clear payoff explanation */}
           <div>
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/50 mb-1" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-              Upload product docs — optional but recommended
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-mono uppercase tracking-widest text-black/50" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                Upload product docs — optional
+              </label>
+              <span className="text-xs font-mono text-black/30" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Pro &amp; Max only</span>
+            </div>
             {/* Payoff callout */}
             <div className="flex items-start gap-2.5 bg-gray-50 border border-gray-200 px-4 py-3 mb-3">
               <Sparkles className="w-3.5 h-3.5 text-black/40 mt-0.5 flex-shrink-0" strokeWidth={1.5} />
@@ -260,6 +263,8 @@ function OnboardingContent() {
             <button
               type="button"
               onClick={() => {
+                const hasContent = productOverview.trim() || criticalFlows.trim() || productAreas.trim()
+                if (hasContent && !window.confirm('Replace your current content with the example?')) return
                 setProductOverview(EXAMPLE_CONTENT.productOverview)
                 setCriticalFlows(EXAMPLE_CONTENT.criticalFlows)
                 setProductAreas(EXAMPLE_CONTENT.productAreas)

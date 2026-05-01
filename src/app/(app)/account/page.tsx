@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
-import { Loader2, ExternalLink, Check } from 'lucide-react'
+import { Loader2, Check, ChevronRight } from 'lucide-react'
 import { Suspense } from 'react'
 
 interface PlanInfo {
@@ -200,7 +200,7 @@ function AccountContent() {
               <p className="text-sm font-medium" data-testid="account-email">{user?.email}</p>
             </div>
             <Link href="/forgot-password" className="text-sm text-black/65 hover:text-black transition-colors duration-150 inline-flex items-center gap-1">
-              Change password <ExternalLink className="w-3 h-3" />
+              Change password <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
         </div>

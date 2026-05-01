@@ -111,7 +111,7 @@ function SettingsContent() {
 
   return (
     <div className="px-6 md:px-10 py-10 max-w-2xl mx-auto space-y-12" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
-      <h1 className="text-2xl font-black tracking-tighter" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Settings</h1>
+      <h1 className="text-2xl font-black tracking-tighter" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Knowledge Base</h1>
 
       {/* Knowledge Base */}
       <section>
@@ -121,14 +121,23 @@ function SettingsContent() {
           <div>
             <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Product overview</label>
             <textarea data-testid="settings-product-overview" value={productOverview} onChange={(e) => setProductOverview(e.target.value)} rows={7} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-y" />
+            <p className={`text-xs mt-1 text-right tabular-nums ${productOverview.length < 100 ? 'text-amber-500' : 'text-black/25'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+              {productOverview.length} chars{productOverview.length < 100 ? ' — aim for 100+' : ''}
+            </p>
           </div>
           <div>
             <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Critical user flows</label>
             <textarea data-testid="settings-critical-flows" value={criticalFlows} onChange={(e) => setCriticalFlows(e.target.value)} rows={7} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-y" />
+            <p className={`text-xs mt-1 text-right tabular-nums ${criticalFlows.length < 80 ? 'text-amber-500' : 'text-black/25'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+              {criticalFlows.length} chars{criticalFlows.length < 80 ? ' — list at least 3 flows' : ''}
+            </p>
           </div>
           <div>
             <label className="block text-xs font-mono uppercase tracking-widest text-black/45 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Product areas / modules</label>
             <textarea data-testid="settings-product-areas" value={productAreas} onChange={(e) => setProductAreas(e.target.value)} rows={4} className="w-full border border-gray-200 focus:border-black focus:outline-none px-4 py-3 text-sm transition-colors duration-150 resize-y" />
+            <p className="text-xs mt-1 text-right tabular-nums text-black/25" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+              {productAreas.length} chars
+            </p>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
             <button data-testid="settings-save-kb-button" type="submit" disabled={kbSaving} className="bg-black text-white px-6 py-2.5 text-sm font-semibold hover:bg-black/90 transition-colors duration-150 disabled:opacity-50 flex items-center gap-2">
@@ -139,6 +148,8 @@ function SettingsContent() {
             <button
               type="button"
               onClick={() => {
+                const hasContent = productOverview.trim() || criticalFlows.trim() || productAreas.trim()
+                if (hasContent && !window.confirm('Replace your current Knowledge Base with the example content?')) return
                 setProductOverview(EXAMPLE_CONTENT.productOverview)
                 setCriticalFlows(EXAMPLE_CONTENT.criticalFlows)
                 setProductAreas(EXAMPLE_CONTENT.productAreas)

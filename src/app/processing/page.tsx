@@ -232,7 +232,7 @@ export default function ProcessingPage() {
               data-testid="processing-cancel-btn"
               className="text-xs text-white/25 hover:text-white/50 transition-colors duration-150"
             >
-              Cancel — results will still be saved when done
+              Leave this page — analysis continues in the background
             </a>
           </div>
         )}

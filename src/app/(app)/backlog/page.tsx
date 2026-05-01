@@ -6,7 +6,7 @@ import { stripJiraMarkup } from '@/lib/jira'
 import { createClient } from '@/lib/supabase/client'
 import {
   Check, X, Edit2, ChevronLeft, ChevronDown, ChevronRight,
-  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox, Zap,
+  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox, Zap, Download, AlertTriangle,
 } from 'lucide-react'
 
 const MONO    = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
@@ -144,6 +144,7 @@ export default function BacklogPage() {
   const [selected, setSelected] = useState<BacklogEntry | null>(null)
   const [loading, setLoading]   = useState(true)
   const [newBugToast, setNewBugToast] = useState<BacklogEntry | null>(null)
+  const [hasRuns, setHasRuns] = useState(false)
 
   // Detail loading — same pattern as results page
   const [detailLoading, setDetailLoading] = useState<Set<string>>(new Set())
@@ -172,9 +173,39 @@ export default function BacklogPage() {
     if (!res.ok) { setLoading(false); return }
     const data: BacklogEntry[] = await res.json()
     setEntries(data)
+    if (data.length === 0) {
+      // For the smarter empty state, check if there are any triage runs at all
+      fetch('/api/triage/runs')
+        .then(r => r.ok ? r.json() : [])
+        .then((runs: unknown[]) => setHasRuns(runs.length > 0))
+    }
     if (data.length > 0 && !selected) setSelected(data[0])
     setLoading(false)
   }, [selected])
+
+  const handleExportBacklog = () => {
+    if (entries.length === 0) return
+    const headers = ['Bug ID', 'Title', 'Priority', 'Severity', 'Status', 'Rejection Reason', 'First Seen', 'Last Seen']
+    const rows = entries.map(e => [
+      e.bug_id,
+      e.title,
+      e.pm_action === 'edited' && e.edited_priority ? e.edited_priority : (e.priority ?? ''),
+      e.pm_action === 'edited' && e.edited_severity ? e.edited_severity : (e.severity ?? ''),
+      e.pm_action ?? 'unreviewed',
+      e.rejection_reason ?? '',
+      new Date(e.first_seen_at).toLocaleDateString(),
+      new Date(e.last_seen_at).toLocaleDateString(),
+    ])
+    const escape = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(v => escape(String(v))).join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `sensebug-backlog-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   useEffect(() => { fetchEntries() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -316,7 +347,8 @@ export default function BacklogPage() {
     })
   }, [entries, search, filterPriority, filterStatus])
 
-  const unreviewedCount = useMemo(() => entries.filter(e => !e.pm_action).length, [entries])
+  const unreviewedCount  = useMemo(() => entries.filter(e => !e.pm_action).length, [entries])
+  const unreviewedP1s    = useMemo(() => entries.filter(e => e.priority === 'P1' && !e.pm_action).length, [entries])
   const hasFilters   = !!(search || filterPriority || filterStatus)
   const clearFilters = () => { setSearch(''); setFilterPriority(null); setFilterStatus(null) }
 
@@ -332,11 +364,23 @@ export default function BacklogPage() {
       <p className="text-sm text-black/50 mb-10">Your persistent bug inbox — deduplicates bugs across all CSV runs.</p>
       <div className="border border-dashed border-gray-300 px-8 py-20 text-center">
         <Inbox className="w-8 h-8 text-black/20 mx-auto mb-3" strokeWidth={1.5} />
-        <p className="text-sm text-black/50 mb-1">No bugs in your backlog yet.</p>
-        <p className="text-xs text-black/35 mb-6">Upload a CSV from the dashboard to populate it.</p>
-        <Link href="/dashboard" className="bg-black text-white px-5 py-2.5 text-sm font-semibold inline-block hover:bg-black/90 transition-colors">
-          Go to dashboard →
-        </Link>
+        {hasRuns ? (
+          <>
+            <p className="text-sm text-black/50 mb-1">No bugs approved yet.</p>
+            <p className="text-xs text-black/35 mb-6">You&apos;ve run analyses but haven&apos;t approved any bugs yet. Head to your most recent run to review them.</p>
+            <Link href="/historyRun" className="bg-black text-white px-5 py-2.5 text-sm font-semibold inline-block hover:bg-black/90 transition-colors">
+              View recent runs →
+            </Link>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-black/50 mb-1">No bugs in your backlog yet.</p>
+            <p className="text-xs text-black/35 mb-6">Upload a CSV from the dashboard to populate it.</p>
+            <Link href="/dashboard" className="bg-black text-white px-5 py-2.5 text-sm font-semibold inline-block hover:bg-black/90 transition-colors">
+              Go to dashboard →
+            </Link>
+          </>
+        )}
       </div>
     </div>
   )
@@ -371,7 +415,33 @@ export default function BacklogPage() {
             </span>
           )}
         </div>
+        <button
+          onClick={handleExportBacklog}
+          className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-black/40 hover:text-black border border-gray-200 hover:border-black px-3 py-1.5 transition-colors flex-shrink-0"
+          style={MONO}
+          title="Export backlog as CSV"
+        >
+          <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
+          Export CSV
+        </button>
       </header>
+
+      {/* ── P1 urgency banner ── */}
+      {unreviewedP1s > 0 && (
+        <div className="flex items-center gap-3 border-b border-red-200 bg-red-50 px-6 py-2.5 flex-shrink-0">
+          <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" strokeWidth={2} />
+          <p className="text-sm text-red-700 flex-1 min-w-0">
+            <span className="font-semibold">{unreviewedP1s} unreviewed P1{unreviewedP1s > 1 ? 's' : ''}</span> — these need your attention first.
+          </p>
+          <button
+            onClick={() => { setFilterPriority('P1'); setFilterStatus('unreviewed') }}
+            className="text-xs font-mono text-red-600 hover:text-red-800 border border-red-300 hover:border-red-500 px-2.5 py-1 transition-colors flex-shrink-0"
+            style={MONO}
+          >
+            Show P1s only →
+          </button>
+        </div>
+      )}
 
       {/* ── Main layout ── */}
       <div className="flex flex-1 overflow-hidden">

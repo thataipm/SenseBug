@@ -451,6 +451,23 @@ function DashboardContent() {
                             )
                           })()}
                         </td>
+                        <td className="py-3 pr-4 hidden sm:table-cell">
+                          {run.bug_count > 0 && (() => {
+                            const reviewed = run.reviewed_count ?? 0
+                            const pct = Math.round((reviewed / run.bug_count) * 100)
+                            const done = reviewed === run.bug_count
+                            return (
+                              <div className="flex items-center gap-2">
+                                <div className="w-14 h-1 bg-gray-200 overflow-hidden">
+                                  <div className={`h-full ${done ? 'bg-green-500' : 'bg-black'}`} style={{ width: `${pct}%` }} />
+                                </div>
+                                <span className={`text-xs font-mono tabular-nums ${done ? 'text-green-600' : 'text-black/40'}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                                  {reviewed}/{run.bug_count}
+                                </span>
+                              </div>
+                            )
+                          })()}
+                        </td>
                         <td className="py-3 pr-4 text-right">
                           <span className="font-mono text-xs text-black/60" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{run.bug_count} bugs</span>
                         </td>

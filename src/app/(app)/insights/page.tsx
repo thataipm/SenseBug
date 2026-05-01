@@ -365,17 +365,31 @@ export default function InsightsPage() {
         </div>
       ) : (
         <div className="border border-gray-100 bg-gray-50 px-6 py-6">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-3">
             <Brain className="w-4 h-4 text-black/20" strokeWidth={1.5} />
             <p className="text-xs font-mono uppercase tracking-widest text-black/25" style={MONO}>Learned patterns</p>
           </div>
-          <p className="text-sm text-black/35">
+          <p className="text-sm text-black/35 mb-4">
             After 30 verdicts, SenseBug learns your prioritisation judgment and automatically adjusts future AI rankings to match — no configuration needed.
           </p>
-          {calibration && (
-            <p className="text-xs font-mono text-black/30 mt-2" style={MONO}>
-              {calibration.verdict_count} / 30 verdicts recorded
-            </p>
+          {calibration !== null && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-mono text-black/40" style={MONO}>Progress to AI learning</span>
+                <span className="text-xs font-mono font-semibold text-black/60 tabular-nums" style={MONO}>
+                  {calibration.verdict_count} / 30
+                </span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 overflow-hidden mb-1.5">
+                <div
+                  className="h-full bg-black transition-all duration-500"
+                  style={{ width: `${Math.min(100, (calibration.verdict_count / 30) * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs font-mono text-black/30" style={MONO}>
+                {30 - calibration.verdict_count} more verdict{30 - calibration.verdict_count !== 1 ? 's' : ''} until SenseBug learns your style
+              </p>
+            </div>
           )}
         </div>
       )}

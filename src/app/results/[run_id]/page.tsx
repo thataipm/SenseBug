@@ -371,9 +371,10 @@ function BulkApproveMenu({ results, bulkLoading, onBulkApprove }: {
       <button
         onClick={() => setOpen(v => !v)}
         disabled={bulkLoading}
-        className="flex items-center gap-1 text-xs font-mono border border-gray-200 px-2 py-1 hover:border-black transition-colors disabled:opacity-30"
+        className="flex items-center gap-1.5 text-xs font-mono bg-black text-white px-3 py-1.5 hover:bg-black/80 transition-colors disabled:opacity-40"
         style={MONO}
       >
+        {bulkLoading ? <Loader2 className="w-3 h-3 animate-spin" strokeWidth={2} /> : null}
         Bulk approve <ChevronDown className="w-3 h-3" strokeWidth={2} />
       </button>
       {open && (
@@ -548,6 +549,14 @@ export default function ResultsPage() {
       setEditMode(false)
       setRejectMode(false)
       setRejectReason('')
+      // Auto-advance: select the next unreviewed bug in the visible list
+      const currentIdx = filteredResults.findIndex(r => r.id === resultId)
+      const remaining  = [
+        ...filteredResults.slice(currentIdx + 1),
+        ...filteredResults.slice(0, currentIdx),
+      ]
+      const nextBug = remaining.find(r => !r.pm_action && r.id !== resultId)
+      if (nextBug) setSelected(nextBug)
     }
     setActionLoading(false)
   }
@@ -611,6 +620,7 @@ export default function ResultsPage() {
 
   const hasFilters   = !!(search || filterPriority || filterStatus)
   const clearFilters = () => { setSearch(''); setFilterPriority(null); setFilterStatus(null) }
+  const allReviewed  = results.length > 0 && results.every(r => r.pm_action)
 
   const handleBulkApprove = async (filter: BulkFilter) => {
     const priorityMap: Record<BulkFilter, string | null> = {
@@ -780,6 +790,32 @@ export default function ResultsPage() {
               <div className="h-full bg-black transition-all duration-300" style={{ width: `${reviewPct}%` }} />
             </div>
             <span className="text-xs font-mono text-black/65 tabular-nums" style={MONO}>{reviewed}/{results.length}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── All-reviewed completion banner ── */}
+      {allReviewed && (
+        <div className="border-b border-green-200 bg-green-50 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <Check className="w-4 h-4 text-green-600 flex-shrink-0" strokeWidth={2.5} />
+            <p className="text-sm font-semibold text-green-800">All {results.length} bugs reviewed</p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Link href="/backlog" className="text-xs font-mono text-green-700 border border-green-300 hover:bg-green-100 px-3 py-1.5 transition-colors" style={MONO}>
+              View backlog →
+            </Link>
+            <button
+              onClick={handleDownload}
+              disabled={exportLoading}
+              className="text-xs font-mono text-green-700 border border-green-300 hover:bg-green-100 px-3 py-1.5 transition-colors disabled:opacity-50"
+              style={MONO}
+            >
+              Download CSV
+            </button>
+            <Link href="/dashboard" className="text-xs font-mono text-green-700 border border-green-300 hover:bg-green-100 px-3 py-1.5 transition-colors" style={MONO}>
+              New run →
+            </Link>
           </div>
         </div>
       )}
@@ -1189,6 +1225,11 @@ export default function ResultsPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Session snapshot — md screens only; lg+ has it in the right panel */}
+                  <div className="lg:hidden">
+                    <SessionSnapshot results={results} />
+                  </div>
 
                 </div>
               </div>

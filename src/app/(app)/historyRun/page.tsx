@@ -30,6 +30,15 @@ export default function HistoryRunPage() {
     init()
   }, [router, fetchRuns])
 
+  function relativeDate(iso: string): string {
+    const diffDays = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7)  return `${diffDays}d ago`
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
+    return new Date(iso).toLocaleDateString()
+  }
+
   const filteredRuns = runs.filter((r) => r.filename.toLowerCase().includes(search.toLowerCase()))
   const allSelected  = filteredRuns.length > 0 && filteredRuns.every((r) => selectedIds.has(r.id))
 
@@ -135,7 +144,10 @@ export default function HistoryRunPage() {
                   </Link>
                 </td>
                 <td className="py-3 pr-4 text-black/65">
-                  <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" />{new Date(run.run_at).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-1.5" title={new Date(run.run_at).toLocaleDateString()}>
+                    <Clock className="w-3 h-3" />
+                    {relativeDate(run.run_at)}
+                  </span>
                 </td>
                 <td className="py-3 pr-4 text-center font-mono text-xs text-black/65" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{run.bug_count}</td>
                 <td className="py-3 pr-4 hidden sm:table-cell">

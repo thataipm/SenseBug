@@ -27,7 +27,16 @@ export default function IntegrationsPage() {
   useEffect(() => {
     fetch('/api/integrations/jira')
       .then(r => r.ok ? r.json() : null)
-      .then(d => { setIntegration(d); setLoading(false) })
+      .then(d => {
+        setIntegration(d)
+        // Pre-populate non-sensitive fields so the user only needs to re-enter the API token
+        if (d) {
+          setSiteUrl(d.site_url ?? '')
+          setEmail(d.email ?? '')
+          setProjectKey(d.project_key ?? '')
+        }
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
   }, [])
 
@@ -72,7 +81,10 @@ export default function IntegrationsPage() {
     const res = await fetch('/api/integrations/jira', { method: 'DELETE' })
     if (res.ok) {
       setIntegration(null)
-      setSiteUrl(''); setEmail(''); setApiToken(''); setProjectKey('')
+      setSiteUrl('')
+      setEmail('')
+      setApiToken('')
+      setProjectKey('')
     }
     setDeleting(false)
   }
