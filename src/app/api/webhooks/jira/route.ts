@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { triageSingleBug } from '@/lib/triage-single'
 import { extractAdfText } from '@/lib/jira-api'
 import { sendP1AlertEmail } from '@/lib/email'
+import { getCalibrationBlock } from '@/lib/pm-calibration'
 
 export const maxDuration = 60
 export const runtime = 'nodejs'
@@ -60,12 +61,16 @@ export async function POST(request: NextRequest) {
 
   const kbData = kb ?? { product_overview: '', critical_flows: '', product_areas: '' }
 
+  // Fetch calibration block — non-fatal if absent or under threshold
+  const calibrationBlock = await getCalibrationBlock(supabase, integration.user_id).catch(() => null)
+
   // Triage the bug with Haiku (same model as Pass 1 batch upload)
   let triageResult
   try {
     triageResult = await triageSingleBug(
       { bug_id: issueKey, title, description, comments, priority: reporterPriority },
-      kbData
+      kbData,
+      calibrationBlock
     )
   } catch (e) {
     console.error('[webhook/jira] Triage error for', issueKey, ':', e instanceof Error ? e.message : e)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { isValidOrigin } from '@/lib/csrf'
 import { updateJiraPriority } from '@/lib/jira-api'
+import { recomputeAndStoreCalibration } from '@/lib/pm-calibration'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,6 +114,18 @@ export async function PATCH(request: NextRequest) {
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Calibration recompute — fire-and-forget on every 5th verdict past 30.
+  // Count includes the verdict we just recorded.
+  ;(async () => {
+    const { count } = await supabase
+      .from('backlog')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('pm_action', 'is', null)
+    if (!count || count < 30 || count % 5 !== 0) return
+    await recomputeAndStoreCalibration(supabase, user.id)
+  })().catch(e => console.error('[calibration] recompute error:', e instanceof Error ? e.message : e))
 
   // Jira write-back — fire-and-forget on approve/edit.
   // Only fires when a Jira integration exists for this user.

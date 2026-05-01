@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Clock, Brain } from 'lucide-react'
+import type { CalibrationSignal } from '@/lib/pm-calibration'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ReferenceLine,
@@ -114,15 +115,28 @@ function ScoreGauge({ score }: { score: number }) {
   )
 }
 
+interface CalibrationData {
+  verdict_count: number
+  signal: CalibrationSignal
+  prompt_injection: string
+  prompt_block: string | null
+  computed_at: string
+}
+
 export default function InsightsPage() {
-  const [snapshots, setSnapshots] = useState<HealthSnapshot[]>([])
-  const [loading, setLoading] = useState(true)
+  const [snapshots, setSnapshots]       = useState<HealthSnapshot[]>([])
+  const [calibration, setCalibration]   = useState<CalibrationData | null>(null)
+  const [loading, setLoading]           = useState(true)
 
   useEffect(() => {
-    fetch('/api/health-score')
-      .then(r => r.ok ? r.json() : [])
-      .then((data: HealthSnapshot[]) => { setSnapshots(data); setLoading(false) })
-      .catch(() => setLoading(false))
+    Promise.all([
+      fetch('/api/health-score').then(r => r.ok ? r.json() : []),
+      fetch('/api/calibration').then(r => r.ok ? r.json() : null),
+    ]).then(([snaps, cal]) => {
+      setSnapshots(snaps ?? [])
+      setCalibration(cal)
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [])
 
   if (loading) {
@@ -274,14 +288,97 @@ export default function InsightsPage() {
         </div>
       )}
 
-      {/* Learned patterns — Phase 4 placeholder */}
-      <div className="border border-gray-100 bg-gray-50 px-6 py-6">
-        <p className="text-xs font-mono uppercase tracking-widest text-black/25 mb-2" style={MONO}>Learned patterns</p>
-        <p className="text-sm text-black/35">
-          After 30+ verdicts, SenseBug will learn your triage patterns and show them here — e.g. &ldquo;You consistently downgrade performance bugs&rdquo; or &ldquo;You always escalate checkout issues.&rdquo;
-        </p>
-        <p className="text-xs text-black/25 mt-2 font-mono" style={MONO}>Available after Phase 4 calibration</p>
-      </div>
+      {/* Learned patterns */}
+      {calibration && calibration.verdict_count >= 30 ? (
+        <div className="border border-gray-200">
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-100">
+            <Brain className="w-4 h-4 text-black/40" strokeWidth={1.5} />
+            <p className="text-xs font-mono uppercase tracking-widest text-black/40" style={MONO}>Learned patterns</p>
+            <span className="ml-auto text-xs font-mono text-black/30 tabular-nums" style={MONO}>{calibration.verdict_count} verdicts</span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+
+            {/* Approval rates */}
+            <div className="px-6 py-5">
+              <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Acceptance by priority</p>
+              <div className="space-y-2.5">
+                {(['P1','P2','P3','P4'] as const).map(p => {
+                  const r = calibration.signal.approval_rates[p]
+                  if (!r || r.total === 0) return null
+                  const barColor = r.approval_pct >= 70 ? 'bg-green-400' : r.approval_pct >= 40 ? 'bg-amber-400' : 'bg-red-400'
+                  return (
+                    <div key={p}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-mono text-black/60" style={MONO}>{p}</span>
+                        <span className="text-xs font-mono tabular-nums text-black/60" style={MONO}>{r.approval_pct}% · {r.total} bugs</span>
+                      </div>
+                      <div className="w-full h-1 bg-gray-100">
+                        <div className={`h-full ${barColor}`} style={{ width: `${r.approval_pct}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Top rejection reasons + gap flags */}
+            <div className="px-6 py-5">
+              <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Top rejection reasons</p>
+              {calibration.signal.top_rejection_reasons.length > 0 ? (
+                <div className="space-y-1.5">
+                  {calibration.signal.top_rejection_reasons.map(r => (
+                    <div key={r.reason} className="flex items-center justify-between">
+                      <span className="text-xs text-black/60 truncate mr-2">{r.reason}</span>
+                      <span className="text-xs font-mono tabular-nums text-black/40 flex-shrink-0" style={MONO}>{r.count}×</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-black/30">No rejections yet.</p>
+              )}
+
+              {calibration.signal.gap_flag_rejection_rates.length > 0 && (
+                <>
+                  <p className="text-xs font-mono uppercase tracking-widest text-black/30 mt-5 mb-3" style={MONO}>Flag → rejection rate</p>
+                  <div className="space-y-1.5">
+                    {calibration.signal.gap_flag_rejection_rates.map(f => (
+                      <div key={f.flag} className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-black/60 truncate">{f.flag}</span>
+                        <span className={`text-xs font-mono tabular-nums flex-shrink-0 ${f.rejection_pct >= 70 ? 'text-red-600' : 'text-black/40'}`} style={MONO}>{f.rejection_pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Generated plain-English summary */}
+            <div className="px-6 py-5">
+              <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Applied to future triage</p>
+              <p className="text-xs text-black/50 leading-relaxed whitespace-pre-line">{calibration.prompt_injection}</p>
+              <p className="text-[10px] font-mono text-black/25 mt-4" style={MONO}>
+                Last updated {new Date(calibration.computed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="border border-gray-100 bg-gray-50 px-6 py-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Brain className="w-4 h-4 text-black/20" strokeWidth={1.5} />
+            <p className="text-xs font-mono uppercase tracking-widest text-black/25" style={MONO}>Learned patterns</p>
+          </div>
+          <p className="text-sm text-black/35">
+            After 30 verdicts, SenseBug learns your triage judgment and automatically adjusts future AI rankings to match — no configuration needed.
+          </p>
+          {calibration && (
+            <p className="text-xs font-mono text-black/30 mt-2" style={MONO}>
+              {calibration.verdict_count} / 30 verdicts recorded
+            </p>
+          )}
+        </div>
+      )}
 
     </div>
   )

@@ -7,6 +7,7 @@ import { isValidOrigin } from '@/lib/csrf'
 import { stripJiraMarkup } from '@/lib/jira'
 import { RANK_SYSTEM_PROMPT } from '@/lib/triage-prompts'
 import { computeHealthScore, metricsFromResults } from '@/lib/health-score'
+import { getCalibrationBlock } from '@/lib/pm-calibration'
 import Papa from 'papaparse'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
@@ -249,7 +250,8 @@ async function callClaudeBatch(
   anthropic: Anthropic,
   kbData: Record<string, string>,
   retrievedChunks: string,
-  batch: BugRow[]
+  batch: BugRow[],
+  calibrationBlock?: string | null
 ): Promise<Record<string, unknown>[]> {
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001'
 
@@ -279,7 +281,12 @@ async function callClaudeBatch(
         // cache_control on the system prompt: Anthropic caches the first 5 min
         // of identical prompts. Batch 1 warms the cache; batches 2-N pay only
         // for the per-batch user content, cutting per-call latency 60-70%.
-        system: [{ type: 'text', text: RANK_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+        system: [
+          { type: 'text', text: RANK_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+          // Calibration is a separate un-cached block so the base prompt stays cacheable.
+          // It only exists when the user has 30+ verdicts and changes every 5 verdicts.
+          ...(calibrationBlock ? [{ type: 'text' as const, text: calibrationBlock }] : []),
+        ],
         messages: [
           { role: 'user',      content: userPrompt },
           { role: 'assistant', content: '['        }, // prefill — forces JSON array output
@@ -344,7 +351,8 @@ async function runWithConcurrencyLimit<T>(
 async function callClaude(
   kb: Record<string, string> | null,
   retrievedChunks: string,
-  bugsForLlm: BugRow[]
+  bugsForLlm: BugRow[],
+  calibrationBlock?: string | null
 ): Promise<{ results: Record<string, unknown>[]; failedBatches: number }> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set in environment variables')
@@ -365,7 +373,7 @@ async function callClaude(
   const batchResults = await runWithConcurrencyLimit(
     batches.map((batch, batchIdx) => async () => {
       try {
-        return await callClaudeBatch(anthropic, kbData, retrievedChunks, batch)
+        return await callClaudeBatch(anthropic, kbData, retrievedChunks, batch, calibrationBlock)
       } catch (e) {
         failedBatches++
         console.error(
@@ -675,12 +683,20 @@ export async function POST(request: NextRequest) {
     }
   })()
 
-  // KB vector context — skips OpenAI embedding if user has no uploaded docs
+  // KB vector context + calibration block — run in parallel, both non-blocking
   let retrievedChunks = 'No relevant documentation context available.'
+  let calibrationBlock: string | null = null
   try {
-    retrievedChunks = await getKBContext(supabase, user.id, bugsForLlm)
+    [retrievedChunks, calibrationBlock] = await Promise.all([
+      getKBContext(supabase, user.id, bugsForLlm).catch(() => retrievedChunks),
+      getCalibrationBlock(supabase, user.id).catch(() => null),
+    ])
   } catch {
-    // Non-fatal — continue without vector context
+    // Non-fatal — continue without either
+  }
+
+  if (calibrationBlock) {
+    console.log(`[triage] Injecting calibration block for user ${user.id}`)
   }
 
   // ── Phase 3: Claude (main bottleneck) + resolve dup warning in parallel ──────
@@ -688,7 +704,7 @@ export async function POST(request: NextRequest) {
   let crossRunDupWarning: string | null = null
   try {
     const [claudeResult, dupWarning] = await Promise.all([
-      callClaude(kb, retrievedChunks, bugsForLlm),
+      callClaude(kb, retrievedChunks, bugsForLlm, calibrationBlock),
       crossRunDupPromise,
     ])
     llmResults        = claudeResult.results

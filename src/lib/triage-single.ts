@@ -57,7 +57,8 @@ function tryParseResult(raw: string): Record<string, unknown> | null {
  */
 export async function triageSingleBug(
   bug: SingleBugInput,
-  kb: { product_overview: string; critical_flows: string; product_areas: string }
+  kb: { product_overview: string; critical_flows: string; product_areas: string },
+  calibrationBlock?: string | null
 ): Promise<SingleTriageResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set')
@@ -79,7 +80,10 @@ export async function triageSingleBug(
     model,
     max_tokens: 512,
     temperature: 0,
-    system: [{ type: 'text', text: RANK_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    system: [
+      { type: 'text', text: RANK_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+      ...(calibrationBlock ? [{ type: 'text' as const, text: calibrationBlock }] : []),
+    ],
     messages: [
       { role: 'user',      content: userPrompt },
       { role: 'assistant', content: '['        },
