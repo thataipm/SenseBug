@@ -100,6 +100,11 @@ export async function POST(request: NextRequest) {
           description: freshData.description,
           comments:    freshData.comments,
           priority:    freshData.reporter_priority,
+          labels:      freshData.labels,
+          components:  freshData.components,
+          status:      freshData.status,
+          created:     freshData.created,
+          updated:     freshData.updated,
         },
         kbData,
         calibrationBlock

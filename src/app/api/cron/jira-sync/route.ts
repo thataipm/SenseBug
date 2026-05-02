@@ -161,6 +161,11 @@ export async function GET(request: NextRequest) {
               description: newDesc,
               comments:    newComments,
               priority:    freshData.reporter_priority,
+              labels:      freshData.labels,
+              components:  freshData.components,
+              status:      freshData.status,
+              created:     freshData.created,
+              updated:     freshData.updated,
             },
             kbData,
             calibrationBlock

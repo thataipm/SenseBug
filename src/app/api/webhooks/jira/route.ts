@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { triageSingleBug } from '@/lib/triage-single'
-import { extractAdfText } from '@/lib/jira-api'
+import { extractAdfText, normalizeJiraPriority } from '@/lib/jira-api'
 import { sendP1AlertEmail } from '@/lib/email'
 import { getCalibrationBlock } from '@/lib/pm-calibration'
 
@@ -57,12 +57,26 @@ export async function POST(request: NextRequest) {
 
   const title            = String(fields.summary ?? 'Untitled')
   const description      = extractAdfText(fields.description)
-  const reporterPriority = fields.priority?.name ?? null
+  const reporterPriority = normalizeJiraPriority(fields.priority?.name)
 
-  const comments = ((fields.comment?.comments ?? []) as Array<{ body: unknown }>)
-    .map(c => extractAdfText(c.body))
-    .filter(Boolean)
+  const comments = ((fields.comment?.comments ?? []) as Array<{ body: unknown; author?: { displayName?: string }; created?: string }>)
+    .map(c => {
+      const text   = extractAdfText(c.body)
+      if (!text.trim()) return null
+      const author = c.author?.displayName ?? 'Unknown'
+      const date   = c.created
+        ? new Date(c.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : null
+      return date ? `[${author}, ${date}]: ${text.trim()}` : `[${author}]: ${text.trim()}`
+    })
+    .filter((s): s is string => s !== null)
     .join('\n---\n')
+
+  const labels     = ((fields.labels     ?? []) as string[]).filter(Boolean)
+  const components = ((fields.components ?? []) as Array<{ name?: string }>).map(c => c.name ?? '').filter(Boolean)
+  const status     = fields.status?.name  ?? null
+  const created    = fields.created       ?? null
+  const updated    = fields.updated       ?? null
 
   const now = new Date().toISOString()
 
@@ -110,11 +124,12 @@ export async function POST(request: NextRequest) {
   // Fetch calibration block — non-fatal if absent or under threshold
   const calibrationBlock = await getCalibrationBlock(supabase, integration.user_id).catch(() => null)
 
-  // Triage the bug with Haiku (same model as Pass 1 batch upload)
+  // Triage with Haiku — pass all available Jira context
   let triageResult
   try {
     triageResult = await triageSingleBug(
-      { bug_id: issueKey, title, description, comments, priority: reporterPriority },
+      { bug_id: issueKey, title, description, comments, priority: reporterPriority,
+        labels, components, status, created, updated },
       kbData,
       calibrationBlock
     )
