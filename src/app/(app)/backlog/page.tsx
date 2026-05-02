@@ -157,6 +157,7 @@ export default function BacklogPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [syncLoading, setSyncLoading]     = useState(false)
+  const [syncToast, setSyncToast]         = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [copied, setCopied]               = useState(false)
   const [showOriginal, setShowOriginal]   = useState(true)
   const [showComments, setShowComments]   = useState(true)
@@ -323,7 +324,10 @@ export default function BacklogPage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ bug_id: entry.bug_id }),
       })
-      if (!res.ok) return
+      if (!res.ok) {
+        setSyncToast({ type: 'error', message: 'Sync failed — could not reach Jira. Try again.' })
+        return
+      }
       const fresh = await res.json()
       // Patch the entry with fresh data and reset the detail cache so it re-generates
       const patch = {
@@ -340,10 +344,24 @@ export default function BacklogPage() {
       detailRequestedRef.current.delete(entry.bug_id)
       setEntries(prev => prev.map(e => e.bug_id === entry.bug_id ? { ...e, ...patch } : e))
       setSelected(prev => prev && prev.bug_id === entry.bug_id ? { ...prev, ...patch } : prev)
+      const hasNewContent = !!(fresh.original_description?.trim() || fresh.original_comments?.trim())
+      setSyncToast({
+        type:    'success',
+        message: hasNewContent ? 'Synced — new content pulled from Jira.' : 'Synced — ticket still has no description yet.',
+      })
+    } catch {
+      setSyncToast({ type: 'error', message: 'Sync failed — network error. Try again.' })
     } finally {
       setSyncLoading(false)
     }
   }
+
+  // Auto-dismiss sync toast after 5 seconds
+  useEffect(() => {
+    if (!syncToast) return
+    const t = setTimeout(() => setSyncToast(null), 5000)
+    return () => clearTimeout(t)
+  }, [syncToast])
 
   const filteredEntries = useMemo(() => {
     return entries.filter(e => {
@@ -402,6 +420,19 @@ export default function BacklogPage() {
 
   return (
     <div className="h-screen bg-white flex flex-col" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
+
+      {/* ── Sync toast ── */}
+      {syncToast && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 shadow-lg text-sm font-medium ${syncToast.type === 'success' ? 'bg-black text-white' : 'bg-red-600 text-white'}`}>
+          {syncToast.type === 'success'
+            ? <Check className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />
+            : <AlertCircle className="w-4 h-4 flex-shrink-0" strokeWidth={2} />}
+          <span>{syncToast.message}</span>
+          <button onClick={() => setSyncToast(null)} className="ml-2 text-white/60 hover:text-white transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <header className="border-b border-gray-200 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0">
