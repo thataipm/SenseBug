@@ -89,12 +89,15 @@ export function AppSidebar() {
     return () => clearTimeout(t)
   }, [jiraToast])
 
-  // Re-fetch the unreviewed count whenever the window regains focus —
-  // ensures the badge stays accurate after the user reviews bugs in /backlog
-  // or /results and navigates back.
+  // Re-fetch the unreviewed count whenever the window regains focus, or when
+  // the backlog page dispatches a verdict/delete event.
   useEffect(() => {
     window.addEventListener('focus', refreshBadge)
-    return () => window.removeEventListener('focus', refreshBadge)
+    window.addEventListener('sensebug:badge-refresh', refreshBadge)
+    return () => {
+      window.removeEventListener('focus', refreshBadge)
+      window.removeEventListener('sensebug:badge-refresh', refreshBadge)
+    }
   }, [refreshBadge])
 
   const handleSignOut = async () => {

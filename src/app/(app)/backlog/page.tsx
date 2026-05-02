@@ -295,6 +295,8 @@ export default function BacklogPage() {
       setEntries(prev => prev.map(e => e.id === entryId ? { ...e, ...patch } : e))
       if (selected.id === entryId) setSelected(prev => prev ? { ...prev, ...patch } : prev)
       setEditMode(false); setRejectMode(false); setRejectReason('')
+      // Tell the sidebar to re-fetch the unreviewed badge count
+      window.dispatchEvent(new Event('sensebug:badge-refresh'))
       // Auto-advance to the next unreviewed bug in the visible list
       const currentIdx = filteredEntries.findIndex(e => e.id === entryId)
       const remaining  = [
@@ -315,6 +317,7 @@ export default function BacklogPage() {
       const next = entries.find(e => e.id !== entryId) ?? null
       setEntries(prev => prev.filter(e => e.id !== entryId))
       setSelected(next)
+      window.dispatchEvent(new Event('sensebug:badge-refresh'))
       if (next) setMobileShowDetail(true)
       else setMobileShowDetail(false)
     }
@@ -816,12 +819,22 @@ export default function BacklogPage() {
                   {/* Action buttons */}
                   {!editMode && !rejectMode && (
                     <div className="pt-5 border-t border-gray-100">
-                      <p className="text-xs text-black/55 mb-4">Your call — approve it, adjust the priority, or dismiss it entirely.</p>
+                      {selected.priority === null ? (
+                        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 px-3 py-2.5 mb-4">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
+                          <p className="text-xs text-amber-700 leading-snug">
+                            Analysis pending — sync ticket content from Jira first, then approve.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-black/55 mb-4">Your call — approve it, adjust the priority, or dismiss it entirely.</p>
+                      )}
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
                           onClick={() => handleVerdict('approved', selected.id)}
-                          disabled={actionLoading || selected.pm_action === 'approved'}
-                          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${selected.pm_action === 'approved' ? 'bg-green-600 text-white border border-green-600' : 'bg-green-50 border border-green-300 text-green-700 hover:bg-green-600 hover:text-white hover:border-green-600'}`}
+                          disabled={actionLoading || selected.pm_action === 'approved' || selected.priority === null}
+                          title={selected.priority === null ? 'Sync ticket from Jira first to enable approval' : undefined}
+                          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${selected.pm_action === 'approved' ? 'bg-green-600 text-white border border-green-600' : 'bg-green-50 border border-green-300 text-green-700 hover:bg-green-600 hover:text-white hover:border-green-600'}`}
                         ><Check className="w-4 h-4" strokeWidth={2} />Approve</button>
                         <button
                           onClick={() => { setEditMode(true); setEditPriority(selected.priority ?? 'P3'); setEditSeverity(selected.severity ?? 'Medium') }}

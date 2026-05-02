@@ -167,7 +167,15 @@ export async function PATCH(request: NextRequest) {
   if (action === 'approved' || action === 'edited') {
     const effectivePriority = action === 'edited' && edited_priority
       ? String(edited_priority)
-      : String(entry.priority ?? '')
+      : (entry.priority ?? null)
+
+    // Skip Jira write-back if there is no priority to send — this happens when
+    // a ticket is still pending triage (priority=null). Writing an empty priority
+    // to Jira would corrupt the ticket; the cron will re-triage and the PM can
+    // re-approve once the analysis is ready.
+    if (!effectivePriority) {
+      return NextResponse.json({ success: true })
+    }
 
     const { data: integration } = await supabase
       .from('integrations')
