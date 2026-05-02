@@ -128,9 +128,11 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Calibration recompute — fire-and-forget on every 5th verdict past 30.
+  // Calibration recompute — Pro+ only, fire-and-forget on every 5th verdict past 30.
   // Count includes the verdict we just recorded.
   ;(async () => {
+    const { data: planRow } = await supabase.from('user_plans').select('plan').eq('user_id', user.id).single()
+    if (!planRow || planRow.plan === 'starter') return
     const { count } = await supabase
       .from('backlog')
       .select('id', { count: 'exact', head: true })

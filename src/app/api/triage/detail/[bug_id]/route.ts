@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidOrigin } from '@/lib/csrf'
 import { generateDetailForBug } from '@/lib/triage-detail'
+import { ensureUserPlan } from '@/lib/plan'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 
@@ -56,12 +57,16 @@ export async function POST(
 
   if (resultErr || !result) return NextResponse.json({ error: 'Bug not found' }, { status: 404 })
 
+  // Plan check — rewrites are Pro+ only; impact + rationale free for all
+  const plan   = await ensureUserPlan(supabase, user.id)
+  const isPaid = plan.plan !== 'starter'
+
   // ── Cache hit: detail was already generated, return it without an AI call ──
   if (result.detail_generated_at) {
     return NextResponse.json({
       business_impact:      result.business_impact,
       rationale:            result.rationale,
-      improved_description: result.improved_description,
+      improved_description: isPaid ? result.improved_description : null,
       cached:               true,
     })
   }
@@ -180,7 +185,7 @@ export async function POST(
   return NextResponse.json({
     business_impact,
     rationale,
-    improved_description,
+    improved_description: isPaid ? improved_description : null,
     cached: false,
   })
 }

@@ -683,13 +683,15 @@ export async function POST(request: NextRequest) {
     }
   })()
 
-  // KB vector context + calibration block — run in parallel, both non-blocking
+  // KB vector context + calibration block — run in parallel, both non-blocking.
+  // Calibration is Pro+ only — starter users never have a calibration block.
   let retrievedChunks = 'No relevant documentation context available.'
   let calibrationBlock: string | null = null
   try {
-    [retrievedChunks, calibrationBlock] = await Promise.all([
+    const isPaid = plan.plan !== 'starter'
+    ;[retrievedChunks, calibrationBlock] = await Promise.all([
       getKBContext(supabase, user.id, bugsForLlm).catch(() => retrievedChunks),
-      getCalibrationBlock(supabase, user.id).catch(() => null),
+      isPaid ? getCalibrationBlock(supabase, user.id).catch(() => null) : Promise.resolve(null),
     ])
   } catch {
     // Non-fatal — continue without either
