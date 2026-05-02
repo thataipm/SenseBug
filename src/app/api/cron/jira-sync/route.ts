@@ -27,7 +27,7 @@ import { sendP1AlertEmail } from '@/lib/email'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-// Allow up to 5 minutes — may need to process many tickets across users
+// Allow up to 5 minutes — processes many tickets concurrently across users
 export const maxDuration = 300
 
 const CONTENT_MIN_DESC    = 30   // chars — minimum description length to trigger triage
@@ -35,6 +35,25 @@ const CONTENT_MIN_COMMENT = 10   // chars — minimum comment length to trigger 
 const STALE_HOURS         = 2    // re-check tickets last seen more than N hours ago
 const MAX_AGE_DAYS        = 7    // stop polling tickets older than N days
 const MAX_TICKETS_PER_RUN = 100  // safety cap to avoid runaway Jira API usage
+const CONCURRENCY         = 5    // max parallel Jira API + triage calls per user
+
+/**
+ * Run `fn` over `items` with at most `limit` concurrent promises at a time.
+ * Resolves when all items have been processed (errors are caught inside fn).
+ */
+async function runConcurrent<T>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<void>
+): Promise<void> {
+  const executing = new Set<Promise<void>>()
+  for (const item of items) {
+    const p: Promise<void> = fn(item).finally(() => executing.delete(p))
+    executing.add(p)
+    if (executing.size >= limit) await Promise.race(executing)
+  }
+  await Promise.all(executing)
+}
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -99,7 +118,7 @@ export async function GET(request: NextRequest) {
       continue
     }
 
-    // Fetch KB + calibration once per user
+    // Fetch KB + calibration + user email once per user (reused by all concurrent tasks)
     const { data: kb } = await supabase
       .from('knowledge_base')
       .select('product_overview, critical_flows, product_areas')
@@ -109,7 +128,13 @@ export async function GET(request: NextRequest) {
     const kbData           = kb ?? { product_overview: '', critical_flows: '', product_areas: '' }
     const calibrationBlock = await getCalibrationBlock(supabase, userId).catch(() => null)
 
-    for (const ticket of tickets) {
+    // Fetch user email once — reused by P1 alert for any ticket in this batch
+    const { data: userData } = await supabase.auth.admin.getUserById(userId)
+    const alertEmail = userData?.user?.email ?? null
+
+    // Process all tickets for this user with bounded concurrency.
+    // JS is single-threaded so counter mutations (processed++, etc.) are safe.
+    await runConcurrent(tickets, CONCURRENCY, async (ticket) => {
       processed++
       try {
         // Fetch fresh data from Jira
@@ -134,13 +159,13 @@ export async function GET(request: NextRequest) {
         const needsTriage = ticket.priority === null || contentChanged
 
         if (!hasContent && !contentChanged) {
-          // Still empty and nothing changed — just update last_seen_at and move on
+          // Still empty and nothing changed — just touch last_seen_at and move on
           await supabase
             .from('backlog')
             .update({ last_seen_at: new Date().toISOString() })
             .eq('id', ticket.id)
           unchanged++
-          continue
+          return
         }
 
         const update: Record<string, unknown> = {
@@ -176,10 +201,13 @@ export async function GET(request: NextRequest) {
           update.quick_reason = triageResult.quick_reason
           update.gap_flags    = triageResult.gap_flags
           update.rank         = triageResult.rank
-          // Clear cached AI detail so it regenerates with the new content
+          // Clear cached AI detail so it regenerates with the new content.
+          // detail_generated_at MUST be cleared — the detail route uses it
+          // as a cache-hit guard and returns null fields forever if it remains set.
           update.business_impact      = null
           update.rationale            = null
           update.improved_description = null
+          update.detail_generated_at  = null
 
           newPriority = triageResult.priority
           retriaged++
@@ -192,24 +220,20 @@ export async function GET(request: NextRequest) {
         await supabase.from('backlog').update(update).eq('id', ticket.id)
 
         // Fire P1 alert if this ticket just got triaged as P1 for the first time
-        if (newPriority === 'P1' && ticket.priority === null) {
-          const { data: userData } = await supabase.auth.admin.getUserById(userId)
-          const email = userData?.user?.email
-          if (email) {
-            await sendP1AlertEmail({
-              to:          email,
-              bugId:       ticket.bug_id,
-              title:       freshData.title,
-              quickReason: String(update.quick_reason ?? ''),
-              severity:    String(update.severity     ?? 'High'),
-            }).catch(e => console.error('[cron/jira-sync] P1 alert email failed:', e instanceof Error ? e.message : e))
-          }
+        if (newPriority === 'P1' && ticket.priority === null && alertEmail) {
+          await sendP1AlertEmail({
+            to:          alertEmail,
+            bugId:       ticket.bug_id,
+            title:       freshData.title,
+            quickReason: String(update.quick_reason ?? ''),
+            severity:    String(update.severity     ?? 'High'),
+          }).catch(e => console.error('[cron/jira-sync] P1 alert email failed:', e instanceof Error ? e.message : e))
         }
       } catch (e) {
         console.error(`[cron/jira-sync] Error processing ${ticket.bug_id}:`, e instanceof Error ? e.message : e)
         // Continue with next ticket — one failure shouldn't stop the whole run
       }
-    }
+    })
   }
 
   console.log(`[cron/jira-sync] Done — processed: ${processed}, retriaged: ${retriaged}, unchanged: ${unchanged}`)

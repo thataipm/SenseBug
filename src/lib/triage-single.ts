@@ -99,7 +99,7 @@ export async function triageSingleBug(
 
   const message = await anthropic.messages.create({
     model,
-    max_tokens:  768,
+    max_tokens:  1024,
     temperature: 0,
     system: [
       { type: 'text', text: JIRA_SINGLE_TRIAGE_PROMPT, cache_control: { type: 'ephemeral' } },

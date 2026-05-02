@@ -5,7 +5,8 @@ import { fetchJiraIssue } from '@/lib/jira-api'
 import { triageSingleBug } from '@/lib/triage-single'
 import { getCalibrationBlock } from '@/lib/pm-calibration'
 
-export const dynamic = 'force-dynamic'
+export const dynamic    = 'force-dynamic'
+export const maxDuration = 60  // Jira fetch + Claude Haiku can take 15-25 s
 
 // POST /api/backlog/sync
 // Re-fetches a Jira webhook bug from the live Jira API, updates its content,
@@ -73,10 +74,13 @@ export async function POST(request: NextRequest) {
     original_comments:    freshData.comments    || null,
     reporter_priority:    freshData.reporter_priority,
     last_seen_at:         now,
-    // Clear stale AI analysis so it regenerates with the new content
+    // Clear stale AI analysis so it regenerates with the new content.
+    // detail_generated_at MUST be cleared too — the detail route uses it as a
+    // cache-hit guard and will return null fields forever if it remains set.
     business_impact:      null,
     rationale:            null,
     improved_description: null,
+    detail_generated_at:  null,
   }
 
   // Re-triage if there is now enough content (works for both pending tickets

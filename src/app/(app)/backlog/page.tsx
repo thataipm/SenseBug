@@ -151,6 +151,7 @@ export default function BacklogPage() {
 
   // Detail loading — same pattern as results page
   const [detailLoading, setDetailLoading] = useState<Set<string>>(new Set())
+  const [detailError,   setDetailError]   = useState<Set<string>>(new Set())
   const detailRequestedRef = useRef<Set<string>>(new Set())
 
   // Detail pane state
@@ -235,8 +236,14 @@ export default function BacklogPage() {
         headers: { 'Content-Type': 'application/json' },
         body,
       })
-      if (!res.ok) { detailRequestedRef.current.delete(key); return }
+      if (!res.ok) {
+        detailRequestedRef.current.delete(key)
+        setDetailError(prev => { const n = new Set(prev); n.add(key); return n })
+        return
+      }
       const detail = await res.json()
+      // Clear any prior error on success
+      setDetailError(prev => { const n = new Set(prev); n.delete(key); return n })
       const patch = {
         business_impact:      detail.business_impact,
         rationale:            detail.rationale,
@@ -247,10 +254,19 @@ export default function BacklogPage() {
       setSelected(prev => prev && prev.bug_id === key ? { ...prev, ...patch } : prev)
     } catch {
       detailRequestedRef.current.delete(key)
+      setDetailError(prev => { const n = new Set(prev); n.add(key); return n })
     } finally {
       setDetailLoading(prev => { const n = new Set(prev); n.delete(key); return n })
     }
   }, [])
+
+  // Retry after a failed detail fetch — clears error + dedup lock then re-fetches
+  const retryDetail = useCallback((entry: BacklogEntry) => {
+    const key = entry.bug_id
+    setDetailError(prev => { const n = new Set(prev); n.delete(key); return n })
+    detailRequestedRef.current.delete(key)
+    fetchDetail(entry)
+  }, [fetchDetail])
 
   useEffect(() => {
     if (!selected || selected.business_impact != null) return
@@ -270,7 +286,7 @@ export default function BacklogPage() {
       .filter(e => e.priority === 'P1' && e.business_impact == null)
       .slice(0, 5)
       .forEach(e => fetchDetail(e))
-  }, [entries.length > 0]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entries.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset per-bug UI when selection changes
   useEffect(() => {
@@ -593,6 +609,7 @@ export default function BacklogPage() {
           const displayPriority = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : (selected.priority ?? '')
           const displaySeverity = selected.pm_action === 'edited' && selected.edited_severity ? selected.edited_severity : (selected.severity ?? '')
           const isLoadingDetail = detailLoading.has(selected.bug_id)
+          const isDetailError   = !isLoadingDetail && detailError.has(selected.bug_id)
           const isWebhookBug    = !selected.source_run_id
           const hasNoContent    = !selected.original_description?.trim() && !selected.original_comments?.trim()
           const awaitingContent = isWebhookBug && hasNoContent && !selected.business_impact && !isLoadingDetail
@@ -695,6 +712,11 @@ export default function BacklogPage() {
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-black/30" />
                         <span className="text-sm text-black/40">Generating detail{selected.quick_reason ? `… (${selected.quick_reason})` : '…'}</span>
                       </div>
+                    ) : isDetailError ? (
+                      <div className="flex items-center gap-2 py-1">
+                        <span className="text-sm text-red-500/70 italic">Analysis failed.</span>
+                        <button onClick={() => retryDetail(selected)} className="text-xs text-black/50 underline hover:text-black transition-colors">Retry</button>
+                      </div>
                     ) : (
                       <p className="text-sm text-black/60 leading-relaxed italic">{selected.quick_reason ?? 'Analysis pending.'}</p>
                     )}
@@ -710,6 +732,11 @@ export default function BacklogPage() {
                     ) : isLoadingDetail ? (
                       <div className="space-y-2 animate-pulse">
                         <div className="h-3 bg-gray-100 w-full" /><div className="h-3 bg-gray-100 w-11/12" /><div className="h-3 bg-gray-100 w-3/4" />
+                      </div>
+                    ) : isDetailError ? (
+                      <div className="flex items-center gap-2 py-1">
+                        <span className="text-sm text-red-500/70 italic">Analysis failed.</span>
+                        <button onClick={() => retryDetail(selected)} className="text-xs text-black/50 underline hover:text-black transition-colors">Retry</button>
                       </div>
                     ) : (
                       <p className="text-sm text-black/40 italic">Analysis pending.</p>

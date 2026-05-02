@@ -97,10 +97,11 @@ export async function POST(request: NextRequest) {
         quick_reason:         null,
         gap_flags:            [],
         original_description: description || null,
-        original_comments:    comments || null,
+        original_comments:    comments    || null,
         reporter_priority:    reporterPriority,
         source_run_id:        null,
         last_seen_at:         now,
+        detail_generated_at:  null,
       }, { onConflict: 'user_id,bug_id', ignoreDuplicates: false })
 
     if (upsertErr) {
@@ -154,6 +155,7 @@ export async function POST(request: NextRequest) {
       reporter_priority:    reporterPriority,
       source_run_id:        null,
       last_seen_at:         now,
+      detail_generated_at:  null,
     }, { onConflict: 'user_id,bug_id', ignoreDuplicates: false })
     return NextResponse.json({ success: true, status: 'pending_triage' })
   }
@@ -177,6 +179,7 @@ export async function POST(request: NextRequest) {
       reporter_priority:    reporterPriority,
       source_run_id:        null,
       last_seen_at:         now,
+      detail_generated_at:  null,
     }, { onConflict: 'user_id,bug_id', ignoreDuplicates: false })
 
   if (upsertErr) {
