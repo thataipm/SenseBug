@@ -124,7 +124,11 @@ export async function POST(request: NextRequest) {
   // Fetch calibration block — non-fatal if absent or under threshold
   const calibrationBlock = await getCalibrationBlock(supabase, integration.user_id).catch(() => null)
 
-  // Triage with Haiku — pass all available Jira context
+  // Triage with Haiku — pass all available Jira context.
+  // If triage fails for any reason (AI error, parse failure, rate limit),
+  // fall back to storing the ticket as pending so the cron retries it.
+  // Always return 200 to Jira — a non-2xx causes Jira to retry indefinitely
+  // and logs an error in the Automation audit trail.
   let triageResult
   try {
     triageResult = await triageSingleBug(
@@ -134,8 +138,24 @@ export async function POST(request: NextRequest) {
       calibrationBlock
     )
   } catch (e) {
-    console.error('[webhook/jira] Triage error for', issueKey, ':', e instanceof Error ? e.message : e)
-    return NextResponse.json({ error: 'Triage failed' }, { status: 500 })
+    console.error('[webhook/jira] Triage error for', issueKey, '— storing as pending:', e instanceof Error ? e.message : e)
+    // Store with no triage fields — cron will retry within 30 minutes
+    await supabase.from('backlog').upsert({
+      user_id:              integration.user_id,
+      bug_id:               issueKey,
+      title,
+      rank:                 null,
+      priority:             null,
+      severity:             null,
+      quick_reason:         null,
+      gap_flags:            [],
+      original_description: description || null,
+      original_comments:    comments    || null,
+      reporter_priority:    reporterPriority,
+      source_run_id:        null,
+      last_seen_at:         now,
+    }, { onConflict: 'user_id,bug_id', ignoreDuplicates: false })
+    return NextResponse.json({ success: true, status: 'pending_triage' })
   }
 
   // Upsert into backlog — same conflict-safe pattern as the upload route.
@@ -153,7 +173,7 @@ export async function POST(request: NextRequest) {
       quick_reason:         triageResult.quick_reason,
       gap_flags:            triageResult.gap_flags,
       original_description: description || null,
-      original_comments:    comments || null,
+      original_comments:    comments    || null,
       reporter_priority:    reporterPriority,
       source_run_id:        null,
       last_seen_at:         now,
@@ -161,7 +181,8 @@ export async function POST(request: NextRequest) {
 
   if (upsertErr) {
     console.error('[webhook/jira] Backlog upsert error:', upsertErr.message)
-    return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    // Still return 200 — the upsert failing shouldn't cause Jira to retry
+    return NextResponse.json({ success: true, status: 'db_error', detail: upsertErr.message })
   }
 
   // P1 alert email — awaited so Vercel doesn't kill the function before it sends
