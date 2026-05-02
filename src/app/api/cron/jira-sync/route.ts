@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
           const { data: userData } = await supabase.auth.admin.getUserById(userId)
           const email = userData?.user?.email
           if (email) {
-            sendP1AlertEmail({
+            await sendP1AlertEmail({
               to:          email,
               bugId:       ticket.bug_id,
               title:       freshData.title,

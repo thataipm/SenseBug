@@ -149,20 +149,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
-  // Fire-and-forget P1 alert email
+  // P1 alert email — awaited so Vercel doesn't kill the function before it sends
   if (triageResult.priority === 'P1') {
-    supabase.auth.admin.getUserById(integration.user_id).then(({ data }) => {
-      const email = data?.user?.email
-      if (email) {
-        sendP1AlertEmail({
-          to:          email,
-          bugId:       issueKey,
-          title,
-          quickReason: triageResult.quick_reason,
-          severity:    triageResult.severity,
-        }).catch(e => console.error('[webhook/jira] P1 alert email failed:', e instanceof Error ? e.message : e))
-      }
-    })
+    const { data: userData } = await supabase.auth.admin.getUserById(integration.user_id)
+    const alertEmail = userData?.user?.email
+    if (alertEmail) {
+      await sendP1AlertEmail({
+        to:          alertEmail,
+        bugId:       issueKey,
+        title,
+        quickReason: triageResult.quick_reason,
+        severity:    triageResult.severity,
+      }).catch(e => console.error('[webhook/jira] P1 alert email failed:', e instanceof Error ? e.message : e))
+    }
   }
 
   // Increment monthly bug counter — fire-and-forget, non-fatal.
