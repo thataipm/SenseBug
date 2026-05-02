@@ -3,7 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 export interface UserPlan {
   id: string
   user_id: string
-  plan: 'starter' | 'pro' | 'max'
+  plan: 'starter' | 'pro' | 'max' | 'admin'
   trial_started_at: string | null  // kept in DB for migration safety, no longer used
   trial_ends_at: string | null     // kept in DB for migration safety, no longer used
   monthly_runs_count: number

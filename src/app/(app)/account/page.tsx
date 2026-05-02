@@ -13,6 +13,7 @@ interface PlanInfo {
   monthly_bug_limit: number
   bugs_per_run_limit: number
   bugs_analyzed_this_month: number
+  doc_upload: boolean
 }
 
 const PLAN_LABELS: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max', admin: 'Admin' }
@@ -240,7 +241,7 @@ function AccountContent() {
               </div>
               <div>
                 <p className="text-xs font-mono text-black/55 mb-1" style={MONO}>Doc uploads</p>
-                <p className="text-sm font-medium">{isPaid ? 'Included' : 'Not included'}</p>
+                <p className="text-sm font-medium">{plan.doc_upload ? 'Included' : 'Not included'}</p>
               </div>
             </div>
           )}

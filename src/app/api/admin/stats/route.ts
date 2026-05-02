@@ -38,7 +38,7 @@ export async function GET() {
       .select('id, user_id, filename, bug_count, run_at')
       .gte('run_at', (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString() })())
       .order('run_at', { ascending: false }),
-    admin.from('triage_runs').select('bug_count'),
+    admin.from('triage_runs').select('bug_count').limit(100000),
     admin
       .from('feedback')
       .select('id, email, type, subject, message, created_at')
@@ -57,7 +57,9 @@ export async function GET() {
   const newThisMonth      = users.filter(u => new Date(u.created_at) >= startOfMonth).length
   const proCount          = (plans ?? []).filter(p => p.plan === 'pro').length
   const maxCount          = (plans ?? []).filter(p => p.plan === 'max' || p.plan === 'team').length
-  const starterCount      = (plans ?? []).filter(p => p.plan === 'starter').length
+  const adminCount        = (plans ?? []).filter(p => p.plan === 'admin').length
+  // Users with no plan row yet are implicitly on Starter — subtract known paid/admin users
+  const starterCount      = Math.max(0, totalUsers - proCount - maxCount - adminCount)
   const estimatedMRR      = proCount * 19 + maxCount * 49
   const totalRuns         = allRunsData?.length ?? 0
   const totalBugsAnalyzed = (allRunsData ?? []).reduce((s, r) => s + (r.bug_count ?? 0), 0)
@@ -126,6 +128,7 @@ export async function GET() {
     proCount,
     maxCount,
     starterCount,
+    adminCount,
     estimatedMRR,
     totalRuns,
     totalBugsAnalyzed,

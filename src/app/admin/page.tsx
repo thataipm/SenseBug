@@ -30,6 +30,7 @@ interface AdminStats {
   proCount:          number
   maxCount:          number
   starterCount:      number
+  adminCount:        number
   estimatedMRR:      number
   totalRuns:         number
   totalBugsAnalyzed: number
@@ -159,7 +160,7 @@ export default function AdminPage() {
           <StatCard
             label="Paid Users"
             value={stats.proCount + stats.maxCount}
-            sub={`${stats.conversionRate}% conversion`}
+            sub={`${stats.conversionRate}% conversion · ${stats.adminCount} admin`}
             icon={CreditCard}
           />
           <StatCard
@@ -211,9 +212,10 @@ export default function AdminPage() {
             <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-5" style={MONO}>Plan Breakdown</p>
             <div className="space-y-4">
               {[
-                { label: 'Starter', count: stats.starterCount, bar: 'bg-gray-300' },
-                { label: 'Pro',     count: stats.proCount,     bar: 'bg-blue-500' },
-                { label: 'Max',     count: stats.maxCount,     bar: 'bg-purple-500' },
+                { label: 'Starter', count: stats.starterCount, bar: 'bg-gray-300'  },
+                { label: 'Pro',     count: stats.proCount,     bar: 'bg-blue-500'  },
+                { label: 'Max',     count: stats.maxCount,     bar: 'bg-purple-500'},
+                { label: 'Admin',   count: stats.adminCount,   bar: 'bg-black'     },
               ].map(({ label, count, bar }) => (
                 <div key={label} className="flex items-center gap-3">
                   <span className="text-xs font-mono text-black/60 w-14 flex-shrink-0" style={MONO}>{label}</span>
