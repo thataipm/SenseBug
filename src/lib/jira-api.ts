@@ -121,12 +121,12 @@ export async function addJiraComment(
       body: {
         type:    'doc',
         version: 1,
-        content: [
-          {
-            type:    'paragraph',
-            content: [{ type: 'text', text: commentText }],
-          },
-        ],
+        // ADF does not render \n inside a paragraph — each line needs its own
+        // paragraph node. Empty lines become empty paragraphs (adds spacing).
+        content: commentText.split('\n').map(line => ({
+          type:    'paragraph',
+          content: line.trim() ? [{ type: 'text', text: line }] : [],
+        })),
       },
     }),
   })
