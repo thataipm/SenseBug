@@ -173,7 +173,17 @@ export default function HelpPage() {
     <div className="px-6 md:px-10 py-10 max-w-2xl mx-auto" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-3" style={MONO}>Help & FAQ</p>
       <h1 className="text-2xl font-black tracking-tighter mb-2" style={HEADING}>How can we help?</h1>
-      <p className="text-sm text-black/55 mb-12">Everything you need to know about using SenseBug AI.</p>
+      <p className="text-sm text-black/55 mb-10">Everything you need to know about using SenseBug AI.</p>
+
+      {/* Contact / Feedback form — moved to top so it's easy to reach */}
+      <div className="mb-14 border border-gray-200 p-6">
+        <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-3" style={MONO}>Contact & Feedback</p>
+        <h3 className="text-base font-bold mb-1.5" style={HEADING}>Send us a message</h3>
+        <p className="text-sm text-black/55 mb-6">
+          Found a bug? Have a feature idea? We read every message and reply within one business day.
+        </p>
+        <FeedbackForm />
+      </div>
 
       {/* FAQ sections */}
       <div className="space-y-12">
@@ -192,16 +202,6 @@ export default function HelpPage() {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Contact / Feedback form */}
-      <div className="mt-14 border border-gray-200 p-6">
-        <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-3" style={MONO}>Contact & Feedback</p>
-        <h3 className="text-base font-bold mb-1.5" style={HEADING}>Send us a message</h3>
-        <p className="text-sm text-black/55 mb-6">
-          Found a bug? Have a feature idea? We read every message and reply within one business day.
-        </p>
-        <FeedbackForm />
       </div>
     </div>
   )

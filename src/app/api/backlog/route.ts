@@ -25,14 +25,19 @@ export async function GET(request: NextRequest) {
   const status     = searchParams.get('status') ?? 'all'
   const search     = searchParams.get('search') ?? ''
   const countOnly  = searchParams.get('count_only') === 'true'
+  // source=jira  → only webhook bugs (source_run_id IS NULL)
+  // source=csv   → only CSV-upload bugs (source_run_id IS NOT NULL)
+  const source     = searchParams.get('source')
 
-  // Lightweight count path — used by the sidebar badge to avoid fetching all rows
+  // Lightweight count path — used by the sidebar badge and dashboard
   if (countOnly) {
     let countQuery = supabase
       .from('backlog')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
     if (status === 'unreviewed') countQuery = countQuery.is('pm_action', null)
+    if (source === 'jira') countQuery = countQuery.is('source_run_id', null)
+    if (source === 'csv')  countQuery = countQuery.not('source_run_id', 'is', null)
     const { count } = await countQuery
     return NextResponse.json({ count: count ?? 0 })
   }
@@ -156,30 +161,30 @@ export async function PATCH(request: NextRequest) {
     await recomputeAndStoreCalibration(supabase, user.id)
   })().catch(e => console.error('[calibration] recompute error:', e instanceof Error ? e.message : e))
 
-  // Jira write-back — fire-and-forget on approve/edit.
-  // Only fires when a Jira integration exists for this user.
+  // Jira write-back — awaited so the serverless function doesn't exit before
+  // the Jira HTTP calls complete. Fire-and-forget (.then()) was being killed
+  // by Vercel before the priority update and comment actually reached Jira.
   if (action === 'approved' || action === 'edited') {
     const effectivePriority = action === 'edited' && edited_priority
       ? String(edited_priority)
       : String(entry.priority ?? '')
 
-    supabase
+    const { data: integration } = await supabase
       .from('integrations')
       .select('site_url, email, api_token, project_key')
       .eq('user_id', user.id)
       .eq('provider', 'jira')
       .single()
-      .then(({ data: integration }) => {
-        if (!integration) return
 
-        // If a project_key filter is set, only write back if bug_id starts with that key
-        if (integration.project_key) {
-          const prefix = String(integration.project_key).toUpperCase()
-          if (!String(entry.bug_id).toUpperCase().startsWith(prefix + '-')) return
-        }
+    if (integration) {
+      // If a project_key filter is set, only write back if bug_id starts with that key
+      const skip = integration.project_key
+        ? !String(entry.bug_id).toUpperCase().startsWith(String(integration.project_key).toUpperCase() + '-')
+        : false
 
-        // Priority write-back
-        updateJiraPriority(
+      if (!skip) {
+        // Priority write-back — always fires on approve/edit
+        await updateJiraPriority(
           integration.site_url,
           integration.email,
           integration.api_token,
@@ -187,9 +192,7 @@ export async function PATCH(request: NextRequest) {
           effectivePriority
         ).catch(e => console.error('[backlog] Jira priority write-back failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
 
-        // AI summary comment — only on first verdict (entry.pm_action === null means this
-        // is the initial review, not a re-submission). Re-submissions still update the
-        // Jira priority above but skip the comment to avoid spamming the issue.
+        // AI summary comment — only on first verdict to avoid spamming the issue
         if (entry.pm_action === null) {
           const commentLines: string[] = [
             `✅ SenseBug verdict: ${action === 'approved' ? 'Approved' : 'Adjusted'} — Priority set to ${effectivePriority}`,
@@ -204,7 +207,7 @@ export async function PATCH(request: NextRequest) {
           }
           commentLines.push('', '— Reviewed via SenseBug AI')
 
-          addJiraComment(
+          await addJiraComment(
             integration.site_url,
             integration.email,
             integration.api_token,
@@ -212,7 +215,8 @@ export async function PATCH(request: NextRequest) {
             commentLines.join('\n')
           ).catch(e => console.error('[backlog] Jira comment failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
         }
-      })
+      }
+    }
   }
 
   return NextResponse.json({ success: true })

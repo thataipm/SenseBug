@@ -3,7 +3,9 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug, Clock } from 'lucide-react'
+import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug, Clock, X } from 'lucide-react'
+
+interface JiraToast { title: string; priority: string; bug_id: string }
 
 const NAV = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard'    },
@@ -33,6 +35,7 @@ export function AppSidebar() {
   const [displayName, setDisplayName]   = useState('')
   const [plan, setPlan]                 = useState<PlanInfo | null>(null)
   const [unreviewedCount, setUnreviewed] = useState(0)
+  const [jiraToast, setJiraToast]       = useState<JiraToast | null>(null)
 
   const refreshBadge = useCallback(() => {
     fetch('/api/backlog?count_only=true&status=unreviewed')
@@ -42,17 +45,49 @@ export function AppSidebar() {
 
   useEffect(() => {
     const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setEmail(data.user.email ?? '')
-        const meta = data.user.user_metadata ?? {}
-        const full = meta.full_name || `${meta.first_name ?? ''} ${meta.last_name ?? ''}`.trim()
-        setDisplayName(full)
-      }
+      if (!data.user) return
+      setEmail(data.user.email ?? '')
+      const meta = data.user.user_metadata ?? {}
+      const full = meta.full_name || `${meta.first_name ?? ''} ${meta.last_name ?? ''}`.trim()
+      setDisplayName(full)
+
+      // Global Jira realtime subscription — shows a toast on any page when a
+      // new bug arrives via the Jira webhook so the PM always gets notified.
+      channel = supabase
+        .channel('sidebar-jira-inserts')
+        .on(
+          'postgres_changes',
+          {
+            event:  'INSERT',
+            schema: 'public',
+            table:  'backlog',
+            filter: `user_id=eq.${data.user.id}`,
+          },
+          (payload) => {
+            const entry = payload.new as { title: string; priority: string; bug_id: string; source_run_id: string | null }
+            // Only show toast for Jira webhook bugs (source_run_id is null)
+            if (entry.source_run_id !== null) return
+            setJiraToast({ title: entry.title, priority: entry.priority, bug_id: entry.bug_id })
+            setUnreviewed(prev => prev + 1)
+          }
+        )
+        .subscribe()
     })
     fetch('/api/plan').then(r => r.ok ? r.json() : null).then(d => d && setPlan(d))
     refreshBadge()
+
+    return () => { if (channel) createClient().removeChannel(channel) }
   }, [refreshBadge])
+
+  // Auto-dismiss Jira toast after 7 seconds
+  useEffect(() => {
+    if (!jiraToast) return
+    const t = setTimeout(() => setJiraToast(null), 7000)
+    return () => clearTimeout(t)
+  }, [jiraToast])
 
   // Re-fetch the unreviewed count whenever the window regains focus —
   // ensures the badge stays accurate after the user reviews bugs in /backlog
@@ -75,10 +110,34 @@ export function AppSidebar() {
   const nearLimit = pct > 80
 
   return (
-    <aside
-      className="hidden md:flex w-56 flex-shrink-0 border-r border-gray-200 flex-col bg-white"
-      style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}
-    >
+    <>
+      {/* Global Jira sync toast — visible on any app page */}
+      {jiraToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-start gap-3 bg-black text-white px-4 py-3 shadow-lg max-w-sm" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
+          <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 mt-1.5" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-white/50 mb-0.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+              Synced from Jira · {jiraToast.priority}
+            </p>
+            <p className="text-sm font-medium truncate">{jiraToast.title}</p>
+            <Link
+              href="/backlog"
+              className="text-[10px] font-mono text-white/50 hover:text-white transition-colors mt-0.5 inline-block"
+              style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+              onClick={() => setJiraToast(null)}
+            >
+              Review in backlog →
+            </Link>
+          </div>
+          <button onClick={() => setJiraToast(null)} className="text-white/40 hover:text-white flex-shrink-0 ml-1 mt-0.5">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      <aside
+        className="hidden md:flex w-56 flex-shrink-0 border-r border-gray-200 flex-col bg-white"
+        style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}
+      >
       {/* Logo */}
       <div className="h-14 flex items-center px-5 border-b border-gray-100 flex-shrink-0">
         <Link
@@ -191,5 +250,6 @@ export function AppSidebar() {
         </button>
       </div>
     </aside>
+    </>
   )
 }

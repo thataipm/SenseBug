@@ -136,8 +136,17 @@ async function handleRenewal(data: Subscription) {
     return
   }
 
-  // Update next_billing_date so the reminder cron stays accurate
-  await storeNextBillingDate(userId, data.next_billing_date)
+  // Re-assert the plan on renewal so any accidental drift gets corrected.
+  // Also update next_billing_date for the renewal reminder cron.
+  if (plan) {
+    const updates: Record<string, unknown> = { next_billing_date: data.next_billing_date }
+    // Only write plan if we have a valid value — avoids overwriting admin plans
+    if (plan === 'pro' || plan === 'max') updates.plan = plan
+    const { error } = await supabase.from('user_plans').update(updates).eq('user_id', userId)
+    if (error) console.error('[dodo/webhook] handleRenewal DB error:', error.message)
+  } else {
+    await storeNextBillingDate(userId, data.next_billing_date)
+  }
 
   // Send renewal receipt email
   await sendRenewalEmail({
@@ -148,7 +157,7 @@ async function handleRenewal(data: Subscription) {
     nextBillingDate: formatEmailDate(data.next_billing_date),
   })
 
-  console.log(`[dodo/webhook] handleRenewal: renewal email sent to ${data.customer.email}`)
+  console.log(`[dodo/webhook] handleRenewal: plan re-asserted and renewal email sent to ${data.customer.email}`)
 }
 
 /** subscription.expired — billing period ended after cancellation; downgrade to starter */

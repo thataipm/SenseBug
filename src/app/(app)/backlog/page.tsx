@@ -3,10 +3,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { BacklogEntry } from '@/types'
 import { stripJiraMarkup } from '@/lib/jira'
-import { createClient } from '@/lib/supabase/client'
 import {
   Check, X, Edit2, ChevronLeft, ChevronDown, ChevronRight,
-  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox, Zap, Download, AlertTriangle, Trash2,
+  Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox, Download, AlertTriangle, Trash2, RefreshCw, Sparkles,
 } from 'lucide-react'
 
 const MONO    = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
@@ -143,7 +142,6 @@ export default function BacklogPage() {
   const [entries, setEntries]   = useState<BacklogEntry[]>([])
   const [selected, setSelected] = useState<BacklogEntry | null>(null)
   const [loading, setLoading]   = useState(true)
-  const [newBugToast, setNewBugToast] = useState<BacklogEntry | null>(null)
   const [hasRuns, setHasRuns] = useState(false)
 
   // Detail loading — same pattern as results page
@@ -158,6 +156,7 @@ export default function BacklogPage() {
   const [rejectReason, setRejectReason]   = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [syncLoading, setSyncLoading]     = useState(false)
   const [copied, setCopied]               = useState(false)
   const [showOriginal, setShowOriginal]   = useState(true)
   const [showComments, setShowComments]   = useState(true)
@@ -210,53 +209,6 @@ export default function BacklogPage() {
 
   useEffect(() => { fetchEntries() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Supabase Realtime — prepend bugs arriving via Jira webhook ─────────────
-  useEffect(() => {
-    const supabase = createClient()
-    // Keep a ref to the channel so the cleanup function (which runs synchronously
-    // on unmount) can remove it even though the channel is created asynchronously.
-    let channel: ReturnType<typeof supabase.channel> | null = null
-
-    supabase.auth.getUser().then(({ data }) => {
-      const userId = data.user?.id
-      if (!userId) return
-
-      channel = supabase
-        .channel('backlog-inserts')
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'backlog', filter: `user_id=eq.${userId}` },
-          (payload) => {
-            const newEntry = payload.new as BacklogEntry
-            setEntries(prev => {
-              // Deduplicate — the initial fetch may have already included this row
-              if (prev.some(e => e.id === newEntry.id)) return prev
-              // Insert at the position matching its priority (keep list sorted)
-              const PRIO: Record<string, number> = { P1: 0, P2: 1, P3: 2, P4: 3 }
-              const np = PRIO[newEntry.priority ?? ''] ?? 9
-              const idx = prev.findIndex(e => (PRIO[e.priority ?? ''] ?? 9) > np)
-              const next = [...prev]
-              next.splice(idx === -1 ? next.length : idx, 0, newEntry)
-              return next
-            })
-            setNewBugToast(newEntry)
-          }
-        )
-        .subscribe()
-    })
-
-    // Cleanup runs on unmount — if the channel was created before unmount, remove it.
-    // If the component unmounts before getUser() resolves, channel is still null — safe.
-    return () => { if (channel) supabase.removeChannel(channel) }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-dismiss toast after 6 seconds
-  useEffect(() => {
-    if (!newBugToast) return
-    const t = setTimeout(() => setNewBugToast(null), 6000)
-    return () => clearTimeout(t)
-  }, [newBugToast])
-
   // ── Lazy detail fetching — identical to results page logic ─────────────────
   const fetchDetail = useCallback(async (entry: BacklogEntry) => {
     const key = entry.bug_id
@@ -296,6 +248,12 @@ export default function BacklogPage() {
 
   useEffect(() => {
     if (!selected || selected.business_impact != null) return
+    // Skip auto-fetch for Jira webhook bugs with no description or comments —
+    // the ticket was just created and likely has no content yet. The user can
+    // click "Generate AI Analysis" or "Sync from Jira" when they're ready.
+    const isWebhookBug  = !selected.source_run_id
+    const hasNoContent  = !selected.original_description?.trim() && !selected.original_comments?.trim()
+    if (isWebhookBug && hasNoContent) return
     fetchDetail(selected)
   }, [selected, fetchDetail])
 
@@ -331,6 +289,14 @@ export default function BacklogPage() {
       setEntries(prev => prev.map(e => e.id === entryId ? { ...e, ...patch } : e))
       if (selected.id === entryId) setSelected(prev => prev ? { ...prev, ...patch } : prev)
       setEditMode(false); setRejectMode(false); setRejectReason('')
+      // Auto-advance to the next unreviewed bug in the visible list
+      const currentIdx = filteredEntries.findIndex(e => e.id === entryId)
+      const remaining  = [
+        ...filteredEntries.slice(currentIdx + 1),
+        ...filteredEntries.slice(0, currentIdx),
+      ]
+      const nextBug = remaining.find(e => !e.pm_action && e.id !== entryId)
+      if (nextBug) { setSelected(nextBug); setMobileShowDetail(true) }
     }
     setActionLoading(false)
   }
@@ -347,6 +313,36 @@ export default function BacklogPage() {
       else setMobileShowDetail(false)
     }
     setDeleteLoading(false)
+  }
+
+  const handleSync = async (entry: BacklogEntry) => {
+    setSyncLoading(true)
+    try {
+      const res = await fetch('/api/backlog/sync', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ bug_id: entry.bug_id }),
+      })
+      if (!res.ok) return
+      const fresh = await res.json()
+      // Patch the entry with fresh data and reset the detail cache so it re-generates
+      const patch = {
+        title:                fresh.title,
+        original_description: fresh.original_description,
+        original_comments:    fresh.original_comments,
+        reporter_priority:    fresh.reporter_priority,
+        last_seen_at:         fresh.last_seen_at,
+        // Clear cached analysis so it regenerates with the new content
+        business_impact:      null,
+        rationale:            null,
+        improved_description: null,
+      }
+      detailRequestedRef.current.delete(entry.bug_id)
+      setEntries(prev => prev.map(e => e.bug_id === entry.bug_id ? { ...e, ...patch } : e))
+      setSelected(prev => prev && prev.bug_id === entry.bug_id ? { ...prev, ...patch } : prev)
+    } finally {
+      setSyncLoading(false)
+    }
   }
 
   const filteredEntries = useMemo(() => {
@@ -406,20 +402,6 @@ export default function BacklogPage() {
 
   return (
     <div className="h-screen bg-white flex flex-col" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
-
-      {/* ── Realtime new-bug toast ── */}
-      {newBugToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-start gap-3 bg-black text-white px-4 py-3 shadow-lg max-w-sm animate-in slide-in-from-bottom-4 duration-300">
-          <Zap className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-mono uppercase tracking-widest text-white/50 mb-0.5" style={MONO}>New bug — {newBugToast.priority}</p>
-            <p className="text-sm font-medium truncate">{newBugToast.title}</p>
-          </div>
-          <button onClick={() => setNewBugToast(null)} className="text-white/40 hover:text-white flex-shrink-0 ml-1">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* ── Header ── */}
       <header className="border-b border-gray-200 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0">
@@ -563,6 +545,9 @@ export default function BacklogPage() {
           const displayPriority = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : (selected.priority ?? '')
           const displaySeverity = selected.pm_action === 'edited' && selected.edited_severity ? selected.edited_severity : (selected.severity ?? '')
           const isLoadingDetail = detailLoading.has(selected.bug_id)
+          const isWebhookBug    = !selected.source_run_id
+          const hasNoContent    = !selected.original_description?.trim() && !selected.original_comments?.trim()
+          const awaitingContent = isWebhookBug && hasNoContent && !selected.business_impact && !isLoadingDetail
 
           return (
             <div className={`${!mobileShowDetail ? 'hidden md:flex md:flex-col' : 'flex flex-col'} flex-1 overflow-hidden`}>
@@ -589,9 +574,23 @@ export default function BacklogPage() {
                     )}
                   </div>
                   <h2 className="text-xl font-bold tracking-tight leading-snug" style={HEADING}>{selected.title}</h2>
-                  <p className="text-xs text-black/35 font-mono mt-2" style={MONO}>
-                    First seen {formatDate(selected.first_seen_at)} · Last seen {formatDate(selected.last_seen_at)}
-                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-black/35 font-mono" style={MONO}>
+                      First seen {formatDate(selected.first_seen_at)} · Last seen {formatDate(selected.last_seen_at)}
+                    </p>
+                    {isWebhookBug && (
+                      <button
+                        onClick={() => handleSync(selected)}
+                        disabled={syncLoading}
+                        className="flex items-center gap-1.5 text-xs font-mono text-black/40 hover:text-black transition-colors disabled:opacity-40"
+                        title="Re-fetch description and comments from Jira"
+                        style={MONO}
+                      >
+                        <RefreshCw className={`w-3 h-3 ${syncLoading ? 'animate-spin' : ''}`} strokeWidth={2} />
+                        {syncLoading ? 'Syncing…' : 'Sync from Jira'}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Analysis body */}
@@ -611,7 +610,34 @@ export default function BacklogPage() {
                     </div>
                   )}
 
+                  {/* Empty-ticket callout — Jira webhook bug with no description yet */}
+                  {awaitingContent && (
+                    <div className="border border-dashed border-gray-300 px-4 py-5 text-center">
+                      <p className="text-xs font-mono uppercase tracking-widest text-black/35 mb-2" style={MONO}>No ticket details yet</p>
+                      <p className="text-sm text-black/55 mb-4">This ticket was just created and has no description or comments yet. Add details in Jira first, then sync.</p>
+                      <div className="flex items-center justify-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => handleSync(selected)}
+                          disabled={syncLoading}
+                          className="flex items-center gap-1.5 text-sm border border-gray-300 hover:border-black px-4 py-2 transition-colors disabled:opacity-40"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${syncLoading ? 'animate-spin' : ''}`} strokeWidth={2} />
+                          {syncLoading ? 'Syncing…' : 'Sync from Jira'}
+                        </button>
+                        <button
+                          onClick={() => fetchDetail(selected)}
+                          disabled={isLoadingDetail}
+                          className="flex items-center gap-1.5 text-sm border border-gray-300 hover:border-black px-4 py-2 transition-colors disabled:opacity-40"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
+                          Analyse anyway
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Business Impact */}
+                  {!awaitingContent && (
                   <div className="border border-gray-100 bg-gray-50 px-4 py-4">
                     <p className="text-xs font-mono uppercase tracking-widest text-black/35 mb-2" style={MONO}>Business Impact</p>
                     {selected.business_impact != null ? (
@@ -622,11 +648,13 @@ export default function BacklogPage() {
                         <span className="text-sm text-black/40">Generating detail{selected.quick_reason ? `… (${selected.quick_reason})` : '…'}</span>
                       </div>
                     ) : (
-                      <p className="text-sm text-black/60 leading-relaxed italic">{selected.quick_reason ?? 'Click to generate full analysis.'}</p>
+                      <p className="text-sm text-black/60 leading-relaxed italic">{selected.quick_reason ?? 'Analysis pending.'}</p>
                     )}
                   </div>
+                  )}
 
                   {/* Rationale */}
+                  {!awaitingContent && (
                   <div>
                     <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug AI Analysis</p>
                     {selected.rationale != null ? (
@@ -636,9 +664,10 @@ export default function BacklogPage() {
                         <div className="h-3 bg-gray-100 w-full" /><div className="h-3 bg-gray-100 w-11/12" /><div className="h-3 bg-gray-100 w-3/4" />
                       </div>
                     ) : (
-                      <p className="text-sm text-black/40 italic">Generating analysis…</p>
+                      <p className="text-sm text-black/40 italic">Analysis pending.</p>
                     )}
                   </div>
+                  )}
 
                   {/* Suggested rewrite */}
                   {!isWellWritten && selected.improved_description && (
@@ -784,8 +813,97 @@ export default function BacklogPage() {
           </div>
         )}
 
-        {/* ── Panel 3: Backlog stats ── */}
-        <BacklogStats entries={entries} />
+        {/* ── Panel 3: Per-bug signals + aggregate stats ── */}
+        <div className="hidden lg:flex flex-col w-56 xl:w-64 border-l border-gray-200 flex-shrink-0 overflow-y-auto">
+          {selected && (() => {
+            const flags   = selected.gap_flags ?? []
+            const quality = flags.filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
+            const hasMissingDesc = flags.includes('Missing description')
+            const hasNoRepro     = flags.includes('No reproduction steps')
+            const isOverPri      = flags.includes('Likely over-prioritised')
+            const confLabel = hasMissingDesc || quality.length >= 2 ? 'Low' : quality.length === 1 ? 'Medium' : 'High'
+            const clarity   = hasMissingDesc ? 'Low' : quality.length > 1 ? 'Medium' : 'High'
+            const repro     = hasNoRepro ? 'Missing' : 'Present'
+            const displayP  = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : (selected.priority ?? '')
+            const dotColor  = (v: string) => v === 'High' || v === 'Present' ? 'bg-green-500' : v === 'Medium' ? 'bg-yellow-400' : 'bg-red-500'
+            const txtColor  = (v: string) => v === 'High' || v === 'Present' ? 'text-green-600' : v === 'Medium' ? 'text-yellow-600' : 'text-red-500'
+            return (
+              <>
+                {/* Reporter vs AI */}
+                <div className="py-4 px-4 border-b border-gray-100">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Reporter vs AI</p>
+                  {selected.reporter_priority ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="flex-1 text-center">
+                        <p className="text-[10px] text-black/35 mb-2" style={MONO}>Reporter</p>
+                        <span className={`border px-2 py-0.5 text-xs font-mono uppercase ${selected.reporter_priority === 'P1' ? 'bg-red-50 text-red-600 border-red-200' : selected.reporter_priority === 'P2' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-gray-50 text-black/50 border-gray-200'}`} style={MONO}>{selected.reporter_priority}</span>
+                      </div>
+                      <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 ${selected.reporter_priority !== displayP ? 'text-amber-400' : 'text-black/20'}`} strokeWidth={2.5} />
+                      <div className="flex-1 text-center">
+                        <p className="text-[10px] text-black/35 mb-2" style={MONO}>AI</p>
+                        <PriorityBadge p={displayP} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-[10px] text-black/30 mb-2" style={MONO}>No reporter priority</p>
+                      <PriorityBadge p={displayP} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Signal meters */}
+                <div className="py-4 px-4 border-b border-gray-100">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Signals</p>
+                  <div className="space-y-2.5">
+                    {[
+                      { label: 'Clarity',     value: clarity,    d: dotColor(clarity),    t: txtColor(clarity)    },
+                      { label: 'Repro steps', value: repro,      d: dotColor(repro),      t: txtColor(repro)      },
+                      { label: 'Confidence',  value: confLabel,  d: dotColor(confLabel),  t: txtColor(confLabel)  },
+                      { label: 'Over-pri',    value: isOverPri ? 'Flagged' : 'Clean', d: isOverPri ? 'bg-purple-500' : 'bg-green-500', t: isOverPri ? 'text-purple-600' : 'text-green-600' },
+                    ].map(s => (
+                      <div key={s.label} className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-black/60">{s.label}</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.d}`} />
+                          <span className={`text-xs font-mono font-medium ${s.t}`} style={MONO}>{s.value}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quality flags */}
+                <div className="py-4 px-4 border-b border-gray-100">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Quality flags</p>
+                  {flags.length === 0 ? (
+                    <div className="flex items-center gap-1.5 text-green-600">
+                      <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      <span className="text-xs font-mono" style={MONO}>Well-written ticket</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {quality.map(f => (
+                        <span key={f} className="flex items-center gap-1 text-xs border border-orange-200 bg-orange-50 text-orange-600 px-2 py-0.5">
+                          <AlertCircle className="w-3 h-3" strokeWidth={2} />
+                          {f.replace('Missing ', 'No ').replace('Vague description', 'Vague')}
+                        </span>
+                      ))}
+                      {isOverPri && (
+                        <span className="flex items-center gap-1 text-xs border border-purple-200 bg-purple-50 text-purple-600 px-2 py-0.5">
+                          <Flag className="w-3 h-3" strokeWidth={2} />Over-pri
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            )
+          })()}
+
+          {/* Aggregate stats — always visible */}
+          <BacklogStats entries={entries} />
+        </div>
 
       </div>
     </div>

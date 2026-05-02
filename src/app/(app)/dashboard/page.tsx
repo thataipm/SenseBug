@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { setPendingFile } from '@/lib/pending-upload'
 import { TriageRun } from '@/types'
-import { Upload, Loader2, Clock, ChevronRight, AlertTriangle, Trash2, Sparkles, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Upload, Loader2, Clock, ChevronRight, AlertTriangle, Trash2, Sparkles, TrendingUp, TrendingDown, Minus, Inbox } from 'lucide-react'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import { scoreLabel, scoreColor } from '@/lib/health-score'
 
@@ -72,6 +72,7 @@ function DashboardContent() {
   const [healthSnapshots, setHealthSnapshots] = useState<HealthSnapshot[]>([])
   const [kbEmpty, setKbEmpty] = useState(false)
   const [jiraConnected, setJiraConnected] = useState(false)
+  const [jiraUnreviewed, setJiraUnreviewed] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
@@ -99,7 +100,16 @@ function DashboardContent() {
     if (healthRes.ok) setHealthSnapshots(await healthRes.json())
     if (integrationRes.ok) {
       const integration = await integrationRes.json()
-      setJiraConnected(!!integration)
+      const connected = !!integration
+      setJiraConnected(connected)
+      // If Jira is connected, fetch unreviewed Jira bug count for the activity card
+      if (connected) {
+        const jiraCountRes = await fetch('/api/backlog?count_only=true&source=jira&status=unreviewed')
+        if (jiraCountRes.ok) {
+          const { count } = await jiraCountRes.json()
+          setJiraUnreviewed(count ?? 0)
+        }
+      }
     }
     setLoading(false)
   }, [router])
@@ -358,6 +368,32 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* Jira activity card — shown when Jira is connected */}
+        {jiraConnected && jiraUnreviewed !== null && (
+          <div className="border border-gray-200 px-5 py-4 mb-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
+                <Inbox className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-0.5" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Jira Backlog</p>
+                <p className="text-sm font-medium">
+                  {jiraUnreviewed > 0
+                    ? <><span className="font-black">{jiraUnreviewed}</span> unreviewed bug{jiraUnreviewed !== 1 ? 's' : ''} from Jira</>
+                    : 'All Jira bugs reviewed'}
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/backlog"
+              className="text-xs font-mono text-black/55 hover:text-black border border-gray-200 hover:border-black px-3 py-1.5 transition-colors whitespace-nowrap flex-shrink-0"
+              style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+            >
+              {jiraUnreviewed > 0 ? 'Review now →' : 'View backlog →'}
+            </Link>
+          </div>
+        )}
+
         {uploadError && (
           <div data-testid="upload-error" className="mb-6 border border-red-200 bg-red-50 text-red-600 text-sm px-4 py-3 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -381,9 +417,18 @@ function DashboardContent() {
               <Upload className="w-4 h-4" />Choose file
             </span>
             {jiraConnected ? (
-              <p className="text-xs text-green-600 mt-4 font-mono" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-                ✓ Jira connected — bugs will appear here automatically when filed.
-              </p>
+              <div className="mt-4 space-y-1">
+                <p className="text-xs text-green-600 font-mono" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                  ✓ Jira connected — bugs appear automatically when filed.
+                </p>
+                {(jiraUnreviewed ?? 0) > 0 && (
+                  <p className="text-xs text-black/50">
+                    <Link href="/backlog" className="underline hover:text-black transition-colors" onClick={e => e.stopPropagation()}>
+                      {jiraUnreviewed} Jira bug{jiraUnreviewed !== 1 ? 's' : ''} waiting for review →
+                    </Link>
+                  </p>
+                )}
+              </div>
             ) : (
               <p className="text-xs text-black/35 mt-4">
                 Or{' '}
