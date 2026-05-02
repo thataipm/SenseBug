@@ -64,6 +64,40 @@ export async function POST(request: NextRequest) {
     .filter(Boolean)
     .join('\n---\n')
 
+  const now = new Date().toISOString()
+
+  // Content gate — if the ticket has no meaningful description yet (PM just
+  // created it with a title), skip triage and store it as pending (priority=null).
+  // The cron job will re-check it every 30 minutes and triage once content appears.
+  const hasContent = (description?.trim().length ?? 0) >= 30 || (comments?.trim().length ?? 0) >= 10
+  if (!hasContent) {
+    const { error: upsertErr } = await supabase
+      .from('backlog')
+      .upsert({
+        user_id:              integration.user_id,
+        bug_id:               issueKey,
+        title,
+        rank:                 null,
+        priority:             null,
+        severity:             null,
+        quick_reason:         null,
+        gap_flags:            [],
+        original_description: description || null,
+        original_comments:    comments || null,
+        reporter_priority:    reporterPriority,
+        source_run_id:        null,
+        last_seen_at:         now,
+      }, { onConflict: 'user_id,bug_id', ignoreDuplicates: false })
+
+    if (upsertErr) {
+      console.error('[webhook/jira] Backlog upsert error (pending):', upsertErr.message)
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    }
+
+    console.log(`[webhook/jira] ${issueKey} stored as pending triage — no content yet`)
+    return NextResponse.json({ success: true, status: 'pending_triage' })
+  }
+
   // Fetch the user's knowledge base so triage has product context
   const { data: kb } = await supabase
     .from('knowledge_base')
@@ -88,8 +122,6 @@ export async function POST(request: NextRequest) {
     console.error('[webhook/jira] Triage error for', issueKey, ':', e instanceof Error ? e.message : e)
     return NextResponse.json({ error: 'Triage failed' }, { status: 500 })
   }
-
-  const now = new Date().toISOString()
 
   // Upsert into backlog — same conflict-safe pattern as the upload route.
   // On re-delivery of the same issue, triage fields update but PM verdicts

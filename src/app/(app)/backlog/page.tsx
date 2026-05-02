@@ -15,7 +15,12 @@ const REJECT_REASONS = ['Wrong priority', 'Wrong severity', 'Missing context', '
 
 // ── Shared badge components ────────────────────────────────────────────────────
 
-function PriorityBadge({ p }: { p: string }) {
+function PriorityBadge({ p }: { p: string | null }) {
+  if (!p) return (
+    <span className="border px-2 py-0.5 text-xs font-mono border-gray-200 bg-gray-50 text-black/30 flex items-center gap-1" style={MONO}>
+      <Loader2 className="w-2.5 h-2.5 animate-spin" />pending
+    </span>
+  )
   const cls: Record<string, string> = {
     P1: 'bg-red-50 text-red-600 border-red-200',
     P2: 'bg-orange-50 text-orange-600 border-orange-200',
@@ -329,17 +334,22 @@ export default function BacklogPage() {
         return
       }
       const fresh = await res.json()
-      // Patch the entry with fresh data and reset the detail cache so it re-generates
-      const patch = {
+      // Patch the entry with fresh content + re-triage results if available
+      const patch: Partial<BacklogEntry> = {
         title:                fresh.title,
         original_description: fresh.original_description,
         original_comments:    fresh.original_comments,
         reporter_priority:    fresh.reporter_priority,
         last_seen_at:         fresh.last_seen_at,
-        // Clear cached analysis so it regenerates with the new content
         business_impact:      null,
         rationale:            null,
         improved_description: null,
+      }
+      if (fresh.retriaged) {
+        patch.priority     = fresh.priority     ?? null
+        patch.severity     = fresh.severity     ?? null
+        patch.quick_reason = fresh.quick_reason ?? null
+        patch.gap_flags    = fresh.gap_flags    ?? []
       }
       detailRequestedRef.current.delete(entry.bug_id)
       setEntries(prev => prev.map(e => e.bug_id === entry.bug_id ? { ...e, ...patch } : e))
@@ -347,7 +357,11 @@ export default function BacklogPage() {
       const hasNewContent = !!(fresh.original_description?.trim() || fresh.original_comments?.trim())
       setSyncToast({
         type:    'success',
-        message: hasNewContent ? 'Synced — new content pulled from Jira.' : 'Synced — ticket still has no description yet.',
+        message: fresh.retriaged
+          ? 'Synced — ticket re-analysed with latest content.'
+          : hasNewContent
+            ? 'Synced — latest content pulled from Jira.'
+            : 'Synced — ticket still has no description yet.',
       })
     } catch {
       setSyncToast({ type: 'error', message: 'Sync failed — network error. Try again.' })
