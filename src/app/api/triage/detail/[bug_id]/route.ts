@@ -62,7 +62,9 @@ export async function POST(
   const isPaid = plan.plan !== 'starter'
 
   // ── Cache hit: detail was already generated, return it without an AI call ──
-  if (result.detail_generated_at) {
+  // Guard also checks business_impact: if a previous run stored detail_generated_at
+  // but left business_impact null, regenerate rather than serving empty fields forever.
+  if (result.detail_generated_at && result.business_impact != null) {
     return NextResponse.json({
       business_impact:      result.business_impact,
       rationale:            result.rationale,

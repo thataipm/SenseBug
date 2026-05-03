@@ -3,15 +3,29 @@ import { stripJiraMarkup } from '@/lib/jira'
 // ── Priority normalisation ────────────────────────────────────────────────────
 
 const JIRA_PRIORITY_TO_SENSEBUG: Record<string, string> = {
+  // Descriptive names (standard Jira defaults)
   highest:  'P1',
   critical: 'P1',
   blocker:  'P1',
+  urgent:   'P1',
   high:     'P2',
   medium:   'P3',
+  normal:   'P3',
   low:      'P4',
   lowest:   'P4',
   minor:    'P4',
   trivial:  'P4',
+  // Teams that use P1/P2/P3/P4 directly in Jira priority fields
+  p1:       'P1',
+  p2:       'P2',
+  p3:       'P3',
+  p4:       'P4',
+  // Teams that use numeric priority values (1 = highest)
+  '1':      'P1',
+  '2':      'P2',
+  '3':      'P3',
+  '4':      'P4',
+  '5':      'P4',
 }
 
 /** Map a Jira priority name (any case) to P1–P4. Returns null if unknown. */

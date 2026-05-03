@@ -187,13 +187,13 @@ export default function InsightsPage() {
           <Clock className="w-8 h-8 text-black/20 mx-auto mb-3" strokeWidth={1.5} />
           <p className="text-sm font-medium text-black/60 mb-1">No health data yet</p>
           <p className="text-xs text-black/40 mb-6 max-w-xs mx-auto leading-relaxed">
-            Health scores are calculated automatically after each analysis run. Run your first analysis from the dashboard to populate this page.
+            Health scores appear once you have at least 5 triaged bugs — from Jira or CSV. Keep triaging and check back soon.
           </p>
           <Link
-            href="/dashboard"
+            href="/backlog"
             className="bg-black text-white px-5 py-2.5 text-sm font-semibold inline-block hover:bg-black/90 transition-colors"
           >
-            Go to dashboard →
+            Go to backlog →
           </Link>
         </div>
       </div>
@@ -229,7 +229,10 @@ export default function InsightsPage() {
           <p className="text-sm text-black/50 mt-0.5">
             Based on{' '}
             <span className="font-medium text-black">{current.total_bugs} bugs</span>
-            {' '}· Last updated {new Date(current.computed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            {current.id === 'live'
+              ? <span className="ml-2 text-[10px] font-mono uppercase tracking-widest border border-blue-200 bg-blue-50 text-blue-500 px-1.5 py-0.5" style={MONO}>Live</span>
+              : <span>{' '}· Last updated {new Date(current.computed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            }
           </p>
         </div>
         <Link href="/dashboard" className="text-xs font-mono text-black/40 hover:text-black transition-colors" style={MONO}>← Dashboard</Link>

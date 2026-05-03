@@ -568,7 +568,7 @@ export default function BacklogPage() {
             )}
             {filteredEntries.map(e => {
               const qualFlags = (e.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
-              const displayP  = e.pm_action === 'edited' && e.edited_priority ? e.edited_priority : (e.priority ?? '')
+              const displayP  = e.pm_action === 'edited' && e.edited_priority ? e.edited_priority : e.priority
               const displayS  = e.pm_action === 'edited' && e.edited_severity ? e.edited_severity : (e.severity ?? '')
               return (
                 <div
@@ -580,7 +580,10 @@ export default function BacklogPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-mono text-black/65 font-medium" style={MONO}>{e.bug_id}</span>
-                        {displayP && <PriorityBadge p={displayP} />}
+                        {!e.source_run_id && (
+                          <span className="text-[9px] font-mono uppercase border border-blue-200 bg-blue-50 text-blue-500 px-1 leading-4" style={MONO}>Jira</span>
+                        )}
+                        <PriorityBadge p={displayP} />
                         {displayS && <SeverityBadge s={displayS} />}
                         <ConfidenceDots flags={e.gap_flags ?? []} />
                         {e.gap_flags?.includes('Likely over-prioritised') && <Flag className="w-3 h-3 text-purple-500" strokeWidth={2} />}
@@ -606,7 +609,7 @@ export default function BacklogPage() {
         {selected ? (() => {
           const qualityFlags    = (selected.gap_flags ?? []).filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
           const isWellWritten   = qualityFlags.length === 0
-          const displayPriority = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : (selected.priority ?? '')
+          const displayPriority = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : selected.priority
           const displaySeverity = selected.pm_action === 'edited' && selected.edited_severity ? selected.edited_severity : (selected.severity ?? '')
           const isLoadingDetail = detailLoading.has(selected.bug_id)
           const isDetailError   = !isLoadingDetail && detailError.has(selected.bug_id)
@@ -630,7 +633,10 @@ export default function BacklogPage() {
                 <div className="px-6 md:px-8 py-5 border-b border-gray-100">
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <span className="text-xs font-mono text-black/65 font-medium" style={MONO}>{selected.bug_id}</span>
-                    {displayPriority && <PriorityBadge p={displayPriority} />}
+                    {!selected.source_run_id && (
+                      <span className="text-[9px] font-mono uppercase border border-blue-200 bg-blue-50 text-blue-500 px-1 leading-4" style={MONO}>Jira</span>
+                    )}
+                    <PriorityBadge p={displayPriority} />
                     {displaySeverity && <SeverityBadge s={displaySeverity} />}
                     {selected.pm_action && (
                       <span className={`text-xs font-mono uppercase px-2 py-0.5 border ${getActionBadgeClass(selected.pm_action)}`} style={MONO}>
@@ -909,7 +915,7 @@ export default function BacklogPage() {
             const confLabel = hasMissingDesc || quality.length >= 2 ? 'Low' : quality.length === 1 ? 'Medium' : 'High'
             const clarity   = hasMissingDesc ? 'Low' : quality.length > 1 ? 'Medium' : 'High'
             const repro     = hasNoRepro ? 'Missing' : 'Present'
-            const displayP  = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : (selected.priority ?? '')
+            const displayP  = selected.pm_action === 'edited' && selected.edited_priority ? selected.edited_priority : selected.priority
             const dotColor  = (v: string) => v === 'High' || v === 'Present' ? 'bg-green-500' : v === 'Medium' ? 'bg-yellow-400' : 'bg-red-500'
             const txtColor  = (v: string) => v === 'High' || v === 'Present' ? 'text-green-600' : v === 'Medium' ? 'text-yellow-600' : 'text-red-500'
             return (
@@ -921,9 +927,15 @@ export default function BacklogPage() {
                     <div className="flex items-center justify-center gap-2">
                       <div className="flex-1 text-center">
                         <p className="text-[10px] text-black/35 mb-2" style={MONO}>Reporter</p>
-                        <span className={`border px-2 py-0.5 text-xs font-mono uppercase ${selected.reporter_priority === 'P1' ? 'bg-red-50 text-red-600 border-red-200' : selected.reporter_priority === 'P2' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-gray-50 text-black/50 border-gray-200'}`} style={MONO}>{selected.reporter_priority}</span>
+                        <span className={`border px-2 py-0.5 text-xs font-mono uppercase ${
+                          selected.reporter_priority === 'P1' ? 'bg-red-50 text-red-600 border-red-200' :
+                          selected.reporter_priority === 'P2' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                          selected.reporter_priority === 'P3' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                          selected.reporter_priority === 'P4' ? 'bg-green-50 text-green-700 border-green-200' :
+                          'bg-gray-50 text-black/50 border-gray-200'
+                        }`} style={MONO}>{selected.reporter_priority}</span>
                       </div>
-                      <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 ${selected.reporter_priority !== displayP ? 'text-amber-400' : 'text-black/20'}`} strokeWidth={2.5} />
+                      <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 ${displayP && selected.reporter_priority !== displayP ? 'text-amber-400' : 'text-black/20'}`} strokeWidth={2.5} />
                       <div className="flex-1 text-center">
                         <p className="text-[10px] text-black/35 mb-2" style={MONO}>AI</p>
                         <PriorityBadge p={displayP} />

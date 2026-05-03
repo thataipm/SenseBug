@@ -60,8 +60,11 @@ export async function POST(
   const plan   = await ensureUserPlan(supabase, user.id)
   const isPaid = plan.plan !== 'starter'
 
-  // Cache hit — return immediately without an AI call
-  if (entry.detail_generated_at) {
+  // Cache hit — return immediately without an AI call.
+  // Guard also checks business_impact: if a previous run stored detail_generated_at
+  // but left business_impact null (e.g. due to a parse failure), we must regenerate
+  // rather than serving empty cached fields forever.
+  if (entry.detail_generated_at && entry.business_impact != null) {
     return NextResponse.json({
       business_impact:      entry.business_impact,
       rationale:            entry.rationale,
