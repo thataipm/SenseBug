@@ -907,6 +907,7 @@ export default function BacklogPage() {
         {/* ── Panel 3: Per-bug signals + aggregate stats ── */}
         <div className="hidden lg:flex flex-col w-56 xl:w-64 border-l border-gray-200 flex-shrink-0 overflow-y-auto">
           {selected && (() => {
+            const isPending = selected.priority === null
             const flags   = selected.gap_flags ?? []
             const quality = flags.filter(f => f !== 'Likely over-prioritised' && f !== 'Possible duplicate')
             const hasMissingDesc = flags.includes('Missing description')
@@ -949,31 +950,38 @@ export default function BacklogPage() {
                   )}
                 </div>
 
-                {/* Signal meters */}
+                {/* Signal meters — hidden for pending tickets; gap_flags is empty
+                    because the ticket was never triaged, not because it's well-written */}
                 <div className="py-4 px-4 border-b border-gray-100">
                   <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Signals</p>
-                  <div className="space-y-2.5">
-                    {[
-                      { label: 'Clarity',     value: clarity,    d: dotColor(clarity),    t: txtColor(clarity)    },
-                      { label: 'Repro steps', value: repro,      d: dotColor(repro),      t: txtColor(repro)      },
-                      { label: 'Confidence',  value: confLabel,  d: dotColor(confLabel),  t: txtColor(confLabel)  },
-                      { label: 'Over-pri',    value: isOverPri ? 'Flagged' : 'Clean', d: isOverPri ? 'bg-purple-500' : 'bg-green-500', t: isOverPri ? 'text-purple-600' : 'text-green-600' },
-                    ].map(s => (
-                      <div key={s.label} className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-black/60">{s.label}</span>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.d}`} />
-                          <span className={`text-xs font-mono font-medium ${s.t}`} style={MONO}>{s.value}</span>
+                  {isPending ? (
+                    <p className="text-xs font-mono text-black/25 italic" style={MONO}>Available after triage</p>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {[
+                        { label: 'Clarity',     value: clarity,    d: dotColor(clarity),    t: txtColor(clarity)    },
+                        { label: 'Repro steps', value: repro,      d: dotColor(repro),      t: txtColor(repro)      },
+                        { label: 'Confidence',  value: confLabel,  d: dotColor(confLabel),  t: txtColor(confLabel)  },
+                        { label: 'Over-pri',    value: isOverPri ? 'Flagged' : 'Clean', d: isOverPri ? 'bg-purple-500' : 'bg-green-500', t: isOverPri ? 'text-purple-600' : 'text-green-600' },
+                      ].map(s => (
+                        <div key={s.label} className="flex items-center justify-between gap-2">
+                          <span className="text-xs text-black/60">{s.label}</span>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.d}`} />
+                            <span className={`text-xs font-mono font-medium ${s.t}`} style={MONO}>{s.value}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Quality flags */}
+                {/* Quality flags — same guard: empty flags on pending = not analysed */}
                 <div className="py-4 px-4 border-b border-gray-100">
                   <p className="text-[10px] font-mono uppercase tracking-widest text-black/30 mb-3" style={MONO}>Quality flags</p>
-                  {flags.length === 0 ? (
+                  {isPending ? (
+                    <p className="text-xs font-mono text-black/25 italic" style={MONO}>Available after triage</p>
+                  ) : flags.length === 0 ? (
                     <div className="flex items-center gap-1.5 text-green-600">
                       <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
                       <span className="text-xs font-mono" style={MONO}>Well-written ticket</span>
