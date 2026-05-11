@@ -27,6 +27,18 @@ export async function GET() {
     return NextResponse.json({ gated: true }, { status: 403 })
   }
 
+  // Check current backlog count first. If the backlog is empty the user has
+  // cleared their bugs — return no data so the insights page shows the empty
+  // state rather than stale scores from a previous run.
+  const { count: backlogCount } = await supabase
+    .from('backlog')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+
+  if (!backlogCount || backlogCount === 0) {
+    return NextResponse.json([])
+  }
+
   const { data, error } = await supabase
     .from('backlog_health_snapshots')
     .select('*')
