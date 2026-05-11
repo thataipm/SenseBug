@@ -24,7 +24,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'SenseBug AI — AI Bug Prioritization for Product Managers',
+  title: 'SenseBug AI | AI Bug Prioritization for Product Managers',
   description: 'AI-powered bug triage and prioritization for Product Managers. Upload your Jira or Linear backlog and get a ranked list by business impact in seconds.',
   icons: {
     icon: '/favicon.svg',

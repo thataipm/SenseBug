@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'SenseBug AI — Every bug priority decision, justified.',
+  title: 'SenseBug AI | Every bug priority decision, justified.',
   description: 'Stop letting the loudest voice in the room set your sprint. SenseBug AI ranks every bug by business impact and gives you a written rationale for every call — documented, defensible, data-backed. Free for up to 50 bugs.',
   openGraph: {
-    title: 'SenseBug AI — Every bug priority decision, justified.',
+    title: 'SenseBug AI | Every bug priority decision, justified.',
     description: 'Stop letting the loudest voice in the room set your sprint. SenseBug AI ranks every bug by business impact and gives you a written rationale for every call.',
     url: 'https://www.sensebug.com',
     siteName: 'SenseBug AI',
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SenseBug AI — Every bug priority decision, justified.',
+    title: 'SenseBug AI | Every bug priority decision, justified.',
     description: 'Stop letting the loudest voice in the room set your sprint. Ranked by business impact, explained in plain English. Free for up to 50 bugs.',
   },
 }
