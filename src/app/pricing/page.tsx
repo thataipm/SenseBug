@@ -4,7 +4,7 @@ import PricingNav from './PricingNav'
 
 export const metadata = {
   title: 'Pricing — SenseBug AI',
-  description: 'Start free. Upgrade when the value is obvious. Pro at $19/mo includes Jira integration. Max at $49/mo.',
+  description: 'Start free. Every plan comes with a written rationale for every bug decision. The more stakeholders you have to convince, the more you need. Pro at $19/mo. Max at $49/mo.',
 }
 
 export default function PricingPage() {
@@ -20,9 +20,9 @@ export default function PricingPage() {
           Pricing
         </p>
         <h1 className="text-5xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          Pay for what you use.
+          Every plan comes with receipts.
         </h1>
-        <p className="text-base text-black/45 mb-0">Start free. Upgrade when the value is obvious.</p>
+        <p className="text-base text-black/45 mb-0">Start free. Upgrade when your stakeholders multiply.</p>
       </section>
 
       {/* Plan cards + comparison table */}
@@ -36,7 +36,7 @@ export default function PricingPage() {
             <div className="p-8 bg-white md:border-r border-gray-200 border-b md:border-b-0 flex flex-col">
               <div className="text-xs font-mono uppercase tracking-widest text-black/40 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Starter</div>
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Free</div>
-              <div className="text-sm text-black/45 mb-4">No credit card required</div>
+              <div className="text-sm text-black/45 mb-4">Try it on your next backlog — no card needed</div>
               <ul className="text-xs text-black/50 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />50 bugs / month</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />50 bugs per CSV upload</li>
@@ -57,7 +57,7 @@ export default function PricingPage() {
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
                 $19<span className="text-xl font-normal text-white/50">/mo</span>
               </div>
-              <div className="text-sm text-white/40 mb-4">Billed monthly, cancel any time</div>
+              <div className="text-sm text-white/40 mb-4">Be defensible with your team</div>
               <ul className="text-xs text-white/55 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />250 bugs / month</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />100 bugs per CSV upload</li>
@@ -79,7 +79,7 @@ export default function PricingPage() {
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
                 $49<span className="text-xl font-normal text-black/40">/mo</span>
               </div>
-              <div className="text-sm text-black/45 mb-4">For teams triaging 200+ bugs a month</div>
+              <div className="text-sm text-black/45 mb-4">Be defensible in front of leadership</div>
               <ul className="text-xs text-black/50 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />500 bugs / month</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />250 bugs per CSV upload</li>

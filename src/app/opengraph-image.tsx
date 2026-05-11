@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'SenseBug AI — AI Bug Prioritization for Product Managers'
+export const alt = 'SenseBug AI — Every bug priority decision, justified.'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -83,7 +83,7 @@ export default async function Image() {
               maxWidth: 680,
             }}
           >
-            Bug triage that thinks like your best PM.
+            Every bug priority decision, justified.
           </span>
 
           <span
@@ -96,7 +96,7 @@ export default async function Image() {
               lineHeight: 1.5,
             }}
           >
-            Upload your Jira or Linear backlog. Get a ranked, impact-scored list in under 60 seconds.
+            SenseBug AI ranks every bug by business impact and gives you a written rationale for every call.
           </span>
         </div>
 

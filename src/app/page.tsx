@@ -3,19 +3,19 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'SenseBug AI — AI Bug Backlog Intelligence for Product Managers',
-  description: 'The AI layer that sits on top of Jira and makes sense of your bug backlog. Ranks every bug by business impact, learns your judgment over time, and keeps your backlog healthy. Free for up to 50 bugs.',
+  title: 'SenseBug AI — Every bug priority decision, justified.',
+  description: 'Stop letting the loudest voice in the room set your sprint. SenseBug AI ranks every bug by business impact and gives you a written rationale for every call — documented, defensible, data-backed. Free for up to 50 bugs.',
   openGraph: {
-    title: 'SenseBug AI — AI Bug Backlog Intelligence for Product Managers',
-    description: 'The AI layer that sits on top of Jira and makes sense of your bug backlog. Ranks by business impact, learns your judgment over time.',
+    title: 'SenseBug AI — Every bug priority decision, justified.',
+    description: 'Stop letting the loudest voice in the room set your sprint. SenseBug AI ranks every bug by business impact and gives you a written rationale for every call.',
     url: 'https://www.sensebug.com',
     siteName: 'SenseBug AI',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SenseBug AI — AI Bug Backlog Intelligence for Product Managers',
-    description: 'The AI layer that sits on top of Jira and makes sense of your bug backlog. Ranks by business impact, learns your judgment. Free for up to 50 bugs.',
+    title: 'SenseBug AI — Every bug priority decision, justified.',
+    description: 'Stop letting the loudest voice in the room set your sprint. Ranked by business impact, explained in plain English. Free for up to 50 bugs.',
   },
 }
 
@@ -57,17 +57,17 @@ export default function LandingPage() {
         <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-5xl mx-auto relative z-10">
           <p className="text-sm font-mono uppercase tracking-widest text-black/55 mb-8" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-            AI Backlog Intelligence for Product Managers
+            For PMs tired of defending their triage decisions every sprint
           </p>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.95] mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
             Your bug backlog<br />is full of opinions.
           </h1>
           <p className="text-xl text-black/60 max-w-2xl mb-4 leading-relaxed">
             Every ticket was filed by someone who thinks their bug is the most important one.
-            SenseBug AI ignores the noise and ranks by what actually matters — business impact.
+            SenseBug AI ignores the noise, ranks by business impact, and gives you a written rationale for every call — so your decisions are documented before you walk into the room.
           </p>
           <p className="text-base text-black/40 max-w-xl mb-12 leading-relaxed">
-            Connect Jira and every bug is automatically analysed and prioritised the moment it&apos;s filed — no CSV exports, no manual work. The AI ranks against your product&apos;s critical flows, removes reporter bias, and gets more accurate with every verdict you make.
+            Connect Jira and every bug is automatically analysed the moment it&apos;s filed — ranked against your product&apos;s critical flows, checked for reporter bias, and explained in plain English. Stop defending your triage. Start presenting it.
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link
@@ -84,6 +84,18 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Enemy Statement ──────────────────────────────────────────────── */}
+      <section className="px-6 md:px-12 lg:px-24 py-16 border-b border-gray-200">
+        <div className="max-w-3xl mx-auto text-center">
+          <p className="text-2xl md:text-3xl font-black tracking-tight leading-snug mb-4" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
+            &ldquo;Whoever complains loudest gets fixed first&rdquo; is not a prioritisation strategy.
+          </p>
+          <p className="text-base text-black/40 max-w-xl mx-auto">
+            It&apos;s what happens when you have no data to argue back with. SenseBug gives you the data — and the rationale to go with it.
+          </p>
+        </div>
+      </section>
+
       {/* ── The Problem ──────────────────────────────────────────────────── */}
       <section className="px-6 md:px-12 lg:px-24 py-24 border-b border-gray-200 bg-gray-50">
         <div className="max-w-5xl mx-auto">
@@ -91,7 +103,7 @@ export default function LandingPage() {
             The problem
           </p>
           <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-10 leading-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            P1 means "I really want<br />this fixed," not "this is<br />blocking revenue."
+            Stop letting politics<br />run your bug backlog.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-gray-200">
             {[
@@ -108,7 +120,7 @@ export default function LandingPage() {
               {
                 label: '03',
                 heading: 'You still get it wrong',
-                body: "And when the wrong bug ships first, you find out three weeks later. By then the cost is already paid — in engineering time, in customer trust, in credibility.",
+                body: "And when the wrong bug ships first, you find out at the post-mortem. \"We didn't know\" is the only answer you have — and it costs you more than the bug did.",
               },
             ].map((item, i) => (
               <div key={item.label} className={`p-8 bg-white ${i < 2 ? 'md:border-r border-b md:border-b-0 border-gray-200' : ''}`}>
@@ -128,7 +140,7 @@ export default function LandingPage() {
             Before &amp; after
           </p>
           <h2 className="text-4xl font-black tracking-tighter mb-12" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            Same backlog. Different truth.
+            Same backlog. Now you can defend it.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Before */}
@@ -176,7 +188,7 @@ export default function LandingPage() {
             </div>
           </div>
           <p className="text-base text-black/40 mt-6 text-center">
-            Same five tickets. Completely different picture. The checkout bug was always the emergency — it just wasn&apos;t the loudest voice in the room.
+            Same five tickets. When someone asks why the CSS bug didn&apos;t make the sprint, you have a documented answer — not your opinion. The AI&apos;s verdict, grounded in your product&apos;s critical flows.
           </p>
         </div>
       </section>
@@ -246,10 +258,10 @@ export default function LandingPage() {
             What you actually get
           </p>
           <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            Bug backlog clarity in 5 minutes.<br />Not 5 hours.
+            Every call documented.<br />Every sprint defensible.
           </h2>
           <p className="text-base text-black/45 mb-14 max-w-xl">
-            SenseBug AI doesn&apos;t just rank bugs — it gives you the reasoning to defend every call in the room.
+            Stop spending your pre-sprint hour justifying priorities to whoever escalated loudest. Every ranking comes with a written rationale — share it in Slack, paste it in the doc, read it aloud. The AI makes the case so you don&apos;t have to.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-gray-200 mb-12">
@@ -371,10 +383,10 @@ export default function LandingPage() {
             Get started
           </p>
           <h2 className="text-5xl md:text-6xl font-black tracking-tighter leading-none mb-6" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            Stop guessing.<br />Start knowing.
+            Stop defending.<br />Start deciding.
           </h2>
           <p className="text-lg text-black/50 mb-10 leading-relaxed max-w-xl mx-auto">
-            50 bugs, completely free. No credit card. Upload your backlog and see what your priorities actually look like once the opinions are stripped away.
+            50 bugs, completely free. No credit card. Upload your backlog and get a ranked list with a written rationale for every call — the documented case you need before your next sprint planning.
           </p>
           <Link
             href="/signup"
