@@ -114,7 +114,7 @@ export async function GET() {
 
   // ── Recent runs (latest 10) with email lookup ────────────────────────────────
   const recentRuns = (recentRunsData ?? []).slice(0, 10).map(r => {
-    const u = users.find(u => u.id === r.user_id)
+    const u = allUsers.find(u => u.id === r.user_id)
     return {
       email:     u?.email ?? '—',
       filename:  r.filename,
