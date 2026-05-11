@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
   //   - Either: never triaged (priority IS NULL) OR stale (last_seen_at old enough)
   const { data: pending, error: fetchErr } = await supabase
     .from('backlog')
-    .select('id, user_id, bug_id, priority, original_description, original_comments')
+    .select('id, user_id, bug_id, priority, original_description, original_comments, last_seen_at')
     .is('source_run_id', null)
     .is('pm_action', null)
     .gte('first_seen_at', maxAgeThreshold)
@@ -121,11 +121,12 @@ export async function GET(request: NextRequest) {
     // Fetch KB + calibration + user email once per user (reused by all concurrent tasks)
     const { data: kb } = await supabase
       .from('knowledge_base')
-      .select('product_overview, critical_flows, product_areas')
+      .select('product_overview, critical_flows, product_areas, updated_at')
       .eq('user_id', userId)
       .single()
 
-    const kbData           = kb ?? { product_overview: '', critical_flows: '', product_areas: '' }
+    const kbData           = kb ?? { product_overview: '', critical_flows: '', product_areas: '', updated_at: null }
+    const kbUpdatedAt      = kbData.updated_at ? new Date(kbData.updated_at) : null
     const calibrationBlock = await getCalibrationBlock(supabase, userId).catch(() => null)
 
     // Fetch user email once — reused by P1 alert for any ticket in this batch
@@ -156,7 +157,11 @@ export async function GET(request: NextRequest) {
           newDesc     !== ticket.original_description ||
           newComments !== ticket.original_comments
 
-        const needsTriage = ticket.priority === null || contentChanged
+        // Re-triage if: never triaged, content changed, or KB was updated after this ticket
+        // was last seen (KB context change means the priority ranking may be wrong).
+        const ticketLastSeen = ticket.last_seen_at ? new Date(ticket.last_seen_at) : new Date(0)
+        const kbNewer        = kbUpdatedAt ? kbUpdatedAt > ticketLastSeen : false
+        const needsTriage    = ticket.priority === null || contentChanged || kbNewer
 
         if (!hasContent && !contentChanged) {
           // Still empty and nothing changed — just touch last_seen_at and move on
@@ -212,7 +217,8 @@ export async function GET(request: NextRequest) {
           newPriority = triageResult.priority
           retriaged++
 
-          console.log(`[cron/jira-sync] ${ticket.bug_id} → ${triageResult.priority}/${triageResult.severity} (was ${ticket.priority ?? 'pending'})`)
+          const reason = ticket.priority === null ? 'new' : kbNewer ? 'kb-updated' : 'content-changed'
+          console.log(`[cron/jira-sync] ${ticket.bug_id} → ${triageResult.priority}/${triageResult.severity} (was ${ticket.priority ?? 'pending'}, reason: ${reason})`)
         } else {
           unchanged++
         }

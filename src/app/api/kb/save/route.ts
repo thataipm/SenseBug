@@ -28,5 +28,25 @@ export async function POST(request: NextRequest) {
     )
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Invalidate all cached AI details for this user's backlog.
+  // Rationale and business_impact reference KB context (critical flows, product overview)
+  // so they become stale the moment KB changes. Clearing detail_generated_at forces the
+  // detail route to regenerate them with the new KB on the next time each bug is opened.
+  // Fire-and-forget — don't fail the KB save if this errors.
+  supabase
+    .from('backlog')
+    .update({
+      detail_generated_at:  null,
+      business_impact:      null,
+      rationale:            null,
+      improved_description: null,
+    })
+    .eq('user_id', user.id)
+    .then(({ error: clearErr }) => {
+      if (clearErr) console.error('[kb/save] Failed to clear cached details:', clearErr.message)
+      else console.log(`[kb/save] Cleared cached details for user ${user.id}`)
+    })
+
   return NextResponse.json({ success: true })
 }
