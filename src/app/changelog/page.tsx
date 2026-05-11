@@ -1,3 +1,11 @@
+export const metadata = {
+  title: 'Changelog — SenseBug AI',
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
+
 export default function ChangelogPage() {
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>

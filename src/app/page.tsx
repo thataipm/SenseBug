@@ -5,6 +5,9 @@ import { ArrowRight } from 'lucide-react'
 export const metadata: Metadata = {
   title: 'SenseBug AI | Every bug priority decision, justified.',
   description: 'Stop letting the loudest voice in the room set your sprint. SenseBug AI ranks every bug by business impact and gives you a written rationale for every call — documented, defensible, data-backed. Free for up to 50 bugs.',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'SenseBug AI | Every bug priority decision, justified.',
     description: 'Stop letting the loudest voice in the room set your sprint. SenseBug AI ranks every bug by business impact and gives you a written rationale for every call.',

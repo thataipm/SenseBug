@@ -5,6 +5,9 @@ import { posts, formatDate } from './lib/posts'
 export const metadata: Metadata = {
   title: 'Blog — SenseBug AI',
   description: 'Product management insights on bug triage, sprint planning, and getting your engineering team focused on what actually matters.',
+  alternates: {
+    canonical: '/blog',
+  },
   openGraph: {
     title: 'Blog — SenseBug AI',
     description: 'Product management insights on bug triage, sprint planning, and getting your engineering team focused on what actually matters.',

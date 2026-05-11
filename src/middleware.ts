@@ -4,6 +4,17 @@ import { updateSession } from '@/lib/supabase/middleware'
 const PROTECTED = ['/dashboard', '/results', '/settings', '/onboarding', '/historyRun', '/account', '/processing', '/admin', '/backlog', '/insights']
 const AUTH_ONLY = ['/login', '/signup']
 
+// Prevent Vercel preview/staging deployments from being indexed by Google.
+// VERCEL_ENV is 'production' on the main deployment, 'preview' on PR previews.
+const isPreviewDeployment = process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production'
+
+function withNoindexIfPreview(response: NextResponse): NextResponse {
+  if (isPreviewDeployment) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+  }
+  return response
+}
+
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
   const { pathname } = request.nextUrl
@@ -33,7 +44,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return supabaseResponse
+  return withNoindexIfPreview(supabaseResponse)
 }
 
 export const config = {

@@ -5,6 +5,9 @@ import PricingNav from './PricingNav'
 export const metadata = {
   title: 'Pricing — SenseBug AI',
   description: 'Start free. Every plan comes with a written rationale for every bug decision. The more stakeholders you have to convince, the more you need. Pro at $19/mo. Max at $49/mo.',
+  alternates: {
+    canonical: '/pricing',
+  },
 }
 
 export default function PricingPage() {
