@@ -46,15 +46,21 @@ export async function GET() {
       .limit(15),
   ])
 
-  const users   = authData?.users ?? []
-  const planMap = new Map((plans ?? []).map(p => [p.user_id, p.plan as string]))
+  const allUsers = authData?.users ?? []
+  const planMap  = new Map((plans ?? []).map(p => [p.user_id, p.plan as string]))
+
+  // Separate confirmed from unconfirmed (bots / users who never clicked the link).
+  // All stats and conversion calculations use confirmed users only so bots don't
+  // inflate totals and deflate conversion rate.
+  const confirmedUsers   = allUsers.filter(u => !!u.email_confirmed_at)
+  const unconfirmedCount = allUsers.length - confirmedUsers.length
 
   // ── Overview stats ───────────────────────────────────────────────────────────
   const now          = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const totalUsers        = users.length
-  const newThisMonth      = users.filter(u => new Date(u.created_at) >= startOfMonth).length
+  const totalUsers        = confirmedUsers.length
+  const newThisMonth      = confirmedUsers.filter(u => new Date(u.created_at) >= startOfMonth).length
   const proCount          = (plans ?? []).filter(p => p.plan === 'pro').length
   const maxCount          = (plans ?? []).filter(p => p.plan === 'max' || p.plan === 'team').length
   const adminCount        = (plans ?? []).filter(p => p.plan === 'admin').length
@@ -63,6 +69,7 @@ export async function GET() {
   const estimatedMRR      = proCount * 19 + maxCount * 49
   const totalRuns         = allRunsData?.length ?? 0
   const totalBugsAnalyzed = (allRunsData ?? []).reduce((s, r) => s + (r.bug_count ?? 0), 0)
+  // Conversion rate denominator is confirmed users only
   const conversionRate    = totalUsers > 0
     ? (((proCount + maxCount) / totalUsers) * 100).toFixed(1)
     : '0'
@@ -71,8 +78,9 @@ export async function GET() {
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
+  // Chart shows confirmed signups only (counts bots separately)
   const signupsByDate: Record<string, number> = {}
-  users
+  confirmedUsers
     .filter(u => new Date(u.created_at) >= thirtyDaysAgo)
     .forEach(u => {
       const d = u.created_at.slice(0, 10)
@@ -92,14 +100,16 @@ export async function GET() {
     return { date, signups: signupsByDate[date] ?? 0, runs: runsByDate[date] ?? 0 }
   })
 
-  // ── Recent signups (latest 10) ───────────────────────────────────────────────
-  const recentSignups = [...users]
+  // ── Recent signups (latest 15) — show all including unconfirmed so we can
+  //    spot bot clusters, but mark each row with its confirmation status. ────────
+  const recentSignups = [...allUsers]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 10)
+    .slice(0, 15)
     .map(u => ({
       email:      u.email ?? '—',
       created_at: u.created_at,
       plan:       planMap.get(u.id) ?? 'starter',
+      confirmed:  !!u.email_confirmed_at,
     }))
 
   // ── Recent runs (latest 10) with email lookup ────────────────────────────────
@@ -129,6 +139,7 @@ export async function GET() {
     maxCount,
     starterCount,
     adminCount,
+    unconfirmedCount,
     estimatedMRR,
     totalRuns,
     totalBugsAnalyzed,

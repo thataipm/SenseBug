@@ -31,12 +31,13 @@ interface AdminStats {
   maxCount:          number
   starterCount:      number
   adminCount:        number
+  unconfirmedCount:  number
   estimatedMRR:      number
   totalRuns:         number
   totalBugsAnalyzed: number
   conversionRate:    string
   chartData:         { date: string; signups: number; runs: number }[]
-  recentSignups:     { email: string; created_at: string; plan: string }[]
+  recentSignups:     { email: string; created_at: string; plan: string; confirmed: boolean }[]
   recentRuns:        { email: string; filename: string; bug_count: number; run_at: string }[]
   recentFeedback:    { email: string; type: string; subject: string; message: string; created_at: string }[]
 }
@@ -146,15 +147,15 @@ export default function AdminPage() {
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            label="Total Users"
+            label="Confirmed Users"
             value={stats.totalUsers.toLocaleString()}
-            sub={`+${signupsThisMonth} this month`}
+            sub={`+${signupsThisMonth} last 30 days · ${stats.unconfirmedCount} unconfirmed`}
             icon={Users}
           />
           <StatCard
             label="New This Month"
             value={stats.newThisMonth}
-            sub="calendar month"
+            sub={`confirmed · calendar month`}
             icon={TrendingUp}
           />
           <StatCard
@@ -212,17 +213,18 @@ export default function AdminPage() {
             <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-5" style={MONO}>Plan Breakdown</p>
             <div className="space-y-4">
               {[
-                { label: 'Starter', count: stats.starterCount, bar: 'bg-gray-300'  },
-                { label: 'Pro',     count: stats.proCount,     bar: 'bg-blue-500'  },
-                { label: 'Max',     count: stats.maxCount,     bar: 'bg-purple-500'},
-                { label: 'Admin',   count: stats.adminCount,   bar: 'bg-black'     },
+                { label: 'Starter',     count: stats.starterCount,      bar: 'bg-gray-300'   },
+                { label: 'Pro',         count: stats.proCount,          bar: 'bg-blue-500'   },
+                { label: 'Max',         count: stats.maxCount,          bar: 'bg-purple-500' },
+                { label: 'Admin',       count: stats.adminCount,        bar: 'bg-black'      },
+                { label: 'Unconfirmed', count: stats.unconfirmedCount,  bar: 'bg-red-300'    },
               ].map(({ label, count, bar }) => (
                 <div key={label} className="flex items-center gap-3">
                   <span className="text-xs font-mono text-black/60 w-14 flex-shrink-0" style={MONO}>{label}</span>
                   <div className="flex-1 h-1.5 bg-gray-100 overflow-hidden">
                     <div
                       className={`h-full ${bar}`}
-                      style={{ width: stats.totalUsers > 0 ? `${(count / stats.totalUsers) * 100}%` : '0%' }}
+                      style={{ width: (stats.totalUsers + stats.unconfirmedCount) > 0 ? `${(count / (stats.totalUsers + stats.unconfirmedCount)) * 100}%` : '0%' }}
                     />
                   </div>
                   <span className="text-sm font-black w-8 text-right tabular-nums" style={HEADING}>{count}</span>
@@ -231,7 +233,7 @@ export default function AdminPage() {
             </div>
             <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
               <p className="text-xs text-black/50" style={MONO}>{stats.conversionRate}% paid conversion</p>
-              <p className="text-xs text-black/50" style={MONO}>{stats.totalUsers} total</p>
+              <p className="text-xs text-black/50" style={MONO}>{stats.totalUsers} confirmed · {stats.unconfirmedCount} pending</p>
             </div>
           </div>
 
@@ -265,14 +267,20 @@ export default function AdminPage() {
             <table className="w-full">
               <tbody>
                 {stats.recentSignups.map((u, i) => (
-                  <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3 text-sm font-medium text-black/80 max-w-[180px]">
-                      <span className="truncate block">{u.email}</span>
+                  <tr key={i} className={`border-b border-gray-50 last:border-0 transition-colors ${u.confirmed ? 'hover:bg-gray-50' : 'bg-red-50/40 hover:bg-red-50/70'}`}>
+                    <td className="px-5 py-3 text-sm font-medium max-w-[180px]">
+                      <span className={`truncate block ${u.confirmed ? 'text-black/80' : 'text-black/40'}`}>{u.email}</span>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`text-xs font-mono border px-1.5 py-0.5 ${PLAN_BADGE[u.plan] ?? PLAN_BADGE.starter}`} style={MONO}>
-                        {PLAN_LABELS[u.plan] ?? u.plan}
-                      </span>
+                      {u.confirmed ? (
+                        <span className={`text-xs font-mono border px-1.5 py-0.5 ${PLAN_BADGE[u.plan] ?? PLAN_BADGE.starter}`} style={MONO}>
+                          {PLAN_LABELS[u.plan] ?? u.plan}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-mono border px-1.5 py-0.5 text-red-500 border-red-200 bg-red-50" style={MONO}>
+                          Unconfirmed
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-right text-xs text-black/50 whitespace-nowrap" style={MONO}>
                       {fmtDate(u.created_at)}
