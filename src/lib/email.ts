@@ -280,24 +280,38 @@ export async function sendWeeklyDigestEmail(params: {
   }
 }
 
-// ─── 6. P1 bug alert (sent when Jira webhook delivers a P1-ranked bug) ──────────
+// ─── 6. P1 / Critical bug alert ──────────────────────────────────────────────
+//
+// Fires when a Jira bug is triaged as P1 priority OR Critical severity.
+// Both conditions are treated as "needs immediate attention" — a Critical
+// severity bug is flagged regardless of the AI's priority assessment.
 
 export async function sendP1AlertEmail(params: {
   to: string
   bugId: string
   title: string
   quickReason: string | null
-  severity: string
+  priority: string   // P1 / P2 / P3 / P4
+  severity: string   // Critical / High / Medium / Low
 }) {
-  const { to, bugId, title, quickReason, severity } = params
+  const { to, bugId, title, quickReason, priority, severity } = params
+
+  // Build a context-aware label for the alert banner
+  const isCritical = severity === 'Critical'
+  const isP1       = priority === 'P1'
+  const bannerLabel = isP1 && isCritical ? 'P1 · Critical'
+    : isP1                               ? `P1 · ${severity}`
+    :                                      `Critical · ${priority}`
+  const subjectTag  = isP1 ? 'P1' : 'Critical'
+
   try {
     await getResend().emails.send({
       from: FROM,
       to,
-      subject: `P1 bug arrived: ${bugId} — action required`,
+      subject: `${subjectTag} bug needs attention: ${bugId}`,
       html: emailShell(`
         <div style="background: #fff1f2; border: 1px solid #fecaca; padding: 14px 20px; margin-bottom: 24px;">
-          <span style="font-size: 11px; font-family: monospace; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.08em;">P1 · ${severity}</span>
+          <span style="font-size: 11px; font-family: monospace; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.08em;">${bannerLabel}</span>
         </div>
         <h1 style="font-size: 20px; font-weight: 800; margin: 0 0 8px; line-height: 1.3;">${title}</h1>
         <p style="font-size: 11px; font-family: monospace; color: #999; margin: 0 0 20px;">${bugId}</p>

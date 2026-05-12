@@ -188,8 +188,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, status: 'db_error', detail: upsertErr.message })
   }
 
-  // P1 alert email — awaited so Vercel doesn't kill the function before it sends
-  if (triageResult.priority === 'P1') {
+  // Alert email — fires on P1 priority OR Critical severity (both warrant
+  // immediate attention regardless of the other dimension).
+  const shouldAlert = triageResult.priority === 'P1' || triageResult.severity === 'Critical'
+  if (shouldAlert) {
     const { data: userData } = await supabase.auth.admin.getUserById(integration.user_id)
     const alertEmail = userData?.user?.email
     if (alertEmail) {
@@ -198,8 +200,9 @@ export async function POST(request: NextRequest) {
         bugId:       issueKey,
         title,
         quickReason: triageResult.quick_reason,
+        priority:    triageResult.priority,
         severity:    triageResult.severity,
-      }).catch(e => console.error('[webhook/jira] P1 alert email failed:', e instanceof Error ? e.message : e))
+      }).catch(e => console.error('[webhook/jira] alert email failed:', e instanceof Error ? e.message : e))
     }
   }
 

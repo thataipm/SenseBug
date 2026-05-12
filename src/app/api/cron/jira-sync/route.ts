@@ -230,15 +230,27 @@ export async function GET(request: NextRequest) {
 
         await supabase.from('backlog').update(update).eq('id', ticket.id)
 
-        // Fire P1 alert if this ticket just got triaged as P1 for the first time
-        if (newPriority === 'P1' && ticket.priority === null && alertEmail) {
+        // Fire alert if this ticket just became P1 or Critical.
+        // Conditions that warrant an alert:
+        //   - Priority is newly P1 (was null OR was a lower priority — re-triage upgraded it)
+        //   - Severity is Critical (regardless of priority — always warrants attention)
+        // Guard: don't re-alert if the ticket was already P1/Critical before this run.
+        const newSeverity   = String(update.severity ?? 'High')
+        const prevWasP1     = ticket.priority === 'P1'
+        const prevWasCrit   = false // severity not stored on the pending row; always alert on Critical for now
+        const shouldAlert   = alertEmail && (
+          (newPriority === 'P1'     && !prevWasP1)  ||
+          (newSeverity === 'Critical' && !prevWasCrit)
+        )
+        if (shouldAlert) {
           await sendP1AlertEmail({
-            to:          alertEmail,
+            to:          alertEmail!,
             bugId:       ticket.bug_id,
             title:       freshData.title,
             quickReason: String(update.quick_reason ?? ''),
-            severity:    String(update.severity     ?? 'High'),
-          }).catch(e => console.error('[cron/jira-sync] P1 alert email failed:', e instanceof Error ? e.message : e))
+            priority:    newPriority ?? 'P1',
+            severity:    newSeverity,
+          }).catch(e => console.error('[cron/jira-sync] alert email failed:', e instanceof Error ? e.message : e))
         }
       } catch (e) {
         console.error(`[cron/jira-sync] Error processing ${ticket.bug_id}:`, e instanceof Error ? e.message : e)
