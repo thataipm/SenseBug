@@ -24,6 +24,7 @@ import { fetchJiraIssue } from '@/lib/jira-api'
 import { triageSingleBug } from '@/lib/triage-single'
 import { getCalibrationBlock } from '@/lib/pm-calibration'
 import { sendP1AlertEmail } from '@/lib/email'
+import { rerankBacklog } from '@/lib/backlog-rerank'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -103,6 +104,9 @@ export async function GET(request: NextRequest) {
   let processed = 0
   let retriaged = 0
   let unchanged = 0
+
+  // Track which users had at least one ticket re-triaged so we can re-rank their backlog
+  const retriagedUsers = new Set<string>()
 
   for (const [userId, tickets] of Object.entries(byUser)) {
     // Fetch this user's Jira integration
@@ -216,6 +220,7 @@ export async function GET(request: NextRequest) {
 
           newPriority = triageResult.priority
           retriaged++
+          retriagedUsers.add(userId)
 
           const reason = ticket.priority === null ? 'new' : kbNewer ? 'kb-updated' : 'content-changed'
           console.log(`[cron/jira-sync] ${ticket.bug_id} → ${triageResult.priority}/${triageResult.severity} (was ${ticket.priority ?? 'pending'}, reason: ${reason})`)
@@ -240,6 +245,19 @@ export async function GET(request: NextRequest) {
         // Continue with next ticket — one failure shouldn't stop the whole run
       }
     })
+  }
+
+  // Re-rank backlog for every user who had at least one ticket re-triaged.
+  // New Jira bugs get a rank so they sort correctly alongside CSV-uploaded bugs.
+  if (retriagedUsers.size > 0) {
+    await Promise.all(
+      [...retriagedUsers].map(uid =>
+        rerankBacklog(supabase, uid).catch(e =>
+          console.error(`[cron/jira-sync] Re-rank failed for user ${uid}:`, e instanceof Error ? e.message : e)
+        )
+      )
+    )
+    console.log(`[cron/jira-sync] Re-ranked backlog for ${retriagedUsers.size} user(s)`)
   }
 
   console.log(`[cron/jira-sync] Done — processed: ${processed}, retriaged: ${retriaged}, unchanged: ${unchanged}`)

@@ -163,6 +163,7 @@ export default function BacklogPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [syncLoading, setSyncLoading]     = useState(false)
+  const [rerankLoading, setRerankLoading] = useState(false)
   const [syncToast, setSyncToast]         = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [copied, setCopied]               = useState(false)
   const [showOriginal, setShowOriginal]   = useState(true)
@@ -212,6 +213,34 @@ export default function BacklogPage() {
     a.download = `sensebug-backlog-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleRerank = async () => {
+    setRerankLoading(true)
+    try {
+      const res = await fetch('/api/backlog/rerank', { method: 'POST' })
+      if (res.status === 429) {
+        const data = await res.json()
+        setSyncToast({ type: 'error', message: data.error ?? 'Rate limited — try again in a moment.' })
+        return
+      }
+      if (!res.ok) {
+        setSyncToast({ type: 'error', message: 'Re-rank failed — please try again.' })
+        return
+      }
+      const { reranked } = await res.json()
+      await fetchEntries()
+      setSyncToast({
+        type: 'success',
+        message: reranked > 0
+          ? `Backlog re-ranked — ${reranked} bug${reranked > 1 ? 's' : ''} ordered by priority, severity & quality.`
+          : 'Nothing to re-rank yet — triage some bugs first.',
+      })
+    } catch {
+      setSyncToast({ type: 'error', message: 'Re-rank failed — network error.' })
+    } finally {
+      setRerankLoading(false)
+    }
   }
 
   useEffect(() => { fetchEntries() }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -480,15 +509,27 @@ export default function BacklogPage() {
             </span>
           )}
         </div>
-        <button
-          onClick={handleExportBacklog}
-          className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-black/40 hover:text-black border border-gray-200 hover:border-black px-3 py-1.5 transition-colors flex-shrink-0"
-          style={MONO}
-          title="Export backlog as CSV"
-        >
-          <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
-          Export CSV
-        </button>
+        <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleRerank}
+            disabled={rerankLoading}
+            className="flex items-center gap-1.5 text-xs font-mono text-black/40 hover:text-black border border-gray-200 hover:border-black px-3 py-1.5 transition-colors disabled:opacity-40"
+            style={MONO}
+            title="Re-score and re-rank all bugs by priority, severity & quality"
+          >
+            <Sparkles className={`w-3.5 h-3.5 ${rerankLoading ? 'animate-pulse' : ''}`} strokeWidth={1.5} />
+            {rerankLoading ? 'Re-ranking…' : 'Re-rank'}
+          </button>
+          <button
+            onClick={handleExportBacklog}
+            className="flex items-center gap-1.5 text-xs font-mono text-black/40 hover:text-black border border-gray-200 hover:border-black px-3 py-1.5 transition-colors flex-shrink-0"
+            style={MONO}
+            title="Export backlog as CSV"
+          >
+            <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
+            Export CSV
+          </button>
+        </div>
       </header>
 
       {/* ── P1 urgency banner ── */}
