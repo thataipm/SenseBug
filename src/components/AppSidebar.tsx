@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug, Clock, X } from 'lucide-react'
+import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug, Clock, X, Bell } from 'lucide-react'
 
 interface JiraToast { title: string; priority: string; bug_id: string }
 
@@ -16,6 +16,7 @@ const NAV = [
   { href: '/settings/integrations', icon: Plug,            label: 'Integrations'  },
   { href: '/account',               icon: User,            label: 'Account'       },
   { href: '/help',                  icon: LifeBuoy,        label: 'Help'          },
+  { href: '/changelog',             icon: Bell,            label: "What's new"    },
 ]
 
 const PLAN_LABEL: Record<string, string> = {
@@ -72,6 +73,8 @@ export function AppSidebar() {
             if (entry.source_run_id !== null) return
             setJiraToast({ title: entry.title, priority: entry.priority, bug_id: entry.bug_id })
             setUnreviewed(prev => prev + 1)
+            // Notify the dashboard (and any other listener) that a new Jira bug arrived
+            window.dispatchEvent(new Event('sensebug:badge-refresh'))
           }
         )
         .subscribe()

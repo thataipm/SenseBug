@@ -130,6 +130,19 @@ function DashboardContent() {
     return () => window.removeEventListener('focus', onFocus)
   }, [fetchData])
 
+  // Re-fetch the Jira unreviewed count whenever the sidebar detects a new
+  // Jira bug via its realtime subscription — keeps the dashboard card live
+  // without a full page refresh.
+  useEffect(() => {
+    const onNewJiraBug = () => {
+      fetch('/api/backlog?count_only=true&source=jira&status=unreviewed')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => d && setJiraUnreviewed(d.count ?? 0))
+    }
+    window.addEventListener('sensebug:badge-refresh', onNewJiraBug)
+    return () => window.removeEventListener('sensebug:badge-refresh', onNewJiraBug)
+  }, [])
+
   const handleUpload = (file: File) => {
     const allowed = ['.csv', '.tsv', '.xlsx', '.xls', '.txt']
     const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()

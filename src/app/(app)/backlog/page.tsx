@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { BacklogEntry } from '@/types'
 import { stripJiraMarkup } from '@/lib/jira'
+import { createClient } from '@/lib/supabase/client'
 import {
   Check, X, Edit2, ChevronLeft, ChevronDown, ChevronRight,
   Flag, Loader2, Copy, CheckCheck, Search, AlertCircle, Inbox, Download, AlertTriangle, Trash2, RefreshCw, Sparkles,
@@ -190,6 +191,50 @@ export default function BacklogPage() {
     if (data.length > 0 && !selected) setSelected(data[0])
     setLoading(false)
   }, [selected])
+
+  // Silent refresh — no loading flash, no selected-state reset.
+  // Used by the realtime subscription so new/updated Jira bugs appear
+  // automatically without the user having to manually refresh the page.
+  const refreshEntriesSilently = useCallback(async () => {
+    const res = await fetch('/api/backlog')
+    if (!res.ok) return
+    const data: BacklogEntry[] = await res.json()
+    setEntries(data)
+  }, []) // stable — no selected dependency
+
+  // Realtime subscription — listen for INSERT and UPDATE events on the backlog
+  // table so new Jira webhook bugs and cron-triaged updates appear automatically.
+  // Debounced to 800ms so a cron batch (many UPDATEs) triggers only one refresh.
+  useEffect(() => {
+    const supabase = createClient()
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return
+
+      const channel = supabase
+        .channel('backlog-live-updates')
+        .on(
+          'postgres_changes',
+          {
+            event:  '*',  // INSERT (new Jira bugs) + UPDATE (cron triage results)
+            schema: 'public',
+            table:  'backlog',
+            filter: `user_id=eq.${data.user.id}`,
+          },
+          () => {
+            if (debounceTimer) clearTimeout(debounceTimer)
+            debounceTimer = setTimeout(refreshEntriesSilently, 800)
+          }
+        )
+        .subscribe()
+
+      return () => {
+        if (debounceTimer) clearTimeout(debounceTimer)
+        supabase.removeChannel(channel)
+      }
+    })
+  }, [refreshEntriesSilently])
 
   const handleExportBacklog = () => {
     if (entries.length === 0) return
