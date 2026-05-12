@@ -217,7 +217,7 @@ export default function LandingPage() {
               {
                 step: '03',
                 title: 'Review in your inbox',
-                desc: 'Your persistent backlog surfaces the bugs that matter most. Approve the AI\'s call, adjust priority, or reject with a reason. P1s trigger an immediate email alert.',
+                desc: 'Your persistent backlog surfaces the bugs that matter most. Approve the AI\'s call, adjust priority, or reject with a reason. P1s trigger an immediate email alert. Jira bugs and CSV-uploaded bugs are continuously re-ranked together — one ordered list, no manual sorting.',
               },
               {
                 step: '04',
@@ -334,6 +334,10 @@ export default function LandingPage() {
               {
                 q: 'Does SenseBug connect directly to Jira?',
                 a: 'Yes. Connect your Jira workspace under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule — once set up, every new bug is automatically analysed and prioritised as it\'s filed, no exports needed. P1 bugs trigger an immediate email alert. When you approve a verdict, SenseBug writes the AI-assigned priority back to Jira.',
+              },
+              {
+                q: 'I use both Jira and CSV uploads. How do they rank together?',
+                a: 'Seamlessly. Every triaged bug — whether it arrived via the Jira webhook or a CSV upload — is scored on the same four signals: priority tier, severity, ticket quality, and PM verdict. Bugs are then assigned a global rank 1-N so your backlog produces a single ordered list across both sources. The Jira sync cron re-ranks automatically after every batch of new tickets; you can also trigger it manually with the Re-rank button in your backlog.',
               },
               {
                 q: 'What CSV format does SenseBug AI need?',
