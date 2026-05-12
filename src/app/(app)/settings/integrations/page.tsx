@@ -6,7 +6,7 @@ import { Loader2, Copy, CheckCheck, ExternalLink, AlertCircle, CheckCircle2, Tra
 const MONO    = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
 const HEADING = { fontFamily: 'var(--font-space-grotesk), sans-serif' }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sensebug.com'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.sensebug.com'
 
 export default function IntegrationsPage() {
   const [integration, setIntegration] = useState<Integration | null>(null)
@@ -160,6 +160,12 @@ export default function IntegrationsPage() {
                 : <><Copy className="w-3.5 h-3.5" />Copy</>
               }
             </button>
+          </div>
+          <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 px-3 py-2.5">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Use this <strong>exact URL</strong> in every Jira Automation rule — both &ldquo;Work item created&rdquo; and &ldquo;Work item updated&rdquo;. A mismatched or truncated URL causes a <code className="font-mono bg-amber-100 px-1">401 Invalid secret</code> error. If you see that error, re-copy this URL and paste it fresh into the failing rule.
+            </p>
           </div>
           <a
             href="https://support.atlassian.com/jira-software-cloud/docs/create-a-rule-in-jira-automation/"
