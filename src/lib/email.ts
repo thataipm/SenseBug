@@ -11,7 +11,7 @@ export function getResend(): Resend {
   return _resend
 }
 
-const FROM = 'SenseBug AI <hello@sensebug.com>'
+const FROM = 'SenseBug AI <alerts@sensebug.com>'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.sensebug.com'
 
