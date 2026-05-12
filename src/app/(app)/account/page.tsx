@@ -36,6 +36,14 @@ function AccountContent() {
   const [cancelLoading, setCancelLoading] = useState(false)
   const [cancelError, setCancelError] = useState('')
   const [cancelEndsAt, setCancelEndsAt] = useState<string | null>(null)
+  // Danger zone
+  const [clearBacklogStep, setClearBacklogStep]     = useState<'idle' | 'confirm' | 'done'>('idle')
+  const [clearBacklogLoading, setClearBacklogLoading] = useState(false)
+  const [clearBacklogError, setClearBacklogError]   = useState('')
+  const [clearBacklogCount, setClearBacklogCount]   = useState(0)
+  const [resetCalibStep, setResetCalibStep]         = useState<'idle' | 'confirm' | 'done'>('idle')
+  const [resetCalibLoading, setResetCalibLoading]   = useState(false)
+  const [resetCalibError, setResetCalibError]       = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const justUpgraded = searchParams.get('upgraded') === '1'
@@ -138,6 +146,44 @@ function AccountContent() {
       setCancelError('Network error. Please try again.')
     }
     setCancelLoading(false)
+  }
+
+  const handleClearBacklog = async () => {
+    setClearBacklogLoading(true)
+    setClearBacklogError('')
+    try {
+      const res = await fetch('/api/backlog/clear', { method: 'DELETE' })
+      if (res.ok) {
+        const { cleared } = await res.json()
+        setClearBacklogCount(cleared)
+        setClearBacklogStep('done')
+      } else {
+        let msg = 'Failed to clear backlog.'
+        try { const j = await res.json(); msg = j.error || msg } catch {}
+        setClearBacklogError(msg)
+      }
+    } catch {
+      setClearBacklogError('Network error. Please try again.')
+    }
+    setClearBacklogLoading(false)
+  }
+
+  const handleResetCalibration = async () => {
+    setResetCalibLoading(true)
+    setResetCalibError('')
+    try {
+      const res = await fetch('/api/calibration', { method: 'DELETE' })
+      if (res.ok) {
+        setResetCalibStep('done')
+      } else {
+        let msg = 'Failed to reset calibration.'
+        try { const j = await res.json(); msg = j.error || msg } catch {}
+        setResetCalibError(msg)
+      }
+    } catch {
+      setResetCalibError('Network error. Please try again.')
+    }
+    setResetCalibLoading(false)
   }
 
   if (loading) return (
@@ -332,6 +378,131 @@ function AccountContent() {
           </div>
         </section>
       )}
+      {/* Danger Zone */}
+      <section>
+        <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-5" style={MONO}>Danger Zone</p>
+        <div className="border border-red-100 divide-y divide-red-100">
+
+          {/* Clear backlog */}
+          <div className="px-6 py-5">
+            <p className="text-sm font-medium mb-1">Clear backlog</p>
+            <p className="text-xs text-black/55 mb-4 leading-relaxed" style={MONO}>
+              Permanently deletes all bugs from your backlog and resets health scores.
+              Use this when switching to a different product context — re-upload your
+              CSV or let Jira re-sync to start fresh.
+            </p>
+
+            {clearBacklogStep === 'idle' && (
+              <button
+                onClick={() => { setClearBacklogStep('confirm'); setClearBacklogError('') }}
+                className="text-xs text-black/40 hover:text-red-500 transition-colors duration-150 underline underline-offset-2"
+                style={MONO}
+              >
+                Clear all backlog data
+              </button>
+            )}
+
+            {clearBacklogStep === 'confirm' && (
+              <div className="border border-red-200 bg-red-50 px-4 py-4 space-y-3">
+                <p className="text-sm font-semibold text-red-800" style={HEADING}>Clear your entire backlog?</p>
+                <p className="text-xs text-red-700 leading-relaxed">
+                  This deletes every bug and health snapshot in your backlog. Your CSV run history and
+                  Knowledge Base are not affected. This cannot be undone.
+                </p>
+                {clearBacklogError && <p className="text-xs text-red-600 font-medium">{clearBacklogError}</p>}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleClearBacklog}
+                    disabled={clearBacklogLoading}
+                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 text-xs font-semibold hover:bg-red-700 transition-colors duration-150 disabled:opacity-50"
+                  >
+                    {clearBacklogLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {clearBacklogLoading ? 'Clearing…' : 'Yes, clear backlog'}
+                  </button>
+                  <button
+                    onClick={() => { setClearBacklogStep('idle'); setClearBacklogError('') }}
+                    disabled={clearBacklogLoading}
+                    className="px-4 py-2 text-xs border border-gray-200 hover:border-black transition-colors duration-150 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {clearBacklogStep === 'done' && (
+              <div className="border border-gray-200 bg-gray-50 px-4 py-3 flex items-start gap-3">
+                <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+                <p className="text-sm">
+                  <span className="font-semibold" style={HEADING}>Backlog cleared.</span>
+                  <span className="text-black/55 ml-1 text-xs" style={MONO}>{clearBacklogCount} bug{clearBacklogCount !== 1 ? 's' : ''} removed.</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Reset AI calibration */}
+          <div className="px-6 py-5">
+            <p className="text-sm font-medium mb-1">Reset AI calibration</p>
+            <p className="text-xs text-black/55 mb-4 leading-relaxed" style={MONO}>
+              Removes the learned judgment model built from your past verdicts.
+              The AI returns to its base model until 30+ new verdicts are recorded
+              for the new product context.
+            </p>
+
+            {resetCalibStep === 'idle' && (
+              <button
+                onClick={() => { setResetCalibStep('confirm'); setResetCalibError('') }}
+                className="text-xs text-black/40 hover:text-red-500 transition-colors duration-150 underline underline-offset-2"
+                style={MONO}
+              >
+                Reset calibration data
+              </button>
+            )}
+
+            {resetCalibStep === 'confirm' && (
+              <div className="border border-red-200 bg-red-50 px-4 py-4 space-y-3">
+                <p className="text-sm font-semibold text-red-800" style={HEADING}>Reset your AI calibration?</p>
+                <p className="text-xs text-red-700 leading-relaxed">
+                  The AI will stop using your past verdict patterns and return to its base
+                  behaviour until it has collected 30+ new verdicts for the new product.
+                  Your backlog and run history are not affected.
+                </p>
+                {resetCalibError && <p className="text-xs text-red-600 font-medium">{resetCalibError}</p>}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleResetCalibration}
+                    disabled={resetCalibLoading}
+                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 text-xs font-semibold hover:bg-red-700 transition-colors duration-150 disabled:opacity-50"
+                  >
+                    {resetCalibLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {resetCalibLoading ? 'Resetting…' : 'Yes, reset calibration'}
+                  </button>
+                  <button
+                    onClick={() => { setResetCalibStep('idle'); setResetCalibError('') }}
+                    disabled={resetCalibLoading}
+                    className="px-4 py-2 text-xs border border-gray-200 hover:border-black transition-colors duration-150 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {resetCalibStep === 'done' && (
+              <div className="border border-gray-200 bg-gray-50 px-4 py-3 flex items-start gap-3">
+                <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+                <div>
+                  <p className="text-sm font-semibold" style={HEADING}>Calibration reset.</p>
+                  <p className="text-xs text-black/55 mt-0.5" style={MONO}>The AI will use its base model until 30+ new verdicts are recorded.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </section>
+
     </div>
   )
 }

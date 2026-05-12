@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { buildCalibrationBlock } from '@/lib/pm-calibration'
+import { isValidOrigin } from '@/lib/csrf'
 import type { CalibrationSignal } from '@/lib/pm-calibration'
 
 export const dynamic = 'force-dynamic'
@@ -30,4 +31,30 @@ export async function GET() {
       : null,
     computed_at:      data.computed_at,
   })
+}
+
+// DELETE /api/calibration
+// Removes the stored PM calibration snapshot for the authenticated user.
+// Future triage calls will use the base model until enough new verdicts
+// (30+) accumulate to rebuild calibration for the new product context.
+export async function DELETE(request: NextRequest) {
+  if (!isValidOrigin(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { error } = await supabase
+    .from('pm_calibration')
+    .delete()
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('[calibration] delete error:', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ reset: true })
 }
