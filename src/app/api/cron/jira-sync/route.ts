@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
   //   - Either: never triaged (priority IS NULL) OR stale (last_seen_at old enough)
   const { data: pending, error: fetchErr } = await supabase
     .from('backlog')
-    .select('id, user_id, bug_id, priority, original_description, original_comments, last_seen_at')
+    .select('id, user_id, bug_id, priority, severity, original_description, original_comments, last_seen_at')
     .is('source_run_id', null)
     .is('pm_action', null)
     .gte('first_seen_at', maxAgeThreshold)
@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
         // Guard: don't re-alert if the ticket was already P1/Critical before this run.
         const newSeverity   = String(update.severity ?? 'High')
         const prevWasP1     = ticket.priority === 'P1'
-        const prevWasCrit   = false // severity not stored on the pending row; always alert on Critical for now
+        const prevWasCrit   = ticket.severity === 'Critical'
         const shouldAlert   = alertEmail && (
           (newPriority === 'P1'     && !prevWasP1)  ||
           (newSeverity === 'Critical' && !prevWasCrit)

@@ -147,19 +147,24 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Calibration recompute — Pro+ only, fire-and-forget on every 5th verdict past 30.
-  // Count includes the verdict we just recorded.
-  ;(async () => {
+  // Calibration recompute — Pro+ only, triggered on every 5th verdict past 30.
+  // Awaited so Vercel doesn't kill it before completion (fire-and-forget IIFE
+  // was unreliable: the function exits as soon as the response is sent).
+  try {
     const { data: planRow } = await supabase.from('user_plans').select('plan').eq('user_id', user.id).single()
-    if (!planRow || planRow.plan === 'starter') return
-    const { count } = await supabase
-      .from('backlog')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .not('pm_action', 'is', null)
-    if (!count || count < 30 || count % 5 !== 0) return
-    await recomputeAndStoreCalibration(supabase, user.id)
-  })().catch(e => console.error('[calibration] recompute error:', e instanceof Error ? e.message : e))
+    if (planRow && planRow.plan !== 'starter') {
+      const { count } = await supabase
+        .from('backlog')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('pm_action', 'is', null)
+      if (count && count >= 30 && count % 5 === 0) {
+        await recomputeAndStoreCalibration(supabase, user.id)
+      }
+    }
+  } catch (e) {
+    console.error('[calibration] recompute error:', e instanceof Error ? e.message : e)
+  }
 
   // Jira write-back — awaited so the serverless function doesn't exit before
   // the Jira HTTP calls complete. Fire-and-forget (.then()) was being killed
