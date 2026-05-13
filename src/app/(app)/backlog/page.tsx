@@ -512,10 +512,10 @@ export default function BacklogPage() {
         <Inbox className="w-8 h-8 text-black/20 mx-auto mb-3" strokeWidth={1.5} />
         {hasRuns ? (
           <>
-            <p className="text-sm text-black/50 mb-1">No bugs approved yet.</p>
-            <p className="text-xs text-black/35 mb-6">You&apos;ve run analyses but haven&apos;t approved any bugs yet. Head to your most recent run to review them.</p>
-            <Link href="/historyRun" className="bg-black text-white px-5 py-2.5 text-sm font-semibold inline-block hover:bg-black/90 transition-colors">
-              View recent runs →
+            <p className="text-sm text-black/50 mb-1">Your backlog is empty.</p>
+            <p className="text-xs text-black/35 mb-6">Bugs populate automatically after each CSV upload. Upload a new file from the dashboard to get started.</p>
+            <Link href="/dashboard" className="bg-black text-white px-5 py-2.5 text-sm font-semibold inline-block hover:bg-black/90 transition-colors">
+              Go to dashboard →
             </Link>
           </>
         ) : (
