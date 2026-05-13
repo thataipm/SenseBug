@@ -71,7 +71,7 @@ export function AppSidebar() {
             const entry = payload.new as { title: string; priority: string; bug_id: string; source_run_id: string | null }
             // Only show toast for Jira webhook bugs (source_run_id is null)
             if (entry.source_run_id !== null) return
-            setJiraToast({ title: entry.title, priority: entry.priority, bug_id: entry.bug_id })
+            setJiraToast({ title: entry.title, priority: entry.priority ?? 'Pending', bug_id: entry.bug_id })
             setUnreviewed(prev => prev + 1)
             // Notify the dashboard (and any other listener) that a new Jira bug arrived
             window.dispatchEvent(new Event('sensebug:badge-refresh'))

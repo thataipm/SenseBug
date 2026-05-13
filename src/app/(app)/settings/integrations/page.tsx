@@ -342,7 +342,7 @@ export default function IntegrationsPage() {
           <ol className="space-y-3">
             {[
               'Bug created or updated in Jira → SenseBug analyses it and adds it to your Backlog.',
-              'P1 bugs → you get an immediate email alert.',
+              'P1 or Critical severity bugs → you get an immediate email alert.',
               'New comments added in Jira → re-synced to SenseBug on the next update trigger.',
               'You approve or adjust a bug → priority is written back to Jira and an AI summary comment is posted on the ticket.',
             ].map((step, i) => (

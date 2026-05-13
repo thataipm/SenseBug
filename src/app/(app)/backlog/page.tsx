@@ -208,11 +208,14 @@ export default function BacklogPage() {
   useEffect(() => {
     const supabase = createClient()
     let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    // channel is assigned inside the async .then() but must be accessible to the
+    // cleanup function below — use a mutable ref so both closures share the same slot.
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return
 
-      const channel = supabase
+      channel = supabase
         .channel('backlog-live-updates')
         .on(
           'postgres_changes',
@@ -228,12 +231,15 @@ export default function BacklogPage() {
           }
         )
         .subscribe()
-
-      return () => {
-        if (debounceTimer) clearTimeout(debounceTimer)
-        supabase.removeChannel(channel)
-      }
     })
+
+    // Cleanup runs when the component unmounts or refreshEntriesSilently changes.
+    // Must be returned from useEffect directly — NOT from inside .then() — otherwise
+    // React never calls it and channels accumulate on every page mount.
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [refreshEntriesSilently])
 
   const handleExportBacklog = () => {

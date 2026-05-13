@@ -206,24 +206,24 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Increment monthly bug counter — fire-and-forget, non-fatal.
-  // Webhook bugs are Pro-only so we don't need to gate; just track usage.
-  ;(async () => {
-    try {
-      const { data: planRow } = await supabase
-        .from('user_plans')
-        .select('monthly_bugs_consumed')
-        .eq('user_id', integration.user_id)
-        .single()
-      if (!planRow) return
+  // Increment monthly bug counter — awaited so Vercel doesn't kill it before it
+  // completes (fire-and-forget was unreliable: the function exits as soon as the
+  // response is sent). Non-fatal — a failure here never blocks the webhook response.
+  try {
+    const { data: planRow } = await supabase
+      .from('user_plans')
+      .select('monthly_bugs_consumed')
+      .eq('user_id', integration.user_id)
+      .single()
+    if (planRow) {
       await supabase
         .from('user_plans')
         .update({ monthly_bugs_consumed: (planRow.monthly_bugs_consumed ?? 0) + 1 })
         .eq('user_id', integration.user_id)
-    } catch (e) {
-      console.error('[webhook/jira] Usage counter update failed:', e instanceof Error ? e.message : e)
     }
-  })()
+  } catch (e) {
+    console.error('[webhook/jira] Usage counter update failed:', e instanceof Error ? e.message : e)
+  }
 
   console.log(`[webhook/jira] ${issueKey} → ${triageResult.priority}/${triageResult.severity} for user ${integration.user_id}`)
   return NextResponse.json({ success: true, priority: triageResult.priority, severity: triageResult.severity })
