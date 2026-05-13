@@ -4,7 +4,7 @@ import PricingNav from './PricingNav'
 
 export const metadata = {
   title: 'Pricing — SenseBug AI',
-  description: 'Start free. Every plan comes with a written rationale for every bug decision. The more stakeholders you have to convince, the more you need. Pro at $19/mo. Max at $49/mo.',
+  description: 'Every bug decision, justified. Start free with 50 bugs/month — upgrade when your backlog grows. Pro at $19/mo includes Jira integration, AI calibration, and health trends. Max at $49/mo.',
   alternates: {
     canonical: '/pricing',
   },
@@ -23,7 +23,7 @@ export default function PricingPage() {
           Pricing
         </p>
         <h1 className="text-5xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          Every plan comes with receipts.
+          Every decision justified.<br />Pick your volume.
         </h1>
         <p className="text-base text-black/45 mb-0">Start free. Upgrade when your stakeholders multiply.</p>
       </section>
@@ -45,7 +45,7 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />50 bugs per CSV upload</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />AI priority, severity &amp; business impact</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />PM verdicts + CSV export</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Persistent backlog + P1 alerts</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Persistent backlog + P1 &amp; Critical alerts</li>
               </ul>
               <Link href="/signup" data-testid="pricing-starter-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150">
                 Get started free
@@ -160,10 +160,12 @@ export default function PricingPage() {
                 </tr>
                 {[
                   { label: 'Approve, adjust & reject verdicts',  vals: [true,  true,  true]  },
-                  { label: 'Instant P1 email alerts',            vals: [true,  true,  true]  },
+                  { label: 'Instant P1 & Critical alerts',       vals: [true,  true,  true]  },
+                  { label: 'Weekly backlog digest email',        vals: [true,  true,  true]  },
                   { label: 'CSV export',                         vals: [true,  true,  true]  },
                   { label: 'Run history',                        vals: [true,  true,  true]  },
                   { label: 'Persistent bug backlog',             vals: [true,  true,  true]  },
+                  { label: 'Automatic backlog re-ranking',       vals: [true,  true,  true]  },
                   { label: 'Backlog health score & trends',      vals: [false, true,  true]  },
                 ].map(({ label, vals }) => (
                   <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
