@@ -263,9 +263,9 @@ export function LandingDemo() {
                       <PriorityBadge p={bug.priority} />
                       <span className="text-sm text-black/70 flex-1 min-w-0 truncate">{bug.title}</span>
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        {escalated   && <TrendingUp   className="w-3 h-3 text-red-400"    title="Escalated"         />}
-                        {deescalated && <TrendingDown  className="w-3 h-3 text-green-600"  title="De-prioritised"    />}
-                        {overPri     && <AlertTriangle className="w-3 h-3 text-yellow-500" title="Over-prioritised"  />}
+                        {escalated   && <TrendingUp   className="w-3 h-3 text-red-400"    />}
+                        {deescalated && <TrendingDown  className="w-3 h-3 text-green-600"  />}
+                        {overPri     && <AlertTriangle className="w-3 h-3 text-yellow-500" />}
                       </div>
                     </div>
                   )
