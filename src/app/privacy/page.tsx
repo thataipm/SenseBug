@@ -3,6 +3,9 @@ import Link from 'next/link'
 export const metadata = {
   title: 'Privacy Policy — SenseBug AI',
   description: 'How SenseBug AI collects, uses, and protects your data.',
+  alternates: {
+    canonical: '/privacy',
+  },
 }
 
 function H2({ children }: { children: React.ReactNode }) {

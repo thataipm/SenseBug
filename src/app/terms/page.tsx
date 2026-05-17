@@ -3,6 +3,9 @@ import Link from 'next/link'
 export const metadata = {
   title: 'Terms of Service — SenseBug AI',
   description: 'The terms that govern your use of SenseBug AI.',
+  alternates: {
+    canonical: '/terms',
+  },
 }
 
 function H2({ children }: { children: React.ReactNode }) {

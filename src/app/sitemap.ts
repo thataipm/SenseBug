@@ -6,7 +6,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Most recent content update — bump this date whenever the landing page or
   // pricing page copy changes significantly.
-  const CONTENT_UPDATED = new Date('2026-05-11')
+  const CONTENT_UPDATED = new Date('2026-05-14')
 
   const blogPosts: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${base}/blog/${post.slug}`,

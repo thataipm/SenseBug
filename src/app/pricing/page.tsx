@@ -4,9 +4,21 @@ import PricingNav from './PricingNav'
 
 export const metadata = {
   title: 'Pricing — SenseBug AI',
-  description: 'Every bug decision, justified. Start free with 50 bugs/month — upgrade when your backlog grows. Pro at $19/mo includes Jira integration, AI calibration, and health trends. Max at $49/mo.',
+  description: 'Start free with 50 bugs/month. Pro at $19/mo adds Jira integration, AI calibration, and health trends. Max at $49/mo for larger backlogs. No credit card required to start.',
   alternates: {
     canonical: '/pricing',
+  },
+  openGraph: {
+    title: 'Pricing — SenseBug AI',
+    description: 'Start free with 50 bugs/month. Pro at $19/mo adds Jira integration, AI calibration, and health trends. Max at $49/mo for larger backlogs.',
+    url: 'https://www.sensebug.com/pricing',
+    siteName: 'SenseBug AI',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Pricing — SenseBug AI',
+    description: 'Start free with 50 bugs/month. Pro at $19/mo adds Jira integration, AI calibration, and health trends.',
   },
 }
 

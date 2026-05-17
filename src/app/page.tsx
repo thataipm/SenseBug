@@ -408,6 +408,52 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── JSON-LD ──────────────────────────────────────────────────────── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: 'Does SenseBug connect directly to Jira?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Yes. Connect your Jira workspace under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule — once set up, every new bug is automatically analysed and prioritised as it\'s filed. P1 bugs trigger an immediate email alert. When you approve a verdict, SenseBug writes the AI-assigned priority back to Jira.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'What CSV format does SenseBug AI need?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Required columns: id (or key / issue_key), title (or summary), and priority. Optional but recommended: description, comments, reporter, labels. More context means more accurate rankings. Jira and Linear exports work out of the box.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'How does the AI rank bugs without knowing my product?',
+              acceptedAnswer: { '@type': 'Answer', text: 'It uses your Knowledge Base — a short description of your product, your critical user flows, and your modules. Set it up once in onboarding and every future run gets ranked against what actually matters for your business.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'What does "Likely over-prioritised" mean?',
+              acceptedAnswer: { '@type': 'Answer', text: 'It means the AI found no business-critical evidence to justify the original priority label. Common causes: the reporter used P1 for visibility, the bug affects a non-critical flow, or a workaround exists. You can approve, override, or reject the verdict.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'Is there a limit on how many bugs I can analyse?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Max: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, SenseBug AI sorts by original priority first so your most critical bugs are always included.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'Is there a free plan?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Starter plan is free forever — 50 bugs per month, no credit card required. Upgrade to Pro or Max when you need larger backlogs or Knowledge Base document uploads.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'What happens to my data?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Your CSV data and Knowledge Base are stored securely in your account and never used to train AI models. Results are private to your account. You can delete any run or your entire account at any time.' },
+            },
+          ],
+        }) }}
+      />
+
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="px-6 md:px-12 lg:px-24 py-10">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
