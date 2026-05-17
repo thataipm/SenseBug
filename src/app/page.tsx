@@ -88,6 +88,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Live Demo ────────────────────────────────────────────────────── */}
+      <LandingDemo />
+
       {/* ── Enemy Statement ──────────────────────────────────────────────── */}
       <section className="px-6 md:px-12 lg:px-24 py-16 border-b border-gray-200">
         <div className="max-w-3xl mx-auto text-center">
@@ -196,9 +199,6 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
-
-      {/* ── Live Demo ────────────────────────────────────────────────────── */}
-      <LandingDemo />
 
       {/* ── How it works ─────────────────────────────────────────────────── */}
       <section className="px-6 md:px-12 lg:px-24 py-24 border-b border-gray-200 bg-gray-50">
