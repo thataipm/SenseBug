@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import PricingNav from './PricingNav'
-import { SupademoButton } from '@/components/SupademoButton'
 
 export const metadata = {
   title: 'Pricing — SenseBug AI',
@@ -26,8 +25,7 @@ export default function PricingPage() {
         <h1 className="text-5xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
           Every decision justified.<br />Pick your volume.
         </h1>
-        <p className="text-base text-black/45 mb-6">Start free. Upgrade when your stakeholders multiply.</p>
-        <SupademoButton variant="pricing" />
+        <p className="text-base text-black/45 mb-0">Start free. Upgrade when your stakeholders multiply.</p>
       </section>
 
       {/* Plan cards + comparison table */}

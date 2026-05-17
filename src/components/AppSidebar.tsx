@@ -3,7 +3,10 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug, Clock, X, Bell } from 'lucide-react'
+import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug, Clock, X, Bell, Play } from 'lucide-react'
+import Script from 'next/script'
+
+const SUPADEMO_ID = 'cmp4dakc80bvic0qmr8g0f1g1'
 
 interface JiraToast { title: string; priority: string; bug_id: string }
 
@@ -117,6 +120,8 @@ export function AppSidebar() {
 
   return (
     <>
+      <Script src="https://script.supademo.com/supademo.js" strategy="lazyOnload" />
+
       {/* Global Jira sync toast — visible on any app page */}
       {jiraToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-start gap-3 bg-black text-white px-4 py-3 shadow-lg max-w-sm" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
@@ -189,6 +194,15 @@ export function AppSidebar() {
             </Link>
           )
         })}
+        {/* Product tour */}
+        <button
+          onClick={() => (window as Window & { Supademo?: { open: (id: string) => void } }).Supademo?.open(SUPADEMO_ID)}
+          className="flex items-center gap-3 px-3 py-2.5 text-sm mb-0.5 text-black/55 hover:text-black hover:bg-gray-100 transition-colors duration-100 w-full text-left"
+        >
+          <Play className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+          Product tour
+        </button>
+
         {/* Upgrade shortcut — only for Starter users */}
         {plan?.plan === 'starter' && (
           <Link

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { SupademoButton } from '@/components/SupademoButton'
+import { LandingDemo } from '@/components/LandingDemo'
 
 export const metadata: Metadata = {
   title: 'SenseBug AI | Every bug priority decision, justified.',
@@ -42,7 +42,6 @@ export default function LandingPage() {
           <a href="#faq" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
             FAQ
           </a>
-          <SupademoButton variant="nav" />
           <Link href="/login" className="text-sm font-medium text-black/60 hover:text-black transition-colors duration-150">
             Log in
           </Link>
@@ -82,7 +81,6 @@ export default function LandingPage() {
             >
               Analyse my backlog — it&apos;s free <ArrowRight className="w-4 h-4" />
             </Link>
-            <SupademoButton variant="hero" />
             <Link href="/login" className="text-sm font-medium text-black/40 hover:text-black transition-colors duration-150">
               Already have an account →
             </Link>
@@ -198,6 +196,9 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
+
+      {/* ── Live Demo ────────────────────────────────────────────────────── */}
+      <LandingDemo />
 
       {/* ── How it works ─────────────────────────────────────────────────── */}
       <section className="px-6 md:px-12 lg:px-24 py-24 border-b border-gray-200 bg-gray-50">
