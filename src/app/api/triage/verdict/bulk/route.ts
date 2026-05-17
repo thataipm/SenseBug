@@ -61,15 +61,17 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Keep backlog in sync — fire-and-forget, same pattern as single verdict route.
-  supabase
-    .from('backlog')
-    .update({ pm_action: action })
-    .eq('user_id', user.id)
-    .in('bug_id', bugIds)
-    .then(({ error: bErr }) => {
-      if (bErr) console.error('[verdict/bulk] backlog sync error:', bErr.message)
-    })
+  // Keep backlog in sync — awaited so Vercel doesn't kill it before it completes.
+  try {
+    const { error: bErr } = await supabase
+      .from('backlog')
+      .update({ pm_action: action })
+      .eq('user_id', user.id)
+      .in('bug_id', bugIds)
+    if (bErr) console.error('[verdict/bulk] backlog sync error:', bErr.message)
+  } catch (e) {
+    console.error('[verdict/bulk] backlog sync threw:', e instanceof Error ? e.message : e)
+  }
 
   return NextResponse.json({ updated: ids.length, ids })
 }

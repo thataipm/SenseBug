@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Loader2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
 
@@ -138,12 +138,19 @@ type Phase = 'idle' | 'loading' | 'results'
 function pRank(p: string) { return parseInt(p[1]) }
 
 export function LandingDemo() {
-  const [phase, setPhase]     = useState<Phase>('idle')
+  const [phase, setPhase]       = useState<Phase>('idle')
   const [selected, setSelected] = useState<DemoBug>(RESULTS[0])
+  const timerRef                = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clean up timer on unmount so setState is never called on a dead component
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [])
 
   function runTriage() {
+    if (timerRef.current) clearTimeout(timerRef.current)
     setPhase('loading')
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setPhase('results')
       setSelected(RESULTS[0])
     }, 1800)

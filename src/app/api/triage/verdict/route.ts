@@ -55,16 +55,18 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Keep backlog in sync — fire-and-forget so a missing backlog row (pre-Phase 2
-  // runs) doesn't cause a user-visible error.
-  supabase
-    .from('backlog')
-    .update(update)
-    .eq('user_id', user.id)
-    .eq('bug_id', result.bug_id)
-    .then(({ error: bErr }) => {
-      if (bErr) console.error('[verdict] backlog sync error:', bErr.message)
-    })
+  // Keep backlog in sync — awaited so Vercel doesn't kill it before it completes.
+  // Non-fatal: a missing backlog row (pre-Phase 2 run) just logs and continues.
+  try {
+    const { error: bErr } = await supabase
+      .from('backlog')
+      .update(update)
+      .eq('user_id', user.id)
+      .eq('bug_id', result.bug_id)
+    if (bErr) console.error('[verdict] backlog sync error:', bErr.message)
+  } catch (e) {
+    console.error('[verdict] backlog sync threw:', e instanceof Error ? e.message : e)
+  }
 
   return NextResponse.json({ success: true })
 }

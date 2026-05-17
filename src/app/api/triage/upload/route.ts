@@ -747,21 +747,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 
-  // Increment usage counters — fire-and-forget, failures don't affect the user response.
+  // Increment usage counters — awaited so Vercel doesn't kill it before it completes.
   // Both counters are updated only after successful storeTriage so a failed run never
   // consumes quota.
   const actualBugsStored = (results || []).length
   if (actualBugsStored > 0) {
-    supabase
-      .from('user_plans')
-      .update({
-        monthly_bugs_consumed: bugsConsumedSoFar + actualBugsStored,
-        monthly_runs_count: (plan.monthly_runs_count || 0) + 1,
-      })
-      .eq('user_id', user.id)
-      .then(({ error }) => {
-        if (error) console.error('[triage] Failed to update usage counters:', error)
-      })
+    try {
+      const { error: counterErr } = await supabase
+        .from('user_plans')
+        .update({
+          monthly_bugs_consumed: bugsConsumedSoFar + actualBugsStored,
+          monthly_runs_count: (plan.monthly_runs_count || 0) + 1,
+        })
+        .eq('user_id', user.id)
+      if (counterErr) console.error('[triage] Failed to update usage counters:', counterErr.message)
+    } catch (e) {
+      console.error('[triage] Usage counter update threw:', e instanceof Error ? e.message : e)
+    }
 
     // Health snapshot — awaited so Vercel doesn't kill it before it completes.
     // Computed from in-memory results so no extra DB round-trip needed.
