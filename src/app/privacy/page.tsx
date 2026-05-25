@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Logo } from '@/components/Logo'
 
 export const metadata = {
   title: 'Privacy Policy — SenseBug AI',
@@ -56,9 +57,7 @@ export default function PrivacyPage() {
 
       {/* Nav */}
       <nav className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between sticky top-0 bg-white z-50">
-        <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          SENSEBUG AI
-        </Link>
+        <Logo markHeight={18} />
         <Link href="/login" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150">
           Log in
         </Link>
@@ -177,7 +176,7 @@ export default function PrivacyPage() {
       {/* Footer */}
       <footer className="border-t border-gray-100 px-6 py-8 mt-8">
         <div className="max-w-3xl mx-auto flex items-center justify-between text-sm text-black/35">
-          <span className="font-black tracking-tight text-black text-base" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</span>
+          <Logo markHeight={14} />
           <div className="flex items-center gap-6">
             <Link href="/terms" className="hover:text-black transition-colors">Terms</Link>
             <a href="mailto:contact@sensebug.com" className="hover:text-black transition-colors">Contact</a>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Logo } from '@/components/Logo'
 
 export default function PricingNav() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
@@ -15,9 +16,7 @@ export default function PricingNav() {
 
   return (
     <nav className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between sticky top-0 bg-white z-50">
-      <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-        SENSEBUG AI
-      </Link>
+      <Logo markHeight={18} />
       <div className="flex items-center gap-4">
         {isLoggedIn === null ? (
           /* Loading — reserve space to prevent layout shift */

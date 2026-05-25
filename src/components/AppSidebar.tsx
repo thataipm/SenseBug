@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LayoutDashboard, BookOpen, User, LifeBuoy, LogOut, Zap, BarChart2, Inbox, Plug, Clock, X, Bell, Play } from 'lucide-react'
+import { Logo } from '@/components/Logo'
 import Script from 'next/script'
 
 const SUPADEMO_ID = 'cmp4dakc80bvic0qmr8g0f1g1'
@@ -151,13 +152,7 @@ export function AppSidebar() {
       >
       {/* Logo */}
       <div className="h-14 flex items-center px-5 border-b border-gray-100 flex-shrink-0">
-        <Link
-          href="/dashboard"
-          className="font-black text-lg tracking-tight"
-          style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}
-        >
-          SENSEBUG AI
-        </Link>
+        <Logo href="/dashboard" markHeight={16} />
       </div>
 
       {/* Nav */}

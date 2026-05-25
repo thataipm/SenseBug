@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { LandingDemo } from '@/components/LandingDemo'
+import { Logo } from '@/components/Logo'
 
 export const metadata: Metadata = {
   title: 'SenseBug AI | Every bug priority decision, justified.',
@@ -29,9 +30,7 @@ export default function LandingPage() {
 
       {/* ── Nav ──────────────────────────────────────────────────────────── */}
       <nav className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between sticky top-0 bg-white z-50">
-        <div style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }} className="font-black text-xl tracking-tight">
-          SENSEBUG AI
-        </div>
+        <Logo markHeight={18} />
         <div className="flex items-center gap-6">
           <Link href="/blog" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
             Blog
@@ -294,9 +293,7 @@ export default function LandingPage() {
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="px-6 md:px-12 lg:px-24 py-10">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="font-black text-lg tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          SENSEBUG AI
-        </div>
+        <Logo markHeight={16} />
         <div className="flex items-center gap-6 text-sm text-black/35">
           <Link href="/blog" className="hover:text-black transition-colors duration-150">Blog</Link>
           <Link href="/privacy" className="hover:text-black transition-colors duration-150">Privacy</Link>
