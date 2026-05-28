@@ -109,8 +109,13 @@ export function AppSidebar() {
 
   const handleSignOut = async () => {
     const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
+    // global scope clears the session on the server too — necessary so middleware
+    // doesn't see a stale auth cookie on the next request.
+    await supabase.auth.signOut({ scope: 'global' })
+    // Hard redirect (not router.push) — forces all client state + Next.js cache
+    // to reset, which is the only reliable way to guarantee the user lands on
+    // /login as fully unauthenticated. router.push was leaving stale state.
+    window.location.href = '/login'
   }
 
   const used      = plan?.bugs_analyzed_this_month ?? 0

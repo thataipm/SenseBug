@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
-// Plan upgrade hierarchy: starter < pro < max
+// Plan upgrade hierarchy: pro < max (Starter no longer exists post-trial-migration)
 const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, team: 2, max: 2 }
 
 function CheckoutContent() {
@@ -30,16 +30,21 @@ function CheckoutContent() {
         return
       }
 
-      // Guard: check if user is already on this plan or higher to prevent duplicate subscriptions
+      // Guard: only block if the user is ALREADY PAID on this plan or higher.
+      // Trial users have plan='pro' or 'max' but is_paid=false — they must be
+      // allowed to upgrade to a real paid subscription. Without this check,
+      // trial-Pro users clicking "Upgrade to Pro" would bounce to /settings.
       const planRes = await fetch('/api/plan')
       if (planRes.ok) {
         const userPlan = await planRes.json()
-        const currentRank = PLAN_RANK[userPlan?.plan ?? 'starter'] ?? 0
-        const requestedRank = PLAN_RANK[plan] ?? 0
-        if (currentRank >= requestedRank) {
-          // Already on this plan or higher — send to settings
-          router.replace('/settings?already_subscribed=1')
-          return
+        if (userPlan?.is_paid) {
+          const currentRank = PLAN_RANK[userPlan?.plan ?? 'starter'] ?? 0
+          const requestedRank = PLAN_RANK[plan] ?? 0
+          if (currentRank >= requestedRank) {
+            // Already paid on this plan or higher — send to settings
+            router.replace('/settings?already_subscribed=1')
+            return
+          }
         }
       }
 
