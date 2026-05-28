@@ -39,6 +39,17 @@ const TIME_BUDGET_MS = 240_000
 // Jira REST search page size — Jira caps single-request results at 100.
 const PAGE_SIZE = 50
 
+// Flush the monthly bug counter every N successful triages. Smaller = more
+// timeout-resistant (we lose at most N-1 bugs of quota if Vercel kills us
+// mid-sync), larger = fewer DB writes. 10 is a good balance.
+const COUNTER_FLUSH_EVERY = 10
+
+// In-flight lock TTL — if a sync started more than this long ago and hasn't
+// completed (because the previous request died), allow a fresh sync to take
+// the lock. 10 minutes is well past Vercel's 300s hard timeout, so any "live"
+// sync is definitely still inside the lock window.
+const SYNC_LOCK_TTL_MS = 10 * 60_000
+
 export async function POST(request: NextRequest) {
   const startedAt = Date.now()
 
@@ -84,7 +95,7 @@ export async function POST(request: NextRequest) {
   // ── Load Jira integration ───────────────────────────────────────────────────
   const { data: integration } = await supabase
     .from('integrations')
-    .select('site_url, email, api_token, project_key')
+    .select('id, site_url, email, api_token, project_key, sync_started_at')
     .eq('user_id', user.id)
     .eq('provider', 'jira')
     .single()
@@ -95,6 +106,30 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   }
+
+  // ── In-flight lock — prevent parallel sync calls from double-counting ───────
+  // If a sync started recently (within SYNC_LOCK_TTL_MS) and hasn't cleared the
+  // lock yet, refuse this request. The lock TTL is well past Vercel's max
+  // function time, so any "live" sync is definitely still holding the lock.
+  // A stale lock (from a dead function) auto-expires and the new request takes it.
+  if (integration.sync_started_at) {
+    const lockAgeMs = Date.now() - new Date(integration.sync_started_at).getTime()
+    if (lockAgeMs < SYNC_LOCK_TTL_MS) {
+      return NextResponse.json(
+        {
+          error: 'A Jira sync is already in progress. Please wait for it to finish, then try again.',
+          retry_after_seconds: Math.ceil((SYNC_LOCK_TTL_MS - lockAgeMs) / 1000),
+        },
+        { status: 409 }
+      )
+    }
+  }
+
+  // Take the lock — every later return path must clear it (we use try/finally below)
+  await supabase
+    .from('integrations')
+    .update({ sync_started_at: new Date().toISOString() })
+    .eq('id', integration.id)
 
   // ── Load KB + calibration once (reused for every bug in this run) ───────────
   const { data: kb } = await supabase
@@ -108,11 +143,52 @@ export async function POST(request: NextRequest) {
   // ── Main loop — paginate through Jira, triage what fits in our budget ───────
   const now = new Date().toISOString()
   let synced  = 0
+  let pendingCounterDelta = 0  // bugs synced since the last counter flush
   let skipped = 0
   let totalInJira = 0
   let startAt = 0
   let cappedReason: 'time' | 'quota' | null = null
   const errors: Array<{ bug_id: string; error: string }> = []
+
+  /**
+   * Flush the pending counter delta to user_plans.monthly_bugs_consumed.
+   * Re-reads the row first to reduce the window where a concurrent webhook
+   * write would be clobbered (still not perfectly atomic, but the race
+   * window shrinks from "entire sync" to "single flush").
+   */
+  async function flushCounter() {
+    if (pendingCounterDelta === 0) return
+    const { data: row } = await supabase
+      .from('user_plans')
+      .select('monthly_bugs_consumed')
+      .eq('user_id', user.id)
+      .single()
+    const current = row?.monthly_bugs_consumed ?? bugsConsumedAtStart
+    await supabase
+      .from('user_plans')
+      .update({ monthly_bugs_consumed: current + pendingCounterDelta })
+      .eq('user_id', user.id)
+    pendingCounterDelta = 0
+  }
+
+  /**
+   * Always-runs cleanup: clear the sync lock and flush any pending counter
+   * delta. Wrapped in try/catch each so a failure in one doesn't block the other.
+   */
+  async function cleanup() {
+    try { await flushCounter() }
+    catch (e) { console.error('[sync-all] flushCounter on cleanup failed:', e) }
+    try {
+      await supabase
+        .from('integrations')
+        .update({ sync_started_at: null })
+        .eq('id', integration.id)
+    } catch (e) {
+      console.error('[sync-all] sync-lock clear failed:', e)
+    }
+  }
+
+  try {
 
   paginate: while (true) {
     // Time check — bail before fetching the next page if we're nearly out of budget
@@ -218,6 +294,15 @@ export async function POST(request: NextRequest) {
           continue
         }
         synced++
+        pendingCounterDelta++
+
+        // Flush the counter periodically so we don't lose all the increments
+        // if Vercel kills the function at the 300s timeout. Worst case we
+        // lose COUNTER_FLUSH_EVERY-1 bugs of accounting (not the bugs themselves —
+        // those are already upserted into the backlog).
+        if (pendingCounterDelta >= COUNTER_FLUSH_EVERY) {
+          await flushCounter()
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'unknown error'
         console.error(`[sync-all] Triage error for ${bug.bug_id}:`, msg)
@@ -248,12 +333,10 @@ export async function POST(request: NextRequest) {
     if (startAt >= page.total) break
   }
 
-  // ── Increment monthly bug counter (single update, not per-bug) ──────────────
-  if (synced > 0) {
-    await supabase
-      .from('user_plans')
-      .update({ monthly_bugs_consumed: bugsConsumedAtStart + synced })
-      .eq('user_id', user.id)
+  } finally {
+    // ALWAYS runs — whether we broke out cleanly, hit an error, or threw.
+    // Flushes any remaining counter delta and clears the in-flight lock.
+    await cleanup()
   }
 
   const remainingAfter =
