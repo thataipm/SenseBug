@@ -268,6 +268,98 @@ export async function addJiraComment(
   }
 }
 
+// ── Search (used by bulk sync) ────────────────────────────────────────────────
+
+export interface JiraSearchPage {
+  issues:     JiraIssueData[]
+  total:      number       // total matching issues across all pages
+  startAt:    number
+  maxResults: number
+}
+
+/**
+ * Search Jira for bug-type issues, with optional project filtering.
+ * Returns one page of results, fully normalised to JiraIssueData shape
+ * (same fields as fetchJiraIssue — no second round-trip needed per issue).
+ *
+ * Used by the sync-all endpoint to seed-import existing bugs.
+ */
+export async function searchJiraBugs(
+  siteUrl:    string,
+  email:      string,
+  apiToken:   string,
+  options: {
+    projectKey?: string | null
+    startAt?:    number
+    maxResults?: number
+  } = {}
+): Promise<JiraSearchPage> {
+  const { projectKey, startAt = 0, maxResults = 50 } = options
+
+  // Build JQL — restrict to bug-type issues, project-filtered if provided.
+  // We use issueType IN (...) to catch the common bug-variant names that the
+  // webhook handler also accepts (defect, error, incident, problem).
+  const jqlParts: string[] = ['issuetype in (Bug, Defect, Error, Incident, Problem)']
+  if (projectKey) jqlParts.push(`project = "${projectKey.replace(/"/g, '\\"')}"`)
+  // Newest first — if the user only has quota for some of them, prefer recent activity
+  const jql = jqlParts.join(' AND ') + ' ORDER BY updated DESC'
+
+  const params = new URLSearchParams({
+    jql,
+    startAt:    String(startAt),
+    maxResults: String(maxResults),
+    fields:     'summary,description,priority,comment,labels,components,status,created,updated',
+  })
+
+  const url = `${siteUrl}/rest/api/3/search?${params.toString()}`
+  const res = await fetch(url, {
+    headers: { Authorization: basicAuth(email, apiToken), Accept: 'application/json' },
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Jira search failed: ${res.status} ${res.statusText} — ${text.slice(0, 200)}`)
+  }
+
+  const data = await res.json()
+  const rawIssues = (data.issues ?? []) as Array<{ key: string; fields: Record<string, unknown> }>
+
+  // Normalise each issue using the same shape as fetchJiraIssue so the
+  // triage pipeline doesn't need a separate code path for bulk vs webhook.
+  const issues: JiraIssueData[] = rawIssues.map(issue => {
+    const f = issue.fields ?? {}
+    const description = extractAdfText((f as Record<string, unknown>).description)
+    const comments    = (((f as { comment?: { comments?: JiraComment[] } }).comment?.comments ?? []) as JiraComment[])
+      .map(extractComment)
+      .filter((s): s is string => s !== null)
+      .join('\n---\n')
+    const labels     = ((f.labels     ?? []) as string[]).filter(Boolean)
+    const components = ((f.components ?? []) as Array<{ name?: string }>)
+      .map(c => c.name ?? '')
+      .filter(Boolean)
+    const priority = (f as { priority?: { name?: string } }).priority
+
+    return {
+      bug_id:            issue.key,
+      title:             String((f as { summary?: string }).summary ?? 'Untitled'),
+      description,
+      comments,
+      reporter_priority: normalizeJiraPriority(priority?.name),
+      labels,
+      components,
+      status:            (f as { status?: { name?: string } }).status?.name ?? null,
+      created:           (f as { created?: string }).created ?? null,
+      updated:           (f as { updated?: string }).updated ?? null,
+    }
+  })
+
+  return {
+    issues,
+    total:      Number(data.total ?? 0),
+    startAt:    Number(data.startAt ?? startAt),
+    maxResults: Number(data.maxResults ?? maxResults),
+  }
+}
+
 /**
  * Verify that the credentials can reach the Jira instance.
  */
