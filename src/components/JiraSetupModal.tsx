@@ -23,6 +23,7 @@ interface SyncResult {
   skipped:                 number
   total_in_jira:           number
   capped:                  boolean
+  capped_reason:           'time' | 'quota' | null
   monthly_quota_remaining: number   // -1 = unlimited (admin)
   errors:                  Array<{ bug_id: string; error: string }>
   message?:                string
@@ -339,7 +340,7 @@ export function JiraSetupModal({ open, onClose, onIntegrationChange }: JiraSetup
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-black mb-0.5">Sync existing Jira bugs</p>
                     <p className="text-xs text-black/55 leading-relaxed">
-                      Imports up to 50 most-recently-updated bugs at a time from your Jira{integration?.project_key ? ` ${integration.project_key} project` : ''}. Re-run for more — already-imported bugs are skipped.
+                      Imports your existing Jira bugs{integration?.project_key ? ` from ${integration.project_key}` : ''} up to your remaining monthly quota. Already-imported bugs are skipped, so re-running is safe.
                     </p>
                   </div>
                   <button
@@ -358,7 +359,8 @@ export function JiraSetupModal({ open, onClose, onIntegrationChange }: JiraSetup
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-black mb-0.5">Importing bugs from Jira…</p>
                     <p className="text-xs text-black/55">
-                      Fetching, analysing, and ranking each bug. Typically 60-90 seconds. <span style={MONO}>{syncElapsed}s elapsed</span>
+                      Fetching, analysing, and ranking each bug. Can take a few minutes for larger backlogs.{' '}
+                      <span style={MONO}>{syncElapsed}s elapsed</span>
                     </p>
                   </div>
                 </div>
@@ -378,13 +380,18 @@ export function JiraSetupModal({ open, onClose, onIntegrationChange }: JiraSetup
                         {syncResult.skipped > 0 && `${syncResult.skipped} already in your backlog. `}
                         {syncResult.total_in_jira > syncResult.synced + syncResult.skipped &&
                           `${syncResult.total_in_jira} bugs match in Jira total. `}
-                        {syncResult.capped && <strong>Re-run to import more.</strong>}
+                        {syncResult.capped && syncResult.capped_reason === 'quota' && (
+                          <strong>Hit your monthly quota — upgrade or wait until next month for the rest.</strong>
+                        )}
+                        {syncResult.capped && syncResult.capped_reason === 'time' && (
+                          <strong>Re-run to import the rest — already-synced bugs are skipped.</strong>
+                        )}
                       </>
                     )}
                   </p>
                   {syncResult.errors.length > 0 && (
                     <p className="text-xs text-amber-700 mt-2">
-                      {syncResult.errors.length} bug{syncResult.errors.length === 1 ? '' : 's'} couldn&apos;t be analysed (will retry automatically).
+                      {syncResult.errors.length} bug{syncResult.errors.length === 1 ? '' : 's'} couldn&apos;t be analysed (will retry automatically via the background sync).
                     </p>
                   )}
                   <button
