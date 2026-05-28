@@ -4,6 +4,7 @@ import { triageSingleBug } from '@/lib/triage-single'
 import { extractAdfText, normalizeJiraPriority } from '@/lib/jira-api'
 import { sendP1AlertEmail } from '@/lib/email'
 import { getCalibrationBlock } from '@/lib/pm-calibration'
+import { getPlanStatus, type UserPlan } from '@/lib/plan'
 
 export const maxDuration = 60
 export const runtime = 'nodejs'
@@ -29,6 +30,23 @@ export async function POST(request: NextRequest) {
 
   if (!integration) {
     return NextResponse.json({ error: 'Invalid secret' }, { status: 401 })
+  }
+
+  // Plan gate — if the user's trial has expired and they're not paid, skip
+  // triage silently (still return 200 so Jira doesn't retry). The webhook
+  // keeps working so the user can re-enable it by subscribing, without
+  // having to reconfigure the Jira Automation rule.
+  const { data: planRow } = await supabase
+    .from('user_plans')
+    .select('*')
+    .eq('user_id', integration.user_id)
+    .single()
+  if (planRow) {
+    const status = getPlanStatus(planRow as UserPlan)
+    if (status.isTrialExpired) {
+      console.log(`[webhook/jira] Skipping triage for user ${integration.user_id} — trial expired`)
+      return NextResponse.json({ success: true, status: 'skipped', reason: 'trial_expired' })
+    }
   }
 
   const body = await request.json().catch(() => null)

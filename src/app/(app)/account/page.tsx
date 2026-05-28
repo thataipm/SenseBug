@@ -14,9 +14,14 @@ interface PlanInfo {
   bugs_per_run_limit: number
   bugs_analyzed_this_month: number
   doc_upload: boolean
+  is_trialing?: boolean
+  is_trial_expired?: boolean
+  is_paid?: boolean
+  days_left_in_trial?: number
+  trial_ends_at?: string | null
 }
 
-const PLAN_LABELS: Record<string, string> = { starter: 'Starter', pro: 'Pro', team: 'Max', max: 'Max', admin: 'Admin' }
+const PLAN_LABELS: Record<string, string> = { starter: 'Pro', pro: 'Pro', team: 'Max', max: 'Max', admin: 'Admin' }
 const MONO = { fontFamily: 'var(--font-ibm-plex-mono), monospace' }
 const HEADING = { fontFamily: 'var(--font-space-grotesk), sans-serif' }
 
@@ -192,8 +197,13 @@ function AccountContent() {
     </div>
   )
 
-  const isAdmin = plan?.plan === 'admin'
-  const isPaid  = !isAdmin && (plan?.plan === 'pro' || plan?.plan === 'max' || plan?.plan === 'team')
+  const isAdmin       = plan?.plan === 'admin'
+  // Truth source for billing UI: the /api/plan response, which knows about trial state.
+  // A trial user has plan='pro' but is_paid=false — they shouldn't see the Cancel section.
+  const isPaid        = !isAdmin && (plan?.is_paid ?? false)
+  const isTrialing    = !isAdmin && (plan?.is_trialing ?? false)
+  const isTrialExpired = !isAdmin && (plan?.is_trial_expired ?? false)
+  const daysLeftInTrial = plan?.days_left_in_trial ?? 0
 
   return (
     <div className="px-6 md:px-10 py-10 max-w-2xl mx-auto space-y-10" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
@@ -261,15 +271,17 @@ function AccountContent() {
             <div>
               <p className="text-2xl font-black tracking-tighter" style={HEADING} data-testid="account-plan-name">
                 {plan ? PLAN_LABELS[plan.plan] : '—'}
+                {isTrialing && <span className="ml-2 text-sm font-medium text-orange-600">· Trial ({daysLeftInTrial} day{daysLeftInTrial === 1 ? '' : 's'} left)</span>}
+                {isTrialExpired && <span className="ml-2 text-sm font-medium text-red-600">· Trial ended</span>}
               </p>
             </div>
-            {plan?.plan === 'starter' && !isAdmin && (
+            {(isTrialing || isTrialExpired) && !isAdmin && (
               <Link
                 href="/pricing"
                 data-testid="account-upgrade-btn"
                 className="bg-black text-white px-5 py-2.5 text-sm font-semibold hover:bg-black/85 transition-colors duration-150"
               >
-                Upgrade to Pro
+                {isTrialExpired ? 'Subscribe to continue' : 'Subscribe now'}
               </Link>
             )}
           </div>
@@ -319,7 +331,7 @@ function AccountContent() {
             <div className="px-6 py-5">
               <p className="text-sm font-medium mb-1">Cancel subscription</p>
               <p className="text-xs text-black/60 mb-4" style={MONO}>
-                Your {PLAN_LABELS[plan?.plan ?? '']} plan stays active through the end of the current billing period, then reverts to Starter (50 bugs / month).
+                Your {PLAN_LABELS[plan?.plan ?? '']} plan stays active through the end of the current billing period. After that your account becomes read-only — your backlog and history stay intact, but you won&apos;t be able to run new analyses until you re-subscribe.
               </p>
 
               {cancelStep === 'idle' && (

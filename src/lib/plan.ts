@@ -93,16 +93,20 @@ export function getPlanStatus(plan: UserPlan): PlanStatus {
     }
   }
 
-  // Trial state — based on trial_ends_at
-  const isTrialing      = trialEndsAt !== null && trialEndsAt > now && !isPaid
-  const isTrialExpired  = trialEndsAt !== null && trialEndsAt <= now && !isPaid
+  // Trial state — based on trial_ends_at.
+  // "No payment AND no trial dates" → treat as expired/blocked. This catches:
+  //   - Cancelled subscribers after subscription.expired runs
+  //   - Legacy 'starter' users who weren't grandfathered with a trial date
+  //   - Any unexpected state where the user has no valid access reason
+  const hasTrialDate    = trialEndsAt !== null
+  const isTrialing      = hasTrialDate && trialEndsAt! > now && !isPaid
+  const isTrialExpired  = (hasTrialDate && trialEndsAt! <= now && !isPaid) || (!hasTrialDate && !isPaid)
   const daysLeftInTrial = isTrialing && trialEndsAt
     ? Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     : 0
 
-  // For limit lookup: trialing users get the limits of the plan they signed up for
-  // ('starter' legacy users get Pro limits via the getPlanLimits alias above)
-  const limitPlan = (plan.plan === 'pro' || plan.plan === 'max') ? plan.plan : 'pro'
+  // For limit lookup: use the plan they signed up for (legacy 'starter' rows alias to Pro)
+  const limitPlan = (planStr === 'pro' || planStr === 'max') ? planStr : 'pro'
 
   return {
     plan: limitPlan,

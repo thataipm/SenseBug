@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidOrigin } from '@/lib/csrf'
 import { generateDetailForBug } from '@/lib/triage-detail'
-import { ensureUserPlan } from '@/lib/plan'
+import { ensureUserPlan, getPlanStatus } from '@/lib/plan'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 
@@ -57,20 +57,33 @@ export async function POST(
 
   if (resultErr || !result) return NextResponse.json({ error: 'Bug not found' }, { status: 404 })
 
-  // Plan check — rewrites are Pro+ only; impact + rationale free for all
-  const plan   = await ensureUserPlan(supabase, user.id)
-  const isPaid = plan.plan !== 'starter'
+  // Plan check — every active user (trial or paid) gets full details.
+  // Cached details are always served (no AI cost). Live generation is blocked
+  // for expired trials to avoid AI cost from a non-paying account.
+  const plan        = await ensureUserPlan(supabase, user.id)
+  const status      = getPlanStatus(plan)
+  const hasAccess   = status.isTrialing || status.isPaid
 
   // ── Cache hit: detail was already generated, return it without an AI call ──
   // Guard also checks business_impact: if a previous run stored detail_generated_at
   // but left business_impact null, regenerate rather than serving empty fields forever.
+  // Cached responses are always returned (no AI cost) — even after trial expiry, so
+  // the user can still see their existing analysis in read-only mode.
   if (result.detail_generated_at && result.business_impact != null) {
     return NextResponse.json({
       business_impact:      result.business_impact,
       rationale:            result.rationale,
-      improved_description: isPaid ? result.improved_description : null,
+      improved_description: result.improved_description,
       cached:               true,
     })
+  }
+
+  // Trial expired and no cached detail → block fresh AI generation
+  if (!hasAccess) {
+    return NextResponse.json(
+      { error: 'Your free trial has ended. Subscribe to continue generating analyses.', trial_expired: true, upgrade_url: '/pricing' },
+      { status: 402 }
+    )
   }
 
   // ── Build context: KB text fields + targeted vector chunks for this bug ────
@@ -187,7 +200,10 @@ export async function POST(
   return NextResponse.json({
     business_impact,
     rationale,
-    improved_description: isPaid ? improved_description : null,
+    // Full feature set is available to any active user (trial or paid).
+    // The trial-expiry gate above blocks generation entirely; if we reach here,
+    // the user has earned the full result.
+    improved_description,
     cached: false,
   })
 }

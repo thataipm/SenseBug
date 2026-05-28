@@ -25,6 +25,7 @@ import { triageSingleBug } from '@/lib/triage-single'
 import { getCalibrationBlock } from '@/lib/pm-calibration'
 import { sendP1AlertEmail } from '@/lib/email'
 import { rerankBacklog } from '@/lib/backlog-rerank'
+import { getPlanStatus, type UserPlan } from '@/lib/plan'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -120,6 +121,21 @@ export async function GET(request: NextRequest) {
     if (!integration) {
       console.warn(`[cron/jira-sync] No Jira integration for user ${userId} — skipping ${tickets.length} tickets`)
       continue
+    }
+
+    // Skip trial-expired users — no AI calls without an active subscription.
+    // Their pending tickets stay in the backlog; they'll be re-triaged when the user pays.
+    const { data: planRow } = await supabase
+      .from('user_plans')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
+    if (planRow) {
+      const status = getPlanStatus(planRow as UserPlan)
+      if (status.isTrialExpired) {
+        console.log(`[cron/jira-sync] Skipping ${tickets.length} tickets for user ${userId} — trial expired`)
+        continue
+      }
     }
 
     // Fetch KB + calibration + user email once per user (reused by all concurrent tasks)

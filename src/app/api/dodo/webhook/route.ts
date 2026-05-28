@@ -95,12 +95,18 @@ async function activatePlan(data: Subscription) {
     return
   }
 
+  // On upgrade: clear trial dates and reminder state — they're a paid subscriber now.
+  // getPlanStatus uses payment_subscription_id as the source of truth for isPaid, but
+  // keeping trial fields cleared keeps the data tidy and makes downgrade-then-resubscribe
+  // give them a clean state (no stale "expired trial" lingering).
   const { error } = await supabase
     .from('user_plans')
     .update({
       plan,
       payment_subscription_id: data.subscription_id,
       payment_customer_id:     data.customer.customer_id,
+      trial_ends_at:           null,
+      trial_reminders_sent:    {},
     })
     .eq('user_id', userId)
 
@@ -160,7 +166,7 @@ async function handleRenewal(data: Subscription) {
   console.log(`[dodo/webhook] handleRenewal: plan re-asserted and renewal email sent to ${data.customer.email}`)
 }
 
-/** subscription.expired — billing period ended after cancellation; downgrade to starter */
+/** subscription.expired — billing period ended after cancellation; account becomes read-only */
 async function deactivatePlan(data: Subscription) {
   const userId = await resolveUserId(data)
 
@@ -172,9 +178,18 @@ async function deactivatePlan(data: Subscription) {
     return
   }
 
+  // New trial-based model: don't downgrade to a free tier (there isn't one).
+  // Clear the subscription and set trial_ends_at to now so getPlanStatus reads
+  // them as expired — account becomes read-only until they re-subscribe.
+  // Keep the plan field as-is so we know whether they were on Pro or Max.
   const { error } = await supabase
     .from('user_plans')
-    .update({ plan: 'starter', payment_subscription_id: null, next_billing_date: null })
+    .update({
+      payment_subscription_id: null,
+      next_billing_date:       null,
+      trial_ends_at:           new Date().toISOString(),
+      trial_reminders_sent:    {},
+    })
     .eq('user_id', userId)
 
   if (error) {
@@ -182,7 +197,7 @@ async function deactivatePlan(data: Subscription) {
     return
   }
 
-  console.log(`[dodo/webhook] deactivatePlan: reset user ${userId} to starter`)
+  console.log(`[dodo/webhook] deactivatePlan: user ${userId} subscription ended → read-only`)
 
   const plan = data.metadata?.plan ?? planFromProductId(data.product_id) ?? 'Pro'
   await sendCancellationEmail({

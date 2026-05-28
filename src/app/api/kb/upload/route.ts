@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
+import { ensureUserPlan, getPlanLimits, getPlanStatus } from '@/lib/plan'
 import { isValidOrigin } from '@/lib/csrf'
 import OpenAI from 'openai'
 
@@ -56,9 +56,17 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Plan gate — document uploads are Pro and Max only
+  // Plan gate — document uploads need an active subscription or trial.
+  // Block trial-expired users to prevent OpenAI embedding cost from non-paying accounts.
   const userPlan = await ensureUserPlan(supabase, user.id)
-  const limits   = getPlanLimits(userPlan.plan)
+  const status   = getPlanStatus(userPlan)
+  if (status.isTrialExpired) {
+    return NextResponse.json(
+      { error: 'Your free trial has ended. Subscribe to continue uploading documents.', trial_expired: true, upgrade_url: '/pricing' },
+      { status: 402 }
+    )
+  }
+  const limits = getPlanLimits(status.effectivePlan)
   if (!limits.docUpload) {
     return NextResponse.json(
       { error: 'Document uploads are available on Pro and Max plans. Upgrade to unlock this feature.' },
