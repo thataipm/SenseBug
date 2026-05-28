@@ -423,8 +423,8 @@ function DashboardContent() {
             <div className="animate-float-slow inline-block mb-4">
               <Upload className="w-8 h-8 text-black/20 group-hover:text-black/40 transition-colors duration-300" strokeWidth={1.5} />
             </div>
-            <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Triage your entire backlog in minutes</h2>
-            <p className="text-sm text-black/60 mb-1">Drop a CSV from Jira, Linear, or any bug tracker. AI re-ranks every bug by real business impact.</p>
+            <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Get every bug scored and explained — in minutes</h2>
+            <p className="text-sm text-black/60 mb-1">Drop a CSV from Jira, Linear, or any bug tracker. Every bug is scored by business impact, and your backlog re-ranks automatically.</p>
             <p className="text-xs text-black/50 mb-8">Needs id, title, and priority columns. Add description and comments for sharper rankings.</p>
             <span className="bg-black text-white px-6 py-2.5 text-sm font-semibold inline-flex items-center gap-2 group-hover:bg-black/80 transition-colors duration-150">
               <Upload className="w-4 h-4" />Choose file

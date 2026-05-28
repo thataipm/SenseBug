@@ -9,18 +9,18 @@ const faqs = [
   {
     section: 'Getting Started',
     items: [
-      { q: 'What is SenseBug AI?', a: "SenseBug AI is the AI intelligence layer for your bug backlog. It automatically ranks bugs by business impact, learns your prioritisation judgment over time, and keeps your backlog healthy — all connected to Jira. Upload a CSV or connect Jira to get started." },
-      { q: 'How do I get started?', a: 'Sign up, complete the onboarding to set up your Knowledge Base (describe your product, critical flows, and modules), then upload a CSV from your bug tracker.' },
-      { q: 'What happens when I analyse bugs?', a: "SenseBug AI parses your CSV, retrieves relevant context from your Knowledge Base, and sends the bugs to Claude (Anthropic's AI) for ranking. Results appear in under a minute and are added to your persistent Backlog." },
+      { q: 'What is SenseBug?', a: "SenseBug is bug backlog intelligence for product teams. It automatically scores every bug by business impact, continuously re-ranks your backlog as new bugs arrive, explains every priority call in writing, and learns your team's judgment over time. Connect Jira or upload a CSV to get started." },
+      { q: 'How do I get started?', a: 'Sign up, complete the onboarding to set up your Knowledge Base (describe your product, critical flows, and modules), then upload a CSV from your bug tracker — or connect Jira live for continuous analysis.' },
+      { q: 'What happens when I analyse bugs?', a: "SenseBug parses your CSV (or pulls from Jira), retrieves relevant context from your Knowledge Base, and sends the bugs to Claude (Anthropic) for scoring. Results appear in under a minute and are added to your persistent Backlog, which re-ranks automatically as new bugs arrive." },
     ],
   },
   {
     section: 'CSV Format',
     items: [
       { q: 'What columns does my CSV need?', a: 'Required: id (or key/issue_key), title (or summary), and priority. Optional but recommended: description, comments, reporter, labels. More context = better AI rankings.' },
-      { q: 'Does SenseBug AI work with Jira exports?', a: "Yes. Jira exports are fully supported. SenseBug AI automatically deduplicates Jira's multi-row format (where each comment/attachment creates a separate row for the same issue)." },
+      { q: 'Does SenseBug work with Jira exports?', a: "Yes. Jira exports are fully supported. SenseBug automatically deduplicates Jira's multi-row format (where each comment/attachment creates a separate row for the same issue)." },
       { q: 'What priority values does the AI understand?', a: 'Both Jira-style (P1, P2, P3, P4) and plain English (Critical, High, Medium, Low) are understood. The AI re-ranks based on business impact, so the original priority is just one input.' },
-      { q: 'Is there a bug limit per run?', a: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Max: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, SenseBug AI sorts by original priority first so your most critical bugs are always included.' },
+      { q: 'Is there a bug limit per run?', a: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Max: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, SenseBug sorts by original priority first so your most critical bugs are always included.' },
     ],
   },
   {
@@ -173,7 +173,7 @@ export default function HelpPage() {
     <div className="px-6 md:px-10 py-10 max-w-2xl mx-auto" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       <p className="text-xs font-mono uppercase tracking-widest text-black/40 mb-3" style={MONO}>Help & FAQ</p>
       <h1 className="text-2xl font-black tracking-tighter mb-2" style={HEADING}>How can we help?</h1>
-      <p className="text-sm text-black/55 mb-10">Everything you need to know about using SenseBug AI.</p>
+      <p className="text-sm text-black/55 mb-10">Everything you need to know about using SenseBug.</p>
 
       {/* Contact / Feedback form — moved to top so it's easy to reach */}
       <div className="mb-14 border border-gray-200 p-6">

@@ -275,7 +275,7 @@ export default function HowToPrioritizeBugs() {
       <p>
         This is where AI triage tools are genuinely useful. Tools like{' '}
         <Link href="https://www.sensebug.com" className="text-black font-medium underline hover:no-underline">
-          SenseBug AI
+          SenseBug
         </Link>{' '}
         apply a consistent scoring model to every ticket in your backlog — reading descriptions
         for escalation signals, ignoring reporter labels, cross-referencing bugs against your
@@ -297,7 +297,7 @@ export default function HowToPrioritizeBugs() {
       <div className="border border-gray-200 bg-gray-50 px-6 py-6 mt-8 space-y-3">
         <p className="font-semibold text-black" style={HEAD}>Ready to see what your backlog actually looks like?</p>
         <p className="text-sm">
-          Export your Jira or Linear backlog as a CSV and run it through SenseBug AI.
+          Export your Jira or Linear backlog as a CSV and run it through SenseBug.
           The Starter plan is free — 50 bugs, no credit card required.
           The checkout bug that&apos;s been quietly filed as P3 is in there somewhere.
         </p>

@@ -8,7 +8,7 @@ export const contentType = 'image/png'
 export default async function Image({ params }: { params: { slug: string } }) {
   const post = getPost(params.slug)
 
-  const title  = post?.title       ?? 'SenseBug AI Blog'
+  const title  = post?.title       ?? 'SenseBug Blog'
   const cat    = post?.category    ?? 'Product Management'
   const rt     = post?.readTime    ?? ''
 
@@ -119,7 +119,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
                 textTransform: 'uppercase',
               }}
             >
-              SENSEBUG AI
+              SENSEBUG
             </span>
           </div>
 

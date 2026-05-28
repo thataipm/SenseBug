@@ -11,7 +11,7 @@ export function getResend(): Resend {
   return _resend
 }
 
-const FROM = 'SenseBug AI <alerts@sensebug.com>'
+const FROM = 'SenseBug <alerts@sensebug.com>'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.sensebug.com'
 
@@ -42,7 +42,7 @@ function emailShell(content: string): string {
   return `
     <div style="font-family: 'IBM Plex Sans', Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #111; padding: 0 16px;">
       <div style="border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 28px; padding-top: 32px;">
-        <span style="font-size: 18px; font-weight: 900; letter-spacing: -0.5px;">SENSEBUG AI</span>
+        <span style="font-size: 18px; font-weight: 900; letter-spacing: -0.5px;">SENSEBUG</span>
       </div>
       ${content}
       <p style="color: #bbb; font-size: 12px; margin-top: 40px; line-height: 1.6; padding-bottom: 32px; border-top: 1px solid #f0f0f0; padding-top: 20px;">
@@ -86,14 +86,14 @@ export async function sendPurchaseConfirmationEmail(params: {
     await getResend().emails.send({
       from: FROM,
       to,
-      subject: `You're on SenseBug AI ${planName} — you're all set`,
+      subject: `You're on SenseBug ${planName} — you're all set`,
       html: emailShell(`
         <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">You're on ${planName}.</h1>
         <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
           Your subscription is active and your new limits are available immediately.
         </p>
         ${receiptTable([
-          { label: 'Plan', value: `SenseBug AI ${planName}` },
+          { label: 'Plan', value: `SenseBug ${planName}` },
           { label: 'Amount', value: amount },
           { label: 'Next billing date', value: nextBillingDate },
         ])}
@@ -119,14 +119,14 @@ export async function sendRenewalEmail(params: {
     await getResend().emails.send({
       from: FROM,
       to,
-      subject: `Your SenseBug AI ${planName} subscription has been renewed`,
+      subject: `Your SenseBug ${planName} subscription has been renewed`,
       html: emailShell(`
         <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">Subscription renewed.</h1>
         <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
           Your ${planName} plan has been renewed successfully. Nothing changes — you're all set for another month.
         </p>
         ${receiptTable([
-          { label: 'Plan', value: `SenseBug AI ${planName}` },
+          { label: 'Plan', value: `SenseBug ${planName}` },
           { label: 'Amount charged', value: amount },
           { label: 'Charged on', value: billedDate },
           { label: 'Next renewal', value: nextBillingDate },
@@ -159,7 +159,7 @@ export async function sendCancellationEmail(params: {
     await getResend().emails.send({
       from: FROM,
       to,
-      subject: `Your SenseBug AI subscription has been cancelled`,
+      subject: `Your SenseBug subscription has been cancelled`,
       html: emailShell(`
         <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">Subscription cancelled.</h1>
         <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
@@ -187,11 +187,11 @@ export async function sendPaymentFailedEmail(params: {
     await getResend().emails.send({
       from: FROM,
       to,
-      subject: `Action required: SenseBug AI payment failed`,
+      subject: `Action required: SenseBug payment failed`,
       html: emailShell(`
         <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">Payment failed.</h1>
         <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
-          We weren't able to process your payment for the SenseBug AI <strong>${planName}</strong> plan.
+          We weren't able to process your payment for the SenseBug <strong>${planName}</strong> plan.
           Your subscription may be paused until payment succeeds.
         </p>
         <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
@@ -339,14 +339,14 @@ export async function sendRenewalReminderEmail(params: {
     await getResend().emails.send({
       from: FROM,
       to,
-      subject: `Your SenseBug AI subscription renews on ${renewalDate}`,
+      subject: `Your SenseBug subscription renews on ${renewalDate}`,
       html: emailShell(`
         <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">Renewal coming up.</h1>
         <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
-          Just a heads-up — your SenseBug AI <strong>${planName}</strong> subscription renews in 3 days.
+          Just a heads-up — your SenseBug <strong>${planName}</strong> subscription renews in 3 days.
         </p>
         ${receiptTable([
-          { label: 'Plan', value: `SenseBug AI ${planName}` },
+          { label: 'Plan', value: `SenseBug ${planName}` },
           { label: 'Amount', value: amount },
           { label: 'Renewal date', value: renewalDate },
         ])}

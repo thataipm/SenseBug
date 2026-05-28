@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'SenseBug AI | Every bug priority decision, justified.'
+export const alt = 'SenseBug | Your bug backlog, automatically scored and explained.'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -67,7 +67,7 @@ export default async function Image() {
               textTransform: 'uppercase',
             }}
           >
-            SENSEBUG AI
+            SENSEBUG
           </span>
         </div>
 
@@ -75,7 +75,7 @@ export default async function Image() {
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span
             style={{
-              fontSize: 64,
+              fontSize: 56,
               fontWeight: 900,
               color: '#fff',
               lineHeight: 1.05,
@@ -83,12 +83,12 @@ export default async function Image() {
               maxWidth: 680,
             }}
           >
-            Every bug priority decision, justified.
+            Your bug backlog, automatically scored and explained.
           </span>
 
           <span
             style={{
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: 400,
               color: 'rgba(255,255,255,0.5)',
               marginTop: 24,
@@ -96,7 +96,7 @@ export default async function Image() {
               lineHeight: 1.5,
             }}
           >
-            SenseBug AI ranks every bug by business impact and gives you a written rationale for every call.
+            Bug backlog intelligence for product teams. Live Jira integration, continuous re-ranking, written rationale per bug.
           </span>
         </div>
 

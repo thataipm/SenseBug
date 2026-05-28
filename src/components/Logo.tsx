@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 /**
- * SenseBug AI logo — mark + wordmark.
+ * SenseBug logo — mark + wordmark.
  *
  * Props:
  *   href        — destination when clicked (default "/")
@@ -24,7 +24,6 @@ export function Logo({
   className = '',
 }: LogoProps) {
   const ink  = variant === 'dark' ? '#FFFFFF' : '#0D0D0D'
-  const dim  = variant === 'dark' ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.35)'
   // viewBox: 100 × 44.1 (bars + dot fully contained)
   const svgW = Math.round(markHeight * (100 / 44.1))
 
@@ -57,19 +56,11 @@ export function Logo({
         style={{
           fontFamily: 'var(--font-space-grotesk), sans-serif',
           fontSize: `${markHeight}px`,
+          fontWeight: 800,
+          color: ink,
         }}
       >
-        <span style={{ fontWeight: 800, color: ink }}>SENSEBUG</span>
-        <span
-          style={{
-            fontWeight: 400,
-            color: dim,
-            fontSize: '0.78em',
-            marginLeft: '0.32em',
-          }}
-        >
-          AI
-        </span>
+        SENSEBUG
       </span>
     </Link>
   )

@@ -694,7 +694,7 @@ export default function ResultsPage() {
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <Link href="/dashboard" className="font-black text-lg tracking-tight flex-shrink-0" style={HEADING}>
-            SENSEBUG AI
+            SENSEBUG
           </Link>
           <span className="text-black/25 flex-shrink-0 hidden sm:block">|</span>
           <div className="min-w-0 hidden sm:block">
@@ -1008,9 +1008,9 @@ export default function ResultsPage() {
                     )}
                   </div>
 
-                  {/* SenseBug AI Analysis */}
+                  {/* SenseBug Analysis */}
                   <div>
-                    <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug AI Analysis</p>
+                    <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug Analysis</p>
                     {selected.rationale != null ? (
                       <p className="text-sm text-black/80 leading-relaxed">{selected.rationale}</p>
                     ) : detailLoading.has(selected.bug_id) ? (

@@ -824,7 +824,7 @@ export default function BacklogPage() {
                   {/* Rationale */}
                   {!awaitingContent && (
                   <div>
-                    <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug AI Analysis</p>
+                    <p className="text-xs font-mono uppercase tracking-widest text-black/30 mb-2" style={MONO}>SenseBug Analysis</p>
                     {selected.rationale != null ? (
                       <p className="text-sm text-black/80 leading-relaxed">{selected.rationale}</p>
                     ) : isLoadingDetail ? (

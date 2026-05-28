@@ -41,7 +41,7 @@ function LoginContent() {
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8">
             <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-              SENSEBUG AI
+              SENSEBUG
             </Link>
           </div>
 

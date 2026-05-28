@@ -30,7 +30,7 @@ export default function AuthPreviewPanel({ footerTagline = 'Make sense of your b
           className="font-black text-xl text-white tracking-tight"
           style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}
         >
-          SENSEBUG AI
+          SENSEBUG
         </div>
       </div>
 
@@ -40,7 +40,7 @@ export default function AuthPreviewPanel({ footerTagline = 'Make sense of your b
           className="text-xs font-mono uppercase tracking-widest text-white/30 mb-5"
           style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
         >
-          AI-ranked results
+          Scored &amp; explained
         </p>
 
         <div className="space-y-2 mb-8">
@@ -143,10 +143,10 @@ export default function AuthPreviewPanel({ footerTagline = 'Make sense of your b
             className="text-xl font-black text-white tracking-tight mb-2"
             style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}
           >
-            Fix what actually matters.
+            Stop the priority arguments.
           </p>
           <p className="text-sm text-white/40 leading-relaxed">
-            AI strips reporter bias and re-ranks your backlog by real business impact.
+            Every bug scored by business impact. Every priority explained in writing. Your backlog re-ranked automatically as new bugs arrive.
           </p>
         </div>
       </div>

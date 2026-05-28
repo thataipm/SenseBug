@@ -25,35 +25,35 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.sensebug.com'),
-  title: 'SenseBug AI | AI Bug Prioritization for Product Managers',
-  description: 'AI-powered bug triage and prioritization for Product Managers. Upload your Jira or Linear backlog and get a ranked list by business impact in seconds.',
+  title: 'SenseBug | Bug backlog intelligence for product teams',
+  description: 'Your bug backlog, automatically scored and explained. SenseBug analyses every bug as it\'s filed, continuously re-ranks your backlog by business impact, and explains every priority call in writing. Live Jira integration or CSV upload.',
   icons: {
     icon: '/favicon.svg',
   },
   openGraph: {
-    siteName: 'SenseBug AI',
+    siteName: 'SenseBug',
     type: 'website',
     locale: 'en_US',
     url: 'https://www.sensebug.com',
-    title: 'SenseBug AI | Every bug priority decision, justified.',
-    description: 'AI-powered bug triage for Product Managers. Upload your backlog and get a ranked list by business impact — with a written rationale for every call.',
+    title: 'SenseBug | Your bug backlog, automatically scored and explained.',
+    description: 'Bug backlog intelligence for product teams. Every bug scored as it\'s filed, the backlog continuously re-ranked, every priority explained in writing. Live Jira integration or CSV upload.',
   },
   twitter: {
     card: 'summary_large_image',
     site: '@sensebugai',
-    title: 'SenseBug AI | Every bug priority decision, justified.',
-    description: 'AI-powered bug triage for Product Managers. Upload your backlog and get a ranked list by business impact — with a written rationale for every call.',
+    title: 'SenseBug | Your bug backlog, automatically scored and explained.',
+    description: 'Bug backlog intelligence for product teams. Continuous scoring, automatic re-ranking, written rationale per bug. Live Jira integration or CSV upload.',
   },
 }
 
 const orgSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'SenseBug AI',
+  name: 'SenseBug',
   url: 'https://www.sensebug.com',
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
-  description: 'AI-powered bug triage and prioritization for Product Managers. Ranks every bug by business impact and provides a written rationale for every call.',
+  description: 'Bug backlog intelligence for product teams. Automatically scores every bug by business impact, continuously re-ranks the backlog, and explains every priority call in writing.',
   offers: [
     { '@type': 'Offer', name: 'Starter', price: '0',  priceCurrency: 'USD' },
     { '@type': 'Offer', name: 'Pro',     price: '19', priceCurrency: 'USD' },

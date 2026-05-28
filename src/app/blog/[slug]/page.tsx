@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!post) return {}
 
   return {
-    title: `${post.title} — SenseBug AI`,
+    title: `${post.title} — SenseBug`,
     description: post.description,
     alternates: {
       canonical: `/blog/${post.slug}`,
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: post.title,
       description: post.description,
       url: `https://www.sensebug.com/blog/${post.slug}`,
-      siteName: 'SenseBug AI',
+      siteName: 'SenseBug',
       type: 'article',
       publishedTime: post.date,
     },
@@ -58,7 +58,7 @@ export default async function BlogPost({ params }: Props) {
           style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}
           className="font-black text-xl tracking-tight hover:text-black/70 transition-colors duration-150"
         >
-          SENSEBUG AI
+          SENSEBUG
         </Link>
         <div className="flex items-center gap-6">
           <Link href="/blog" className="text-sm font-medium text-black/50 hover:text-black transition-colors duration-150 hidden md:block">
@@ -139,13 +139,13 @@ export default async function BlogPost({ params }: Props) {
       <footer className="px-6 md:px-12 lg:px-24 py-10 border-t border-gray-100">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="font-black text-lg tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            SENSEBUG AI
+            SENSEBUG
           </div>
           <div className="flex items-center gap-6 text-sm text-black/35">
             <Link href="/privacy" className="hover:text-black transition-colors duration-150">Privacy</Link>
             <Link href="/terms" className="hover:text-black transition-colors duration-150">Terms</Link>
             <a href="mailto:contact@sensebug.com" className="hover:text-black transition-colors duration-150">Contact</a>
-            <span>© 2026 SenseBug AI</span>
+            <span>© 2026 SenseBug</span>
           </div>
         </div>
       </footer>

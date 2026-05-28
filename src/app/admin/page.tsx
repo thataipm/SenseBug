@@ -128,7 +128,7 @@ export default function AdminPage() {
       {/* ── Top bar ── */}
       <header className="border-b border-gray-200 px-8 h-14 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
-          <span className="font-black text-lg tracking-tight" style={HEADING}>SENSEBUG AI</span>
+          <span className="font-black text-lg tracking-tight" style={HEADING}>SENSEBUG</span>
           <span className="text-xs font-mono border border-gray-200 bg-gray-50 text-black/50 px-2 py-0.5" style={MONO}>
             Admin
           </span>

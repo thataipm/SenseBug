@@ -4,13 +4,13 @@ import PricingNav from './PricingNav'
 
 export const metadata = {
   title: 'Pricing — SenseBug',
-  description: 'Free to try with 50 bugs/month. Pro at $19/mo adds live Jira integration, the weekly Monday brief, and AI calibration. Max at $49/mo for larger backlogs. No credit card required.',
+  description: 'Free to try with 50 bugs/month. Pro at $19/mo adds live Jira integration, AI calibration, and a larger monthly quota. Max at $49/mo for larger backlogs. No credit card required.',
   alternates: {
     canonical: '/pricing',
   },
   openGraph: {
     title: 'Pricing — SenseBug',
-    description: 'Free to try. Pro $19/mo unlocks live Jira integration + the weekly Monday brief + AI calibration. Max $49/mo for larger backlogs.',
+    description: 'Free to try. Pro $19/mo unlocks live Jira integration, AI calibration, and a larger quota. Max $49/mo for larger backlogs.',
     url: 'https://www.sensebug.com/pricing',
     siteName: 'SenseBug',
     type: 'website',
@@ -18,7 +18,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Pricing — SenseBug',
-    description: 'Free to try. Pro $19/mo unlocks live Jira integration + the weekly Monday brief + AI calibration.',
+    description: 'Free to try. Pro $19/mo unlocks live Jira integration, AI calibration, and a larger quota.',
   },
 }
 
@@ -35,9 +35,9 @@ export default function PricingPage() {
           Pricing
         </p>
         <h1 className="text-5xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-          Own the bug ritual.<br />Pick your scale.
+          Bug backlog intelligence.<br />Pick your scale.
         </h1>
-        <p className="text-base text-black/45 mb-0">Start free. Upgrade when your team relies on the Monday brief.</p>
+        <p className="text-base text-black/45 mb-0">Start free. Upgrade for live Jira, larger backlogs, and AI calibration.</p>
       </section>
 
       {/* Plan cards + comparison table */}
@@ -51,14 +51,15 @@ export default function PricingPage() {
             <div className="p-8 bg-white md:border-r border-gray-200 border-b md:border-b-0 flex flex-col">
               <div className="text-xs font-mono uppercase tracking-widest text-black/40 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Starter</div>
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Free</div>
-              <div className="text-sm text-black/45 mb-4">Try the analysis on your next backlog</div>
+              <div className="text-sm text-black/45 mb-4">Try the analysis on your next CSV</div>
               <ul className="text-xs text-black/50 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />50 bugs / month via CSV upload</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />AI priority, severity &amp; rationale</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Persistent backlog + P1 alerts</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Priority, severity &amp; written rationale</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Persistent backlog + automatic re-ranking</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />P1 &amp; Critical email alerts</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />CSV export of results</li>
                 <li className="flex items-center gap-2 text-black/30"><Check className="w-3.5 h-3.5 text-black/15 flex-shrink-0" strokeWidth={2.5} />No live Jira integration</li>
-                <li className="flex items-center gap-2 text-black/30"><Check className="w-3.5 h-3.5 text-black/15 flex-shrink-0" strokeWidth={2.5} />No weekly Monday brief</li>
+                <li className="flex items-center gap-2 text-black/30"><Check className="w-3.5 h-3.5 text-black/15 flex-shrink-0" strokeWidth={2.5} />No AI calibration</li>
               </ul>
               <Link href="/signup" data-testid="pricing-starter-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150">
                 Get started free
@@ -73,18 +74,19 @@ export default function PricingPage() {
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
                 $19<span className="text-xl font-normal text-white/50">/mo</span>
               </div>
-              <div className="text-sm text-white/40 mb-4">The Monday morning ritual</div>
+              <div className="text-sm text-white/40 mb-4">Live Jira + bigger backlogs</div>
               <ul className="text-xs text-white/55 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Live Jira integration (webhook-driven)</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Weekly written brief, every Monday</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Automatic re-ranking on every new bug</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />AI calibration — learns your team</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Backlog health score &amp; trends</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Document uploads for richer context</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Priority write-back to Jira on approval</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Weekly backlog summary email</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />250 bugs / month</li>
               </ul>
               <Link href="/checkout?plan=pro" data-testid="pricing-pro-btn" className="block text-center bg-white text-black py-3 text-sm font-semibold hover:bg-white/90 transition-colors duration-150">
-                Start the ritual
+                Upgrade to Pro
               </Link>
             </div>
 
@@ -94,7 +96,7 @@ export default function PricingPage() {
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
                 $49<span className="text-xl font-normal text-black/40">/mo</span>
               </div>
-              <div className="text-sm text-black/45 mb-4">For larger backlogs &amp; busier teams</div>
+              <div className="text-sm text-black/45 mb-4">For larger teams &amp; busier backlogs</div>
               <ul className="text-xs text-black/50 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Everything in Pro</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />500 bugs / month</li>
@@ -167,17 +169,17 @@ export default function PricingPage() {
                   </tr>
                 ))}
 
-                {/* ── The Ritual ── */}
+                {/* ── Workflow ── */}
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>The Monday ritual</td>
+                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Workflow</td>
                 </tr>
                 {[
-                  { label: 'Weekly written brief (Monday delivery)',  vals: [false, true,  true]  },
-                  { label: 'Backlog health score & week-over-week trend',  vals: [false, true,  true]  },
-                  { label: 'Instant P1 & Critical alerts',       vals: [true,  true,  true]  },
-                  { label: 'Approve, adjust & reject verdicts',  vals: [true,  true,  true]  },
                   { label: 'Persistent bug backlog',             vals: [true,  true,  true]  },
                   { label: 'Automatic backlog re-ranking',       vals: [true,  true,  true]  },
+                  { label: 'Approve, adjust & reject verdicts',  vals: [true,  true,  true]  },
+                  { label: 'Instant P1 & Critical alerts',       vals: [true,  true,  true]  },
+                  { label: 'Weekly backlog summary email',       vals: [true,  true,  true]  },
+                  { label: 'Backlog health score & trends',      vals: [false, true,  true]  },
                   { label: 'Run history',                        vals: [true,  true,  true]  },
                   { label: 'CSV export of results',              vals: [true,  true,  true]  },
                 ].map(({ label, vals }) => (
@@ -264,14 +266,14 @@ export default function PricingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 px-6 md:px-12 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-black/35">
-        <Link href="/" className="font-black text-sm tracking-tight text-black" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</Link>
+        <Link href="/" className="font-black text-sm tracking-tight text-black" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</Link>
         <div className="flex items-center gap-6">
           <Link href="/" className="hover:text-black transition-colors">Home</Link>
           <Link href="/support" className="hover:text-black transition-colors">Support</Link>
           <Link href="/privacy" className="hover:text-black transition-colors">Privacy</Link>
           <Link href="/terms" className="hover:text-black transition-colors">Terms</Link>
         </div>
-        <span>© 2026 SenseBug AI</span>
+        <span>© 2026 SenseBug</span>
       </footer>
     </div>
   )

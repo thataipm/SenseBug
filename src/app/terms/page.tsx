@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 
 export const metadata = {
-  title: 'Terms of Service — SenseBug AI',
-  description: 'The terms that govern your use of SenseBug AI.',
+  title: 'Terms of Service — SenseBug',
+  description: 'The terms that govern your use of SenseBug.',
   alternates: {
     canonical: '/terms',
   },
@@ -79,20 +79,20 @@ export default function TermsPage() {
 
           <section>
             <H2>Agreement to terms</H2>
-            <P>These Terms of Service (&quot;Terms&quot;) govern your access to and use of SenseBug AI (&quot;the Service&quot;), operated by SenseBug AI (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) at sensebug.com. By creating an account or using the Service, you agree to be bound by these Terms.</P>
+            <P>These Terms of Service (&quot;Terms&quot;) govern your access to and use of SenseBug (&quot;the Service&quot;), operated by SenseBug (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) at sensebug.com. By creating an account or using the Service, you agree to be bound by these Terms.</P>
             <P>If you are using the Service on behalf of an organisation, you represent that you have the authority to bind that organisation to these Terms, and references to &quot;you&quot; include that organisation.</P>
           </section>
 
           <section>
             <H2>Description of service</H2>
-            <P>SenseBug AI is an AI-assisted bug triage tool for product managers. It allows you to upload bug backlogs in CSV format, receive AI-generated priority rankings based on business impact, and record your verdicts on each bug. Results can be exported as CSV for use in sprint planning tools.</P>
+            <P>SenseBug is bug backlog intelligence for product teams. It allows you to upload bug backlogs as CSV files or connect Jira directly, receive AI-generated priority rankings based on business impact with written rationale, and record your verdicts on each bug. Your backlog re-ranks automatically as new bugs arrive. Results can be exported as CSV for use in sprint planning tools.</P>
             <P>The Service is provided &quot;as is&quot; and we may modify or discontinue features at any time. We will provide reasonable notice of significant changes.</P>
           </section>
 
           <section>
             <H2>Accounts</H2>
             <P>You must provide a valid email address to create an account. You are responsible for maintaining the security of your account credentials and for all activity that occurs under your account.</P>
-            <P>You must be at least 16 years old to use SenseBug AI. By creating an account, you confirm that you meet this requirement.</P>
+            <P>You must be at least 16 years old to use SenseBug. By creating an account, you confirm that you meet this requirement.</P>
             <P>You may not share your account with others or create accounts for third parties without their consent. Each account is for a single individual.</P>
           </section>
 
@@ -124,7 +124,7 @@ export default function TermsPage() {
 
           <section>
             <H2>Your data</H2>
-            <P>You retain ownership of all data you upload to SenseBug AI — including CSV files, bug content, and Knowledge Base entries. By uploading data, you grant us a limited licence to process it for the sole purpose of providing the Service to you.</P>
+            <P>You retain ownership of all data you upload to SenseBug — including CSV files, bug content, and Knowledge Base entries. By uploading data, you grant us a limited licence to process it for the sole purpose of providing the Service to you.</P>
             <P>
               We do not use your data to train AI models. See our{' '}
               <Link href="/privacy" className="text-black underline underline-offset-2 hover:text-black/60">Privacy Policy</Link>
@@ -138,20 +138,20 @@ export default function TermsPage() {
 
           <section>
             <H2>AI output and accuracy</H2>
-            <P>SenseBug AI uses AI to generate bug rankings and analysis. While we work hard to make these results accurate and useful, AI output is probabilistic and may contain errors, omissions, or inconsistencies.</P>
-            <P>The rankings and analysis produced by SenseBug AI are intended to assist your decision-making — not replace it. You remain responsible for the final triage decisions you make and for the consequences of those decisions on your product and team.</P>
+            <P>SenseBug uses AI to generate bug rankings and analysis. While we work hard to make these results accurate and useful, AI output is probabilistic and may contain errors, omissions, or inconsistencies.</P>
+            <P>The rankings and analysis produced by SenseBug are intended to assist your decision-making — not replace it. You remain responsible for the final triage decisions you make and for the consequences of those decisions on your product and team.</P>
             <P>We make no warranty that the Service will produce correct rankings for any specific bug or backlog.</P>
           </section>
 
           <section>
             <H2>Intellectual property</H2>
-            <P>The SenseBug AI name, logo, product design, and underlying software are our intellectual property. You may not copy, modify, or distribute them without our written permission.</P>
+            <P>The SenseBug name, logo, product design, and underlying software are our intellectual property. You may not copy, modify, or distribute them without our written permission.</P>
             <P>The AI-generated analysis and rankings produced for your specific bug data belong to you. You are free to use, share, and export them as you see fit.</P>
           </section>
 
           <section>
             <H2>Limitation of liability</H2>
-            <P>To the maximum extent permitted by applicable law, SenseBug AI shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service — including but not limited to lost revenue, lost data, or decisions made based on AI output.</P>
+            <P>To the maximum extent permitted by applicable law, SenseBug shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service — including but not limited to lost revenue, lost data, or decisions made based on AI output.</P>
             <P>Our total liability to you for any claim arising from these Terms or your use of the Service shall not exceed the amount you paid us in the 12 months preceding the claim, or $100 if you are on a free plan.</P>
           </section>
 

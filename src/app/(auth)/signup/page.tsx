@@ -70,7 +70,7 @@ function SignupContent() {
     return (
       <div className="min-h-screen flex items-center justify-center px-6" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
         <div className="max-w-sm w-full text-center">
-          <div className="font-black text-xl tracking-tight mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</div>
+          <div className="font-black text-xl tracking-tight mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</div>
           <h1 className="text-2xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Check your email</h1>
           <p className="text-sm text-black/55 mb-3">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</p>
           {plan && (
@@ -89,7 +89,7 @@ function SignupContent() {
       <div className="flex-1 flex items-center justify-center px-8 py-12">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8">
-            <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG AI</Link>
+            <Link href="/" className="font-black text-xl tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>SENSEBUG</Link>
           </div>
           <h1 className="text-3xl font-black tracking-tighter mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Create account</h1>
           <p className="text-sm text-black/45 mb-8">Free to start — no credit card required</p>

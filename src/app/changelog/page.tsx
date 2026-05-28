@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Changelog — SenseBug AI',
+  title: 'Changelog — SenseBug',
   robots: {
     index: false,
     follow: false,
@@ -31,7 +31,7 @@ export default function ChangelogPage() {
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: 'var(--font-ibm-plex-sans), sans-serif' }}>
       <header className="border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between">
-        <a href="/" className="font-black text-lg tracking-tight" style={HEADING}>SENSEBUG AI</a>
+        <a href="/" className="font-black text-lg tracking-tight" style={HEADING}>SENSEBUG</a>
         <a href="/dashboard" className="text-sm text-black/50 hover:text-black transition-colors duration-150">Dashboard →</a>
       </header>
 

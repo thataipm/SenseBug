@@ -239,7 +239,7 @@ async function runJiraWriteback(
       if (action === 'edited' && edited_severity) {
         commentLines.push(`Severity: ${edited_severity}`)
       }
-      commentLines.push('', '— Reviewed via SenseBug AI')
+      commentLines.push('', '— Reviewed via SenseBug')
 
       await addJiraComment(
         integration.site_url,

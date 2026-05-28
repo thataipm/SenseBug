@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 
 export const metadata = {
-  title: 'Privacy Policy — SenseBug AI',
-  description: 'How SenseBug AI collects, uses, and protects your data.',
+  title: 'Privacy Policy — SenseBug',
+  description: 'How SenseBug collects, uses, and protects your data.',
   alternates: {
     canonical: '/privacy',
   },
@@ -79,8 +79,8 @@ export default function PrivacyPage() {
 
           <section>
             <H2>Overview</H2>
-            <P>SenseBug AI (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) operates the SenseBug AI service at sensebug.com. This Privacy Policy explains what information we collect, how we use it, and your rights in relation to it.</P>
-            <P>By using SenseBug AI, you agree to the collection and use of information in accordance with this policy. If you do not agree, please do not use our service.</P>
+            <P>SenseBug (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) operates the SenseBug service at sensebug.com. This Privacy Policy explains what information we collect, how we use it, and your rights in relation to it.</P>
+            <P>By using SenseBug, you agree to the collection and use of information in accordance with this policy. If you do not agree, please do not use our service.</P>
           </section>
 
           <section>
@@ -100,7 +100,7 @@ export default function PrivacyPage() {
           <section>
             <H2>How we use your information</H2>
             <UL>
-              <LI>To provide, operate, and improve the SenseBug AI service</LI>
+              <LI>To provide, operate, and improve the SenseBug service</LI>
               <LI>To process your CSV uploads and generate AI triage results</LI>
               <LI>To send essential service emails (account confirmations, password resets)</LI>
               <LI>To enforce our Terms of Service and prevent abuse</LI>
@@ -111,7 +111,7 @@ export default function PrivacyPage() {
 
           <section>
             <H2>AI processing</H2>
-            <P>SenseBug AI uses third-party AI providers (including Anthropic) to analyse your bug data. When you submit a CSV for triage, the ticket content is sent to these providers to generate rankings and analysis. This data is processed under their respective data processing agreements and is not used to train their models.</P>
+            <P>SenseBug uses third-party AI providers (including Anthropic) to analyse your bug data. When you submit a CSV for triage, the ticket content is sent to these providers to generate rankings and analysis. This data is processed under their respective data processing agreements and is not used to train their models.</P>
             <P>We recommend avoiding uploading CSV files that contain personally identifiable information about your end users (e.g., customer names, emails, or IDs in ticket descriptions).</P>
           </section>
 
@@ -126,7 +126,7 @@ export default function PrivacyPage() {
 
           <section>
             <H2>Third-party services</H2>
-            <P>We use the following third-party services to operate SenseBug AI:</P>
+            <P>We use the following third-party services to operate SenseBug:</P>
             <UL>
               <LI><strong className="text-black/80 font-semibold">Supabase</strong> — database, authentication, and file storage</LI>
               <LI><strong className="text-black/80 font-semibold">Anthropic</strong> — AI language model for bug analysis</LI>
@@ -154,7 +154,7 @@ export default function PrivacyPage() {
 
           <section>
             <H2>Children</H2>
-            <P>SenseBug AI is not directed at children under the age of 16. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us and we will delete it promptly.</P>
+            <P>SenseBug is not directed at children under the age of 16. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us and we will delete it promptly.</P>
           </section>
 
           <section>

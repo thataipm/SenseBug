@@ -79,14 +79,14 @@ export async function POST(req: NextRequest) {
     const safeType    = escapeHtml(typeLabel)
 
     await resend.emails.send({
-      from: 'SenseBug AI <hello@sensebug.com>',
+      from: 'SenseBug <hello@sensebug.com>',
       to:   ADMIN_EMAIL,
       // Plain-text subject is safe — Resend treats it as text, not HTML.
       subject: `[SenseBug Feedback] ${typeLabel}: ${subject.trim()}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #111; padding: 0 16px;">
           <div style="border-bottom: 2px solid #000; padding: 24px 0 16px;">
-            <span style="font-size: 16px; font-weight: 900; letter-spacing: -0.5px;">SENSEBUG AI</span>
+            <span style="font-size: 16px; font-weight: 900; letter-spacing: -0.5px;">SENSEBUG</span>
             <span style="font-size: 12px; color: #777; margin-left: 12px; font-family: monospace;">Feedback Notification</span>
           </div>
           <div style="padding: 24px 0;">

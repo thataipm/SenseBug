@@ -3,21 +3,21 @@ import Link from 'next/link'
 import { posts, formatDate } from './lib/posts'
 
 export const metadata: Metadata = {
-  title: 'Blog — SenseBug AI',
+  title: 'Blog — SenseBug',
   description: 'Product management insights on bug triage, sprint planning, and getting your engineering team focused on what actually matters.',
   alternates: {
     canonical: '/blog',
   },
   openGraph: {
-    title: 'Blog — SenseBug AI',
+    title: 'Blog — SenseBug',
     description: 'Product management insights on bug triage, sprint planning, and getting your engineering team focused on what actually matters.',
     url: 'https://www.sensebug.com/blog',
-    siteName: 'SenseBug AI',
+    siteName: 'SenseBug',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Blog — SenseBug AI',
+    title: 'Blog — SenseBug',
     description: 'Product management insights on bug triage, sprint planning, and getting your engineering team focused on what actually matters.',
   },
 }
@@ -33,7 +33,7 @@ export default function BlogIndex() {
           style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}
           className="font-black text-xl tracking-tight hover:text-black/70 transition-colors duration-150"
         >
-          SENSEBUG AI
+          SENSEBUG
         </Link>
         <div className="flex items-center gap-6">
           <Link href="/blog" className="text-sm font-medium text-black transition-colors duration-150 hidden md:block">
@@ -122,13 +122,13 @@ export default function BlogIndex() {
       <footer className="px-6 md:px-12 lg:px-24 py-10 border-t border-gray-100 mt-8">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="font-black text-lg tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            SENSEBUG AI
+            SENSEBUG
           </div>
           <div className="flex items-center gap-6 text-sm text-black/35">
             <Link href="/privacy" className="hover:text-black transition-colors duration-150">Privacy</Link>
             <Link href="/terms" className="hover:text-black transition-colors duration-150">Terms</Link>
             <a href="mailto:contact@sensebug.com" className="hover:text-black transition-colors duration-150">Contact</a>
-            <span>© 2026 SenseBug AI</span>
+            <span>© 2026 SenseBug</span>
           </div>
         </div>
       </footer>
