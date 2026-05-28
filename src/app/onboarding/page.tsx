@@ -40,9 +40,9 @@ function OnboardingContent() {
       const res = await fetch('/api/kb')
       if (res.ok) {
         const kb = await res.json()
-        // KB already set up — skip onboarding, but preserve plan param so checkout still happens
+        // KB already set up — skip onboarding straight to dashboard
         if (kb) {
-          router.push(plan ? `/checkout?plan=${plan}` : '/dashboard')
+          router.push('/dashboard')
           return
         }
       }
@@ -107,22 +107,25 @@ function OnboardingContent() {
       return
     }
     setSaving(true)
-    const res = await fetch('/api/kb/save', {
+    const saveUrl = plan ? `/api/kb/save?plan=${encodeURIComponent(plan)}` : '/api/kb/save'
+    const res = await fetch(saveUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ product_overview: productOverview, critical_flows: criticalFlows, product_areas: productAreas }),
     })
     setSaving(false)
     if (!res.ok) { setError('Failed to save. Please try again.'); return }
-    // If user came from a paid plan signup, send them to checkout next
-    router.push(plan ? `/checkout?plan=${plan}` : '/dashboard')
+    // New trial-based flow: everyone goes straight to dashboard.
+    // The 14-day trial starts immediately; user can upgrade from pricing anytime.
+    router.push('/dashboard')
   }
 
   // Skip: save an empty KB so the guard doesn't redirect back here,
   // then go to dashboard where a soft banner nudges them to set it up.
   const handleSkip = async () => {
     setSkipping(true)
-    await fetch('/api/kb/save', {
+    const saveUrl = plan ? `/api/kb/save?plan=${encodeURIComponent(plan)}` : '/api/kb/save'
+    await fetch(saveUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ product_overview: '', critical_flows: '', product_areas: '' }),

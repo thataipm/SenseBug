@@ -20,7 +20,7 @@ const faqs = [
       { q: 'What columns does my CSV need?', a: 'Required: id (or key/issue_key), title (or summary), and priority. Optional but recommended: description, comments, reporter, labels. More context = better AI rankings.' },
       { q: 'Does SenseBug work with Jira exports?', a: "Yes. Jira exports are fully supported. SenseBug automatically deduplicates Jira's multi-row format (where each comment/attachment creates a separate row for the same issue)." },
       { q: 'What priority values does the AI understand?', a: 'Both Jira-style (P1, P2, P3, P4) and plain English (Critical, High, Medium, Low) are understood. The AI re-ranks based on business impact, so the original priority is just one input.' },
-      { q: 'Is there a bug limit per run?', a: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Max: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, SenseBug sorts by original priority first so your most critical bugs are always included.' },
+      { q: 'Is there a bug limit per run?', a: 'Pro: 250 bugs/month (up to 100 per batch). Max: 500 bugs/month (up to 250 per batch). If your CSV exceeds the per-batch cap, SenseBug sorts by original priority first so your most critical bugs are always included.' },
     ],
   },
   {
@@ -34,7 +34,7 @@ const faqs = [
   {
     section: 'Billing',
     items: [
-      { q: 'Is there a free plan?', a: 'Yes. The Starter plan is free forever — 50 bugs/month, up to 50 per run. No credit card required. Upgrade to Pro or Max whenever you need more.' },
+      { q: 'Is there a free trial?', a: 'Yes. Every signup gets a 14-day free trial — full Pro (or Max) features, no credit card required. After 14 days, choose a plan to continue. Your backlog, runs, and verdicts stay intact regardless.' },
       { q: 'Can I cancel at any time?', a: "Yes. There are no lock-in contracts. Cancel any time from your Account page and you'll retain access until the end of your billing period." },
     ],
   },

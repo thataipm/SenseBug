@@ -361,3 +361,102 @@ export async function sendRenewalReminderEmail(params: {
     console.error('[email] sendRenewalReminderEmail error:', err instanceof Error ? err.message : err)
   }
 }
+
+// ─── 7. Trial midpoint reminder (Day 7) ──────────────────────────────────────
+
+export async function sendTrialMidpointEmail(params: {
+  to: string
+  planName: string  // 'Pro' or 'Max'
+  daysLeft: number
+  bugsAnalyzed: number
+}): Promise<void> {
+  const { to, planName, daysLeft, bugsAnalyzed } = params
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: `You're halfway through your SenseBug ${planName} trial`,
+      html: emailShell(`
+        <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.3px;">
+          ${daysLeft} days left in your trial
+        </h1>
+        <p style="color: #333; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+          You've been on the SenseBug ${planName} trial for a week. So far you've analysed
+          <strong>${bugsAnalyzed} bug${bugsAnalyzed === 1 ? '' : 's'}</strong>.
+        </p>
+        <p style="color: #555; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+          Want your backlog to keep getting re-ranked automatically after the trial? Add a payment
+          method any time — your backlog stays exactly where it is, no migration needed.
+        </p>
+        ${ctaButton(`${APP_URL}/pricing`, 'See plans')}
+      `),
+    })
+  } catch (err) {
+    console.error('[email] sendTrialMidpointEmail error:', err instanceof Error ? err.message : err)
+  }
+}
+
+// ─── 8. Trial ending soon (Day 12) ────────────────────────────────────────────
+
+export async function sendTrialEndingEmail(params: {
+  to: string
+  planName: string
+  daysLeft: number  // typically 2
+}): Promise<void> {
+  const { to, planName, daysLeft } = params
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: `Your SenseBug ${planName} trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`,
+      html: emailShell(`
+        <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.3px;">
+          Trial ending in ${daysLeft} day${daysLeft === 1 ? '' : 's'}
+        </h1>
+        <p style="color: #333; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+          Your SenseBug ${planName} trial wraps up in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.
+          To keep analysing new bugs and have your backlog automatically re-ranked, choose a plan now.
+        </p>
+        <p style="color: #555; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+          Your backlog, runs, and verdicts all stay intact when the trial ends — you just won't be
+          able to run new analyses until you subscribe.
+        </p>
+        ${ctaButton(`${APP_URL}/pricing`, 'Choose a plan')}
+      `),
+    })
+  } catch (err) {
+    console.error('[email] sendTrialEndingEmail error:', err instanceof Error ? err.message : err)
+  }
+}
+
+// ─── 9. Trial expired (Day 14) ────────────────────────────────────────────────
+
+export async function sendTrialExpiredEmail(params: {
+  to: string
+  planName: string
+}): Promise<void> {
+  const { to, planName } = params
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: `Your SenseBug ${planName} trial has ended`,
+      html: emailShell(`
+        <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.3px;">
+          Your free trial has ended
+        </h1>
+        <p style="color: #333; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+          Thanks for trying SenseBug ${planName} for the last 14 days. Your account is now in
+          read-only mode — your backlog, past runs, and verdicts are all preserved, but you can't
+          run new analyses until you subscribe.
+        </p>
+        <p style="color: #555; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+          Found it useful? Pick a plan and pick up right where you left off.
+        </p>
+        ${ctaButton(`${APP_URL}/pricing`, 'See plans')}
+      `),
+    })
+  } catch (err) {
+    console.error('[email] sendTrialExpiredEmail error:', err instanceof Error ? err.message : err)
+  }
+}

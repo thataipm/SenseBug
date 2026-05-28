@@ -72,11 +72,11 @@ export default function LandingPage() {
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link
-              href="/signup"
+              href="/signup?plan=pro"
               data-testid="hero-signup-btn"
               className="bg-black text-white px-8 py-4 font-semibold text-sm flex items-center gap-2 hover:bg-black/90 transition-colors duration-150"
             >
-              Score my backlog — it&apos;s free <ArrowRight className="w-4 h-4" />
+              Start 14-day free trial <ArrowRight className="w-4 h-4" />
             </Link>
             <Link href="/login" className="text-sm font-medium text-black/40 hover:text-black transition-colors duration-150">
               Already have an account →
@@ -137,10 +137,10 @@ export default function LandingPage() {
           </div>
           <div className="mt-8 flex items-center gap-6 flex-wrap">
             <Link
-              href="/signup"
+              href="/signup?plan=pro"
               className="bg-black text-white px-8 py-3.5 font-semibold text-sm flex items-center gap-2 hover:bg-black/90 transition-colors duration-150"
             >
-              Try free — no card needed <ArrowRight className="w-4 h-4" />
+              Start free trial — no card needed <ArrowRight className="w-4 h-4" />
             </Link>
             <Link href="/pricing" className="text-sm font-medium text-black/45 hover:text-black transition-colors duration-150">
               See pricing →
@@ -206,8 +206,8 @@ export default function LandingPage() {
                 a: 'Stored encrypted in your account. Never used to train AI models. Never shared with third parties. You can delete any run, individual bugs, or your entire account at any time.',
               },
               {
-                q: 'Is there a free plan?',
-                a: 'Yes. Starter is free — 50 bugs per month, no credit card required. Upgrade to Pro ($19/mo) when you want live Jira integration, AI calibration, document uploads, and a larger monthly quota.',
+                q: 'Is there a free trial?',
+                a: 'Yes. Every signup gets a 14-day free trial of Pro (or Max if you start from that CTA) — no credit card required. You get full features, 250 bugs/month, live Jira integration, and AI calibration. After 14 days, choose a plan to continue. Your backlog stays intact regardless.',
               },
             ].map((item, i) => (
               <div key={i} className="py-6">
@@ -239,13 +239,13 @@ export default function LandingPage() {
             Make your backlog<br />defensible.
           </h2>
           <p className="text-lg text-black/50 mb-10 leading-relaxed max-w-xl mx-auto">
-            Free to start. No credit card. Get every bug scored and explained — and your backlog continuously re-ranked — in under 2 minutes.
+            14-day free trial. No credit card. Get every bug scored and explained — and your backlog continuously re-ranked — in under 2 minutes.
           </p>
           <Link
-            href="/signup"
+            href="/signup?plan=pro"
             className="bg-black text-white px-10 py-4 font-semibold text-sm inline-flex items-center gap-2 hover:bg-black/90 transition-colors duration-150"
           >
-            Score my backlog <ArrowRight className="w-4 h-4" />
+            Start 14-day free trial <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>
@@ -284,8 +284,8 @@ export default function LandingPage() {
             },
             {
               '@type': 'Question',
-              name: 'Is there a free plan?',
-              acceptedAnswer: { '@type': 'Answer', text: 'Yes. Starter is free — 50 bugs per month, no credit card required. Upgrade to Pro ($19/mo) when you want live Jira integration, AI calibration, document uploads, and a larger monthly quota.' },
+              name: 'Is there a free trial?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every signup gets a 14-day free trial of Pro (or Max) — no credit card required. Full features, 250 bugs/month, live Jira integration, AI calibration. After 14 days, choose a plan to continue.' },
             },
           ],
         }) }}

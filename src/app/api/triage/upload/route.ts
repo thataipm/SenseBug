@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { SupabaseClient } from '@supabase/supabase-js'
-import { ensureUserPlan, getPlanLimits } from '@/lib/plan'
+import { ensureUserPlan, getPlanLimits, getPlanStatus } from '@/lib/plan'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidOrigin } from '@/lib/csrf'
 import { stripJiraMarkup } from '@/lib/jira'
@@ -607,7 +607,22 @@ export async function POST(request: NextRequest) {
     ensureUserPlan(supabase, user.id),
     supabase.from('knowledge_base').select('*').eq('user_id', user.id).single(),
   ])
-  const limits = getPlanLimits(plan.plan)
+
+  // ── Trial expiry gate ───────────────────────────────────────────────────────
+  // Trial users get full Pro features for 14 days, then are blocked until they pay.
+  const status = getPlanStatus(plan)
+  if (status.isTrialExpired) {
+    return NextResponse.json(
+      {
+        error: 'Your free trial has ended. Subscribe to Pro or Max to keep analysing new bugs.',
+        trial_expired: true,
+        upgrade_url: '/pricing',
+      },
+      { status: 402 }
+    )
+  }
+
+  const limits = getPlanLimits(status.effectivePlan)
 
   const bugsConsumedSoFar = plan.monthly_bugs_consumed || 0
 

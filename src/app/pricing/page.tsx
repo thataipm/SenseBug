@@ -37,34 +37,16 @@ export default function PricingPage() {
         <h1 className="text-5xl font-black tracking-tighter mb-3" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
           Bug backlog intelligence.<br />Pick your scale.
         </h1>
-        <p className="text-base text-black/45 mb-0">Start free. Upgrade for live Jira, larger backlogs, and AI calibration.</p>
+        <p className="text-base text-black/45 mb-1">Both plans include a 14-day free trial.</p>
+        <p className="text-sm text-black/35">No credit card required to start.</p>
       </section>
 
       {/* Plan cards + comparison table */}
       <section className="px-6 md:px-12 lg:px-24 pb-24">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-3xl mx-auto">
 
-          {/* ── Plan cards ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 border border-gray-200 mb-0">
-
-            {/* Starter */}
-            <div className="p-8 bg-white md:border-r border-gray-200 border-b md:border-b-0 flex flex-col">
-              <div className="text-xs font-mono uppercase tracking-widest text-black/40 mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Starter</div>
-              <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>Free</div>
-              <div className="text-sm text-black/45 mb-4">Try the analysis on your next CSV</div>
-              <ul className="text-xs text-black/50 space-y-2 flex-1 mb-6">
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />50 bugs / month via CSV upload</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Priority, severity &amp; written rationale</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Persistent backlog + automatic re-ranking</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />P1 &amp; Critical email alerts</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />CSV export of results</li>
-                <li className="flex items-center gap-2 text-black/30"><Check className="w-3.5 h-3.5 text-black/15 flex-shrink-0" strokeWidth={2.5} />No live Jira integration</li>
-                <li className="flex items-center gap-2 text-black/30"><Check className="w-3.5 h-3.5 text-black/15 flex-shrink-0" strokeWidth={2.5} />No AI calibration</li>
-              </ul>
-              <Link href="/signup" data-testid="pricing-starter-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150">
-                Get started free
-              </Link>
-            </div>
+          {/* ── Plan cards — 2 tiers ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 border border-gray-200 mb-0">
 
             {/* Pro */}
             <div className="p-8 bg-black text-white md:border-r border-gray-200 border-b md:border-b-0 flex flex-col">
@@ -74,7 +56,7 @@ export default function PricingPage() {
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
                 $19<span className="text-xl font-normal text-white/50">/mo</span>
               </div>
-              <div className="text-sm text-white/40 mb-4">Live Jira + bigger backlogs</div>
+              <div className="text-sm text-white/40 mb-4">For PMs running one product&apos;s backlog</div>
               <ul className="text-xs text-white/55 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Live Jira integration (webhook-driven)</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Automatic re-ranking on every new bug</li>
@@ -83,11 +65,12 @@ export default function PricingPage() {
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Document uploads for richer context</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Priority write-back to Jira on approval</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />Weekly backlog summary email</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />250 bugs / month</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white/50 flex-shrink-0" strokeWidth={2.5} />250 bugs / month · 100 per batch</li>
               </ul>
-              <Link href="/checkout?plan=pro" data-testid="pricing-pro-btn" className="block text-center bg-white text-black py-3 text-sm font-semibold hover:bg-white/90 transition-colors duration-150">
-                Upgrade to Pro
+              <Link href="/signup?plan=pro" data-testid="pricing-pro-btn" className="block text-center bg-white text-black py-3 text-sm font-semibold hover:bg-white/90 transition-colors duration-150">
+                Start 14-day Pro trial
               </Link>
+              <p className="text-xs text-white/30 text-center mt-2.5">No credit card</p>
             </div>
 
             {/* Max */}
@@ -96,16 +79,17 @@ export default function PricingPage() {
               <div className="text-4xl font-black mb-1" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
                 $49<span className="text-xl font-normal text-black/40">/mo</span>
               </div>
-              <div className="text-sm text-black/45 mb-4">For larger teams &amp; busier backlogs</div>
+              <div className="text-sm text-black/45 mb-4">For heavier backlogs &amp; multi-product PMs</div>
               <ul className="text-xs text-black/50 space-y-2 flex-1 mb-6">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Everything in Pro</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />500 bugs / month</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Up to 250 bugs per single batch</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Priority support</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />500 bugs / month · 250 per batch</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Priority support (24h response)</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-black/40 flex-shrink-0" strokeWidth={2.5} />Direct founder email</li>
               </ul>
-              <Link href="/checkout?plan=max" data-testid="pricing-max-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150">
-                Get started
+              <Link href="/signup?plan=max" data-testid="pricing-max-btn" className="block text-center border border-black py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors duration-150">
+                Start 14-day Max trial
               </Link>
+              <p className="text-xs text-black/35 text-center mt-2.5">No credit card</p>
             </div>
           </div>
 
@@ -116,7 +100,6 @@ export default function PricingPage() {
                 <tr className="border-b border-gray-100">
                   <th className="text-left px-6 py-4 text-xs font-mono uppercase tracking-widest text-black/30 w-1/2" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Feature</th>
                   {[
-                    { name: 'Starter', sub: 'Free' },
                     { name: 'Pro', sub: '$19/mo', bold: true },
                     { name: 'Max', sub: '$49/mo' },
                   ].map(({ name, sub, bold }) => (
@@ -130,39 +113,40 @@ export default function PricingPage() {
               <tbody>
                 {/* ── Usage ── */}
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Usage</td>
+                  <td colSpan={3} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Usage</td>
                 </tr>
                 {[
-                  { label: 'Bugs analysed / month',  vals: ['50',        '250',       '500']       },
-                  { label: 'Bugs per CSV upload',     vals: ['50',        '100',       '250']       },
-                  { label: 'CSV uploads / month',     vals: ['Unlimited', 'Unlimited', 'Unlimited'] },
+                  { label: 'Bugs analysed / month',  vals: ['250',       '500']       },
+                  { label: 'Bugs per single batch',  vals: ['100',       '250']       },
+                  { label: 'CSV uploads / month',    vals: ['Unlimited', 'Unlimited'] },
+                  { label: 'Free trial',             vals: ['14 days',   '14 days']   },
                 ].map(({ label, vals }) => (
                   <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="px-6 py-3.5 text-black/70">{label}</td>
                     {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center text-xs font-mono font-medium ${i === 1 ? 'bg-black/[0.03]' : ''}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{v}</td>
+                      <td key={i} className={`px-6 py-3.5 text-center text-xs font-mono font-medium ${i === 0 ? 'bg-black/[0.03]' : ''}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>{v}</td>
                     ))}
                   </tr>
                 ))}
 
                 {/* ── AI Analysis ── */}
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>AI Analysis</td>
+                  <td colSpan={3} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>AI Analysis</td>
                 </tr>
                 {[
-                  { label: 'AI-assigned priority & severity',           vals: [true,  true,  true]  },
-                  { label: 'Business impact analysis',                   vals: [true,  true,  true]  },
-                  { label: 'AI reasoning & rationale',                   vals: [true,  true,  true]  },
-                  { label: 'Reporter over-inflation detection',          vals: [true,  true,  true]  },
-                  { label: 'Over-prioritised bug flagging',              vals: [true,  true,  true]  },
-                  { label: 'Possible duplicate flagging',                vals: [true,  true,  true]  },
-                  { label: 'Missing info detection',                     vals: [true,  true,  true]  },
-                  { label: 'AI-suggested ticket rewrites',               vals: [false, true,  true]  },
+                  { label: 'AI-assigned priority & severity',           vals: [true,  true]  },
+                  { label: 'Business impact analysis',                   vals: [true,  true]  },
+                  { label: 'AI reasoning & rationale',                   vals: [true,  true]  },
+                  { label: 'Reporter over-inflation detection',          vals: [true,  true]  },
+                  { label: 'Over-prioritised bug flagging',              vals: [true,  true]  },
+                  { label: 'Possible duplicate flagging',                vals: [true,  true]  },
+                  { label: 'Missing info detection',                     vals: [true,  true]  },
+                  { label: 'AI-suggested ticket rewrites',               vals: [true,  true]  },
                 ].map(({ label, vals }) => (
                   <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="px-6 py-3.5 text-black/70">{label}</td>
                     {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center ${i === 1 ? 'bg-black/[0.03]' : ''}`}>
+                      <td key={i} className={`px-6 py-3.5 text-center ${i === 0 ? 'bg-black/[0.03]' : ''}`}>
                         {v ? <Check className="w-4 h-4 text-black/50 mx-auto" strokeWidth={2.5} /> : <span className="text-black/20 text-lg leading-none">—</span>}
                       </td>
                     ))}
@@ -171,22 +155,22 @@ export default function PricingPage() {
 
                 {/* ── Workflow ── */}
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Workflow</td>
+                  <td colSpan={3} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Workflow</td>
                 </tr>
                 {[
-                  { label: 'Persistent bug backlog',             vals: [true,  true,  true]  },
-                  { label: 'Automatic backlog re-ranking',       vals: [true,  true,  true]  },
-                  { label: 'Approve, adjust & reject verdicts',  vals: [true,  true,  true]  },
-                  { label: 'Instant P1 & Critical alerts',       vals: [true,  true,  true]  },
-                  { label: 'Weekly backlog summary email',       vals: [true,  true,  true]  },
-                  { label: 'Backlog health score & trends',      vals: [false, true,  true]  },
-                  { label: 'Run history',                        vals: [true,  true,  true]  },
-                  { label: 'CSV export of results',              vals: [true,  true,  true]  },
+                  { label: 'Persistent bug backlog',             vals: [true,  true]  },
+                  { label: 'Automatic backlog re-ranking',       vals: [true,  true]  },
+                  { label: 'Approve, adjust & reject verdicts',  vals: [true,  true]  },
+                  { label: 'Instant P1 & Critical alerts',       vals: [true,  true]  },
+                  { label: 'Weekly backlog summary email',       vals: [true,  true]  },
+                  { label: 'Backlog health score & trends',      vals: [true,  true]  },
+                  { label: 'Run history',                        vals: [true,  true]  },
+                  { label: 'CSV export of results',              vals: [true,  true]  },
                 ].map(({ label, vals }) => (
                   <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="px-6 py-3.5 text-black/70">{label}</td>
                     {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center ${i === 1 ? 'bg-black/[0.03]' : ''}`}>
+                      <td key={i} className={`px-6 py-3.5 text-center ${i === 0 ? 'bg-black/[0.03]' : ''}`}>
                         {v ? <Check className="w-4 h-4 text-black/50 mx-auto" strokeWidth={2.5} /> : <span className="text-black/20 text-lg leading-none">—</span>}
                       </td>
                     ))}
@@ -195,17 +179,17 @@ export default function PricingPage() {
 
                 {/* ── Knowledge & Accuracy ── */}
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Knowledge &amp; Accuracy</td>
+                  <td colSpan={3} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Knowledge &amp; Accuracy</td>
                 </tr>
                 {[
-                  { label: 'Knowledge Base (product context)',               vals: [true,  true,  true]  },
-                  { label: 'Document uploads for richer context (PDF, MD)',  vals: [false, true,  true]  },
-                  { label: 'AI calibration — learns your team\'s priorities', vals: [false, true,  true]  },
+                  { label: 'Knowledge Base (product context)',               vals: [true,  true]  },
+                  { label: 'Document uploads for richer context (PDF, MD)',  vals: [true,  true]  },
+                  { label: 'AI calibration — learns your team\'s priorities', vals: [true,  true]  },
                 ].map(({ label, vals }) => (
                   <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="px-6 py-3.5 text-black/70">{label}</td>
                     {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center ${i === 1 ? 'bg-black/[0.03]' : ''}`}>
+                      <td key={i} className={`px-6 py-3.5 text-center ${i === 0 ? 'bg-black/[0.03]' : ''}`}>
                         {v ? <Check className="w-4 h-4 text-black/50 mx-auto" strokeWidth={2.5} /> : <span className="text-black/20 text-lg leading-none">—</span>}
                       </td>
                     ))}
@@ -214,18 +198,36 @@ export default function PricingPage() {
 
                 {/* ── Integrations ── */}
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <td colSpan={4} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Integrations</td>
+                  <td colSpan={3} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Integrations</td>
                 </tr>
                 {[
-                  { label: 'Auto-ingest bugs from Jira',                  vals: [false, true, true] },
-                  { label: 'Priority write-back to Jira on approval',     vals: [false, true, true] },
-                  { label: 'AI summary comment posted to Jira ticket',    vals: [false, true, true] },
+                  { label: 'Auto-ingest bugs from Jira',                  vals: [true, true] },
+                  { label: 'Priority write-back to Jira on approval',     vals: [true, true] },
+                  { label: 'AI summary comment posted to Jira ticket',    vals: [true, true] },
                 ].map(({ label, vals }) => (
                   <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="px-6 py-3.5 text-black/70">{label}</td>
                     {vals.map((v, i) => (
-                      <td key={i} className={`px-6 py-3.5 text-center ${i === 1 ? 'bg-black/[0.03]' : ''}`}>
+                      <td key={i} className={`px-6 py-3.5 text-center ${i === 0 ? 'bg-black/[0.03]' : ''}`}>
                         {v ? <Check className="w-4 h-4 text-black/50 mx-auto" strokeWidth={2.5} /> : <span className="text-black/20 text-lg leading-none">—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+
+                {/* ── Support ── */}
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <td colSpan={3} className="px-6 py-2 text-xs font-mono uppercase tracking-widest text-black/35" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>Support</td>
+                </tr>
+                {[
+                  { label: 'Email support',                vals: ['48h response', '24h response'] },
+                  { label: 'Direct founder email',         vals: ['—',            '✓']            },
+                ].map(({ label, vals }) => (
+                  <tr key={label} className="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td className="px-6 py-3.5 text-black/70">{label}</td>
+                    {vals.map((v, i) => (
+                      <td key={i} className={`px-6 py-3.5 text-center text-xs font-mono font-medium ${i === 0 ? 'bg-black/[0.03]' : ''}`} style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                        {v === '—' ? <span className="text-black/20 text-lg leading-none">—</span> : v === '✓' ? <Check className="w-4 h-4 text-black/50 mx-auto" strokeWidth={2.5} /> : v}
                       </td>
                     ))}
                   </tr>
@@ -234,19 +236,14 @@ export default function PricingPage() {
                 {/* CTA row */}
                 <tr>
                   <td className="px-6 py-5" />
-                  <td className="px-6 py-5 text-center">
-                    <Link href="/signup" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
-                      Get started free
-                    </Link>
-                  </td>
                   <td className="px-6 py-5 text-center bg-black/[0.03]">
-                    <Link href="/checkout?plan=pro" className="inline-block bg-black text-white px-5 py-2 text-xs font-semibold hover:bg-black/80 transition-colors duration-150">
-                      Get started
+                    <Link href="/signup?plan=pro" className="inline-block bg-black text-white px-5 py-2 text-xs font-semibold hover:bg-black/80 transition-colors duration-150">
+                      Start Pro trial
                     </Link>
                   </td>
                   <td className="px-6 py-5 text-center">
-                    <Link href="/checkout?plan=max" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
-                      Get started
+                    <Link href="/signup?plan=max" className="inline-block border border-black px-5 py-2 text-xs font-semibold hover:bg-black hover:text-white transition-colors duration-150">
+                      Start Max trial
                     </Link>
                   </td>
                 </tr>

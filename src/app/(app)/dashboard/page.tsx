@@ -53,6 +53,11 @@ interface PlanInfo {
   monthly_bug_limit: number
   bugs_per_run_limit: number
   bugs_analyzed_this_month: number
+  is_trialing?: boolean
+  is_trial_expired?: boolean
+  is_paid?: boolean
+  days_left_in_trial?: number
+  trial_ends_at?: string | null
 }
 
 interface HealthSnapshot {
@@ -173,9 +178,47 @@ function DashboardContent() {
   const atLimit         = hasMonthlyLimit && bugsAnalyzed >= monthlyBugLimit
   const usagePct        = hasMonthlyLimit && monthlyBugLimit > 0 ? Math.min(100, (bugsAnalyzed / monthlyBugLimit) * 100) : 0
 
+  // Trial state — drives the top banner (active trial) or the blocker banner (expired trial)
+  const isTrialing      = plan?.is_trialing ?? false
+  const isTrialExpired  = plan?.is_trial_expired ?? false
+  const isPaid          = plan?.is_paid ?? false
+  const daysLeftInTrial = plan?.days_left_in_trial ?? 0
+  const trialUrgent     = isTrialing && daysLeftInTrial <= 2  // last 2 days → red urgency
+
   return (
     <>
       {/* Banners */}
+      {/* Trial — expired: full blocker urging upgrade */}
+      {isTrialExpired && !isPaid && (
+        <div data-testid="trial-expired-banner" className="border-b border-red-200 bg-red-50 text-red-900 text-sm px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>Your free trial has ended. Subscribe to keep analysing new bugs — your backlog stays intact.</span>
+          </div>
+          <Link href="/pricing" className="font-medium underline whitespace-nowrap">See plans →</Link>
+        </div>
+      )}
+      {/* Trial — active: ambient reminder, urgent in last 2 days */}
+      {isTrialing && !isPaid && (
+        <div
+          data-testid="trial-active-banner"
+          className={`border-b text-sm px-6 py-3 flex items-center justify-between gap-4 ${
+            trialUrgent
+              ? 'border-red-200 bg-red-50 text-red-900'
+              : 'border-orange-100 bg-orange-50/60 text-orange-900'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+            <span>
+              {trialUrgent
+                ? `Trial ends in ${daysLeftInTrial} day${daysLeftInTrial === 1 ? '' : 's'}. Add payment to keep your backlog active.`
+                : `${daysLeftInTrial} days left in your free trial.`}
+            </span>
+          </div>
+          <Link href="/pricing" className="font-medium underline whitespace-nowrap">Choose a plan →</Link>
+        </div>
+      )}
       {atLimit && (
         <div data-testid="limit-banner" className="border-b border-orange-200 bg-orange-50 text-orange-800 text-sm px-6 py-3 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" />

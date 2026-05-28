@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { isValidOrigin } from '@/lib/csrf'
+import { ensureUserPlan } from '@/lib/plan'
 
 export async function POST(request: NextRequest) {
   if (!isValidOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Initialize the user_plans row with the chosen trial tier if not yet created.
+  // This is the first server-side action after signup confirmation — the natural
+  // place to set whether the user is starting a Pro trial or a Max trial.
+  const { searchParams } = new URL(request.url)
+  const planParam = searchParams.get('plan')
+  const initialPlan: 'pro' | 'max' = planParam === 'max' ? 'max' : 'pro'
+  await ensureUserPlan(supabase, user.id, initialPlan)
 
   const body = await request.json()
   const { product_overview, critical_flows, product_areas } = body
