@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { waitUntil } from '@vercel/functions'
 import { createClient } from '@/lib/supabase/server'
 import { isValidOrigin } from '@/lib/csrf'
 import { updateJiraPriority, addJiraComment } from '@/lib/jira-api'
 import { recomputeAndStoreCalibration } from '@/lib/pm-calibration'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,92 +149,109 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Calibration recompute — Pro+ only, triggered on every 5th verdict past 30.
-  // Awaited so Vercel doesn't kill it before completion (fire-and-forget IIFE
-  // was unreliable: the function exits as soon as the response is sent).
+  // Fire calibration and Jira write-back in the background via waitUntil.
+  // This lets Vercel keep the function alive for side-effects while the
+  // response is already delivered to the client — approve/reject feels instant.
+  waitUntil(
+    Promise.all([
+      runCalibrationIfNeeded(supabase, user.id),
+      runJiraWriteback(supabase, user.id, entry, action, edited_priority, edited_severity),
+    ])
+  )
+
+  return NextResponse.json({ success: true })
+}
+
+// ── Background helpers (called via waitUntil — run after response is sent) ───
+
+async function runCalibrationIfNeeded(supabase: SupabaseClient, userId: string) {
   try {
-    const { data: planRow } = await supabase.from('user_plans').select('plan').eq('user_id', user.id).single()
-    if (planRow && planRow.plan !== 'starter') {
-      const { count } = await supabase
-        .from('backlog')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .not('pm_action', 'is', null)
-      if (count && count >= 30 && count % 5 === 0) {
-        await recomputeAndStoreCalibration(supabase, user.id)
-      }
+    const { data: planRow } = await supabase
+      .from('user_plans').select('plan').eq('user_id', userId).single()
+    if (!planRow || planRow.plan === 'starter') return
+
+    const { count } = await supabase
+      .from('backlog')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .not('pm_action', 'is', null)
+
+    if (count && count >= 30 && count % 5 === 0) {
+      await recomputeAndStoreCalibration(supabase, userId)
     }
   } catch (e) {
-    console.error('[calibration] recompute error:', e instanceof Error ? e.message : e)
+    console.error('[calibration] background recompute error:', e instanceof Error ? e.message : e)
   }
+}
 
-  // Jira write-back — awaited so the serverless function doesn't exit before
-  // the Jira HTTP calls complete. Fire-and-forget (.then()) was being killed
-  // by Vercel before the priority update and comment actually reached Jira.
-  if (action === 'approved' || action === 'edited') {
-    const effectivePriority = action === 'edited' && edited_priority
-      ? String(edited_priority)
-      : (entry.priority ?? null)
+async function runJiraWriteback(
+  supabase: SupabaseClient,
+  userId: string,
+  entry: { bug_id: string; priority: string | null; quick_reason: string | null; business_impact: string | null; pm_action: string | null },
+  action: string,
+  edited_priority: string | null,
+  edited_severity: string | null,
+) {
+  if (action !== 'approved' && action !== 'edited') return
 
-    // Skip Jira write-back if there is no priority to send — this happens when
-    // a ticket is still pending triage (priority=null). Writing an empty priority
-    // to Jira would corrupt the ticket; the cron will re-triage and the PM can
-    // re-approve once the analysis is ready.
-    if (!effectivePriority) {
-      return NextResponse.json({ success: true })
-    }
+  const effectivePriority = action === 'edited' && edited_priority
+    ? String(edited_priority)
+    : (entry.priority ?? null)
 
+  // Skip if no priority — ticket still pending triage. Writing null to Jira would corrupt it.
+  if (!effectivePriority) return
+
+  try {
     const { data: integration } = await supabase
       .from('integrations')
       .select('site_url, email, api_token, project_key')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('provider', 'jira')
       .single()
 
-    if (integration) {
-      // If a project_key filter is set, only write back if bug_id starts with that key
-      const skip = integration.project_key
-        ? !String(entry.bug_id).toUpperCase().startsWith(String(integration.project_key).toUpperCase() + '-')
-        : false
+    if (!integration) return
 
-      if (!skip) {
-        // Priority write-back — always fires on approve/edit
-        await updateJiraPriority(
-          integration.site_url,
-          integration.email,
-          integration.api_token,
-          entry.bug_id,
-          effectivePriority
-        ).catch(e => console.error('[backlog] Jira priority write-back failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
+    const skip = integration.project_key
+      ? !String(entry.bug_id).toUpperCase().startsWith(String(integration.project_key).toUpperCase() + '-')
+      : false
 
-        // AI summary comment — only on first verdict to avoid spamming the issue
-        if (entry.pm_action === null) {
-          const commentLines: string[] = [
-            `✅ SenseBug verdict: ${action === 'approved' ? 'Approved' : 'Adjusted'} — Priority set to ${effectivePriority}`,
-          ]
-          if (entry.business_impact) {
-            commentLines.push('', `Business impact: ${entry.business_impact}`)
-          } else if (entry.quick_reason) {
-            commentLines.push('', `AI reasoning: ${entry.quick_reason}`)
-          }
-          if (action === 'edited' && edited_severity) {
-            commentLines.push(`Severity: ${edited_severity}`)
-          }
-          commentLines.push('', '— Reviewed via SenseBug AI')
+    if (skip) return
 
-          await addJiraComment(
-            integration.site_url,
-            integration.email,
-            integration.api_token,
-            entry.bug_id,
-            commentLines.join('\n')
-          ).catch(e => console.error('[backlog] Jira comment failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
-        }
+    // Priority write-back — always fires on approve/edit
+    await updateJiraPriority(
+      integration.site_url,
+      integration.email,
+      integration.api_token,
+      entry.bug_id,
+      effectivePriority,
+    ).catch(e => console.error('[backlog] Jira priority write-back failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
+
+    // AI summary comment — only on first verdict to avoid spamming the issue
+    if (entry.pm_action === null) {
+      const commentLines: string[] = [
+        `✅ SenseBug verdict: ${action === 'approved' ? 'Approved' : 'Adjusted'} — Priority set to ${effectivePriority}`,
+      ]
+      if (entry.business_impact) {
+        commentLines.push('', `Business impact: ${entry.business_impact}`)
+      } else if (entry.quick_reason) {
+        commentLines.push('', `AI reasoning: ${entry.quick_reason}`)
       }
-    }
-  }
+      if (action === 'edited' && edited_severity) {
+        commentLines.push(`Severity: ${edited_severity}`)
+      }
+      commentLines.push('', '— Reviewed via SenseBug AI')
 
-  return NextResponse.json({ success: true })
+      await addJiraComment(
+        integration.site_url,
+        integration.email,
+        integration.api_token,
+        entry.bug_id,
+        commentLines.join('\n'),
+      ).catch(e => console.error('[backlog] Jira comment failed for', entry.bug_id, ':', e instanceof Error ? e.message : e))
+    }
+  } catch (e) {
+    console.error('[backlog] Jira write-back error for', entry.bug_id, ':', e instanceof Error ? e.message : e)
+  }
 }
 
 // DELETE /api/backlog?id=<uuid>

@@ -91,12 +91,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Server misconfiguration: embedding API key missing.' }, { status: 500 })
   }
 
-  // Delete previous chunks for same filename
-  await supabase.from('kb_documents').delete().eq('user_id', user.id).eq('filename', file.name)
-
   const chunks = chunkText(text)
 
-  // Embed all chunks
+  // Build all embed rows BEFORE touching the DB.
+  // If any embedding call fails, the existing document is still intact.
   const insertRows = []
   for (let i = 0; i < chunks.length; i++) {
     let embeddingResponse
@@ -118,6 +116,9 @@ export async function POST(request: NextRequest) {
       embedding: embeddingResponse.data[0].embedding,
     })
   }
+
+  // All embeddings succeeded — safe to replace the previous version now.
+  await supabase.from('kb_documents').delete().eq('user_id', user.id).eq('filename', file.name)
 
   const { error } = await supabase.from('kb_documents').insert(insertRows)
   if (error) {

@@ -17,6 +17,9 @@ export async function PATCH(request: NextRequest) {
   if (!run_id || !action) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
+  if (!['approved', 'edited', 'rejected'].includes(action)) {
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  }
 
   // Verify run ownership
   const { data: run } = await supabase
