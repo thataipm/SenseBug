@@ -5,22 +5,22 @@ import { LandingDemo } from '@/components/LandingDemo'
 import { Logo } from '@/components/Logo'
 
 export const metadata: Metadata = {
-  title: 'SenseBug AI | Every bug priority decision, justified.',
-  description: 'Stop letting the loudest voice in the room set your sprint. SenseBug AI ranks every bug by business impact and gives you a written rationale for every call — documented, defensible, data-backed. Free for up to 50 bugs.',
+  title: 'SenseBug | The Monday morning bug ritual for engineering leaders.',
+  description: 'Connect Jira once. Every Monday, your team gets a written brief on what changed, what\'s stuck, and what to fix this week. No exports. No manual triage. Live integration, continuous priority scoring, weekly intelligence brief.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'SenseBug AI | Every bug priority decision, justified.',
-    description: 'Stop letting the loudest voice in the room set your sprint. SenseBug AI ranks every bug by business impact and gives you a written rationale for every call.',
+    title: 'SenseBug | The Monday morning bug ritual for engineering leaders.',
+    description: 'Connect Jira once. Get a written intelligence brief every Monday — what changed, what\'s stuck, what to fix this week. Forward it to your VPE.',
     url: 'https://www.sensebug.com',
-    siteName: 'SenseBug AI',
+    siteName: 'SenseBug',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SenseBug AI | Every bug priority decision, justified.',
-    description: 'Stop letting the loudest voice in the room set your sprint. Ranked by business impact, explained in plain English. Free for up to 50 bugs.',
+    title: 'SenseBug | The Monday morning bug ritual for engineering leaders.',
+    description: 'Live Jira integration. Continuous priority scoring. Weekly written brief, delivered to your inbox. Try free.',
   },
 }
 
@@ -60,14 +60,14 @@ export default function LandingPage() {
         <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-5xl mx-auto relative z-10">
           <p className="text-sm font-mono uppercase tracking-widest text-black/55 mb-8" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-            For PMs tired of defending their triage decisions every sprint
+            For engineering leaders who own a bug backlog
           </p>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.95] mb-8" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            Your bug backlog<br />is full of opinions.
+            The Monday morning<br />bug ritual.
           </h1>
           <p className="text-xl text-black/60 max-w-2xl mb-12 leading-relaxed">
-            Every ticket was filed by someone who thinks their bug is the most important one.
-            SenseBug AI ranks by business impact and documents every call — so you walk into sprint planning with evidence, not opinions.
+            Connect Jira once. Every Monday, your team gets a written brief on what changed, what&apos;s stuck, and what to fix this week.
+            No CSV exports. No manual triage. No walking into standup blind.
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link
@@ -75,7 +75,7 @@ export default function LandingPage() {
               data-testid="hero-signup-btn"
               className="bg-black text-white px-8 py-4 font-semibold text-sm flex items-center gap-2 hover:bg-black/90 transition-colors duration-150"
             >
-              Analyse my backlog — it&apos;s free <ArrowRight className="w-4 h-4" />
+              Start the ritual — it&apos;s free <ArrowRight className="w-4 h-4" />
             </Link>
             <Link href="/login" className="text-sm font-medium text-black/40 hover:text-black transition-colors duration-150">
               Already have an account →
@@ -91,10 +91,10 @@ export default function LandingPage() {
       <section className="px-6 md:px-12 lg:px-24 py-16 border-b border-gray-200">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-2xl md:text-3xl font-black tracking-tight leading-snug mb-4" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            &ldquo;Whoever complains loudest gets fixed first&rdquo; is not a prioritisation strategy.
+            Most teams triage reactively.<br />The best ones walk in with a point of view.
           </p>
           <p className="text-base text-black/40 max-w-xl mx-auto">
-            It&apos;s what happens when you have no data to argue back with. SenseBug gives you the data — and the rationale to go with it.
+            SenseBug gives you that point of view — automatically, every Monday morning, in a written brief built to be forwarded.
           </p>
         </div>
       </section>
@@ -109,18 +109,18 @@ export default function LandingPage() {
             {[
               {
                 step: '01',
-                title: 'Connect Jira — or upload a CSV',
-                desc: 'Link your Jira workspace in 60 seconds. Every new bug is automatically analysed as it\'s filed. Or drop a CSV from any tracker — no integrations required.',
+                title: 'Connect Jira in 60 seconds',
+                desc: 'One webhook URL into a Jira Automation rule. From that moment on, every new bug is automatically scored against your team\'s priorities — no exports, ever. Don\'t use Jira yet? Drop a CSV.',
               },
               {
                 step: '02',
-                title: 'AI ranks by business impact',
-                desc: 'The AI reads every ticket against your product\'s critical flows — ignoring reporter labels, catching escalation bias, and flagging vague or over-prioritised bugs.',
+                title: 'A written brief lands every Monday',
+                desc: 'Backlog health score, what changed this week, what\'s stuck, what to fix. The Monday standup pre-read. The forwardable artifact your VPE actually wants.',
               },
               {
                 step: '03',
-                title: 'Review, approve, and it learns',
-                desc: 'Approve the AI\'s call, adjust priority, or reject with a reason. P1s trigger an immediate email alert. After 30 verdicts, SenseBug learns your judgment and injects that pattern into every future ranking — automatically.',
+                title: 'It learns your team\'s judgment',
+                desc: 'Approve, adjust, or reject any call. After 30 verdicts, the analysis is calibrated to your team specifically — what you treat as P1 stays P1, what you downgrade gets flagged earlier next time.',
               },
             ].map((item, i) => (
               <div
@@ -151,10 +151,10 @@ export default function LandingPage() {
       <section className="px-6 md:px-12 lg:px-24 py-24 border-b border-gray-200">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-2xl md:text-3xl font-black tracking-tight leading-snug mb-6" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            &ldquo;The most politically useful thing it does is tell me which bugs are over-prioritised. It gives me cover to say no.&rdquo;
+            &ldquo;The Monday brief is the only Jira-adjacent thing I forward to my VPE without rewriting it first.&rdquo;
           </p>
           <p className="text-sm text-black/40 font-mono uppercase tracking-widest" style={{ fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-            — Product Manager, B2B SaaS
+            — Engineering Manager, B2B SaaS
           </p>
         </div>
       </section>
@@ -172,36 +172,40 @@ export default function LandingPage() {
           <div className="space-y-0 divide-y divide-gray-100">
             {[
               {
-                q: 'Does SenseBug connect directly to Jira?',
-                a: 'Yes. Connect your Jira workspace under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule — once set up, every new bug is automatically analysed and prioritised as it\'s filed, no exports needed. P1 bugs trigger an immediate email alert. When you approve a verdict, SenseBug writes the AI-assigned priority back to Jira.',
+                q: 'How is this different from Jira\'s built-in AI?',
+                a: 'Jira\'s AI ranks tickets inside Jira. SenseBug gives you a written brief outside it — built to be forwarded to leadership, not lived inside a ticket queue. We also track patterns across time (priority inflation per reporter, aging P1s, recurring escalation) that a single-ticket AI inside Jira can\'t see.',
               },
               {
-                q: 'I use both Jira and CSV uploads. How do they rank together?',
-                a: 'Seamlessly. Every triaged bug — whether it arrived via the Jira webhook or a CSV upload — is scored on the same four signals: priority tier, severity, ticket quality, and PM verdict. Bugs are then assigned a global rank 1-N so your backlog produces a single ordered list across both sources. The Jira sync cron re-ranks automatically after every batch of new tickets; you can also trigger it manually with the Re-rank button in your backlog.',
+                q: 'Couldn\'t I just paste my CSV into ChatGPT or Claude?',
+                a: 'You could — once. The value isn\'t the analysis itself. It\'s that it happens automatically every week, integrates with Jira live (no exports), learns your team\'s specific judgment over 30+ verdicts, and produces a forwardable artifact you can hand to leadership. ChatGPT won\'t show up in your inbox at 7am Monday on its own.',
               },
               {
-                q: 'What CSV format does SenseBug AI need?',
-                a: 'Required columns: id (or key / issue_key), title (or summary), and priority. Optional but recommended: description, comments, reporter, labels. More context = more accurate rankings. Jira and Linear exports work out of the box.',
+                q: 'How does the Jira integration actually work?',
+                a: 'Connect under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule. From that moment on, every new bug is automatically analysed and prioritised as it\'s filed. P1s trigger an immediate alert. When you approve a verdict, the AI-assigned priority is written back to Jira automatically. Setup takes ~60 seconds.',
+              },
+              {
+                q: 'Don\'t use Jira yet? CSV upload still works.',
+                a: 'Drop a CSV from any tracker — Linear, GitHub Issues, Shortcut, Asana. Required columns: id, title, priority. Optional but recommended: description, comments, reporter, labels. The first weekly brief gets generated from your most recent CSV.',
+              },
+              {
+                q: 'What\'s in the weekly brief?',
+                a: 'Backlog health score with trend vs last week. New bugs filed in the last 7 days with recommended priority + one-line rationale. Aging tickets (P1s open >14 days, P2s >30 days). Priority inflation patterns (anonymized). One specific recommendation for the week. Methodology — what was analysed and how.',
               },
               {
                 q: 'How does the AI rank bugs without knowing my product?',
-                a: 'It uses your Knowledge Base — a short description of your product, your critical user flows, and your modules. Set it up once in onboarding and every future run gets ranked against what actually matters for your business.',
+                a: 'It uses your Knowledge Base — a short description of your product, your critical user flows, and your modules. Set it up once during onboarding. Every future analysis is ranked against what actually matters for your business, not generic "all bugs are equal" defaults.',
               },
               {
                 q: 'What does "Likely over-prioritised" mean?',
-                a: "It means the AI found no business-critical evidence to justify the original priority label. Common causes: the reporter used P1 for visibility, the bug affects a non-critical flow, or a workaround exists. You can approve, override, or reject the verdict.",
-              },
-              {
-                q: 'Is there a limit on how many bugs I can analyse?',
-                a: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Max: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, SenseBug AI sorts by original priority first so your most critical bugs are always included.',
+                a: "It means SenseBug found no business-critical evidence to justify the original priority label. Common causes: the reporter used P1 for visibility, the bug affects a non-critical flow, or a workaround exists. You can approve, override, or reject the verdict — and after 30 verdicts the calibration starts catching these patterns earlier.",
               },
               {
                 q: 'What happens to my data?',
-                a: 'Your CSV data and Knowledge Base are stored securely in your account and never used to train AI models. Results are private to your account. You can delete any run or your entire account at any time.',
+                a: 'Stored encrypted in your account. Never used to train AI models. Never shared with third parties. You can delete any run, the weekly brief history, or your entire account at any time.',
               },
               {
                 q: 'Is there a free plan?',
-                a: 'Yes. The Starter plan is free forever — 50 bugs per month, no credit card required. Upgrade to Pro or Max when you need larger backlogs or Knowledge Base document uploads.',
+                a: 'Yes. Starter is free — 50 bugs per month, no credit card required. Upgrade to Pro ($19/mo) when you want live Jira integration, the weekly brief, AI calibration, and a larger monthly cap.',
               },
             ].map((item, i) => (
               <div key={i} className="py-6">
@@ -230,16 +234,16 @@ export default function LandingPage() {
             Get started
           </p>
           <h2 className="text-5xl md:text-6xl font-black tracking-tighter leading-none mb-6" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>
-            Stop defending.<br />Start deciding.
+            Stop triaging.<br />Start owning the ritual.
           </h2>
           <p className="text-lg text-black/50 mb-10 leading-relaxed max-w-xl mx-auto">
-            50 bugs, completely free. No credit card. Upload your backlog and get a ranked list with a written rationale for every call — the documented case you need before your next sprint planning.
+            Free to start. No credit card. Connect Jira in 60 seconds — or upload a CSV — and have your first written brief in your inbox before Monday.
           </p>
           <Link
             href="/signup"
             className="bg-black text-white px-10 py-4 font-semibold text-sm inline-flex items-center gap-2 hover:bg-black/90 transition-colors duration-150"
           >
-            Triage my backlog — it&apos;s free <ArrowRight className="w-4 h-4" />
+            Start free <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>
@@ -253,38 +257,33 @@ export default function LandingPage() {
           mainEntity: [
             {
               '@type': 'Question',
-              name: 'Does SenseBug connect directly to Jira?',
-              acceptedAnswer: { '@type': 'Answer', text: 'Yes. Connect your Jira workspace under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule — once set up, every new bug is automatically analysed and prioritised as it\'s filed. P1 bugs trigger an immediate email alert. When you approve a verdict, SenseBug writes the AI-assigned priority back to Jira.' },
+              name: 'How is this different from Jira\'s built-in AI?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Jira\'s AI ranks tickets inside Jira. SenseBug gives you a written brief outside it — built to be forwarded to leadership, not lived inside a ticket queue. We also track patterns across time (priority inflation per reporter, aging P1s, recurring escalation) that a single-ticket AI inside Jira can\'t see.' },
             },
             {
               '@type': 'Question',
-              name: 'What CSV format does SenseBug AI need?',
-              acceptedAnswer: { '@type': 'Answer', text: 'Required columns: id (or key / issue_key), title (or summary), and priority. Optional but recommended: description, comments, reporter, labels. More context means more accurate rankings. Jira and Linear exports work out of the box.' },
+              name: 'How does the Jira integration actually work?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Connect under Settings → Integrations. SenseBug gives you a webhook URL to paste into a Jira Automation rule. From that moment on, every new bug is automatically analysed and prioritised as it\'s filed. P1s trigger an immediate alert. When you approve a verdict, the AI-assigned priority is written back to Jira automatically.' },
             },
             {
               '@type': 'Question',
-              name: 'How does the AI rank bugs without knowing my product?',
-              acceptedAnswer: { '@type': 'Answer', text: 'It uses your Knowledge Base — a short description of your product, your critical user flows, and your modules. Set it up once in onboarding and every future run gets ranked against what actually matters for your business.' },
+              name: 'What\'s in the weekly brief?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Backlog health score with trend vs last week. New bugs filed in the last 7 days with recommended priority + one-line rationale. Aging tickets (P1s open >14 days, P2s >30 days). Priority inflation patterns (anonymized). One specific recommendation for the week.' },
             },
             {
               '@type': 'Question',
-              name: 'What does "Likely over-prioritised" mean?',
-              acceptedAnswer: { '@type': 'Answer', text: 'It means the AI found no business-critical evidence to justify the original priority label. Common causes: the reporter used P1 for visibility, the bug affects a non-critical flow, or a workaround exists. You can approve, override, or reject the verdict.' },
-            },
-            {
-              '@type': 'Question',
-              name: 'Is there a limit on how many bugs I can analyse?',
-              acceptedAnswer: { '@type': 'Answer', text: 'Starter: 50 bugs/month (up to 50 per run). Pro: 250 bugs/month (up to 100 per run). Max: 500 bugs/month (up to 250 per run). If your CSV exceeds the per-run cap, SenseBug AI sorts by original priority first so your most critical bugs are always included.' },
-            },
-            {
-              '@type': 'Question',
-              name: 'Is there a free plan?',
-              acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Starter plan is free forever — 50 bugs per month, no credit card required. Upgrade to Pro or Max when you need larger backlogs or Knowledge Base document uploads.' },
+              name: 'Don\'t use Jira yet? CSV upload still works.',
+              acceptedAnswer: { '@type': 'Answer', text: 'Drop a CSV from any tracker — Linear, GitHub Issues, Shortcut, Asana. Required columns: id, title, priority. Optional but recommended: description, comments, reporter, labels.' },
             },
             {
               '@type': 'Question',
               name: 'What happens to my data?',
-              acceptedAnswer: { '@type': 'Answer', text: 'Your CSV data and Knowledge Base are stored securely in your account and never used to train AI models. Results are private to your account. You can delete any run or your entire account at any time.' },
+              acceptedAnswer: { '@type': 'Answer', text: 'Stored encrypted in your account. Never used to train AI models. Never shared with third parties. You can delete any run, the weekly brief history, or your entire account at any time.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'Is there a free plan?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Yes. Starter is free — 50 bugs per month, no credit card required. Upgrade to Pro ($19/mo) when you want live Jira integration, the weekly brief, AI calibration, and a larger monthly cap.' },
             },
           ],
         }) }}

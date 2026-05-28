@@ -50,6 +50,16 @@ export async function GET(request: NextRequest) {
 
   for (const userId of uniqueUserIds) {
     try {
+      // ── 0. Gate by plan — the Monday brief is Pro+ only ────────────────────
+      // Starter users keep the analysis tool but don't get the recurring artifact.
+      // The brief is the upgrade reason.
+      const { data: planRow } = await supabase
+        .from('user_plans')
+        .select('plan')
+        .eq('user_id', userId)
+        .single()
+      if (!planRow || planRow.plan === 'starter') continue
+
       // ── 1. Get the user's most recent run ──────────────────────────────────
       const { data: latestRun } = await supabase
         .from('triage_runs')
