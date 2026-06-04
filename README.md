@@ -1,70 +1,119 @@
-# Getting Started with Create React App
+# SenseBug — Bug Backlog Intelligence
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> Connect Jira (or upload a CSV). Every bug is automatically scored by business impact, the backlog continuously re-ranks itself, and every priority comes with a written rationale.
 
-## Available Scripts
+SenseBug is an AI intelligence layer for bug backlogs, built for product managers who own triage. Instead of a flat list of inconsistently-prioritized tickets, it gives the PM a defensible, consistent, automatically-updated point of view they can stand behind and share upward.
 
-In the project directory, you can run:
+**Live (when running):** [sensebug.com](https://www.sensebug.com) · **Status:** Built and shipped solo, 2026
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## The problem it solves
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+PMs who own a bug backlog face the same recurring problem every sprint: deciding what matters, then defending those decisions to engineering, sales, and leadership. Engineers file everything as Critical. Sales escalates whoever complained loudest. Leadership asks why a given bug is or isn't being worked on. The backlog offers no narrative.
 
-### `npm test`
+SenseBug reads every ticket against the product's critical flows, strips reporter bias, ranks by real business impact, and writes a one-line rationale for every call — so the PM walks into sprint planning with evidence, not opinions.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## Key features
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Live Jira integration** — a webhook fires on every new/updated bug; it's analysed and prioritized the moment it's filed. No manual exports.
+- **CSV upload** — drop an export from Jira, Linear, GitHub Issues, Shortcut, Asana, or anywhere. Smart column detection + fuzzy header matching.
+- **Two-pass AI analysis** — Haiku for fast batch scoring (priority, severity, quality flags); Sonnet for on-demand deep analysis (business impact, rationale, ticket rewrites).
+- **Continuous re-ranking** — when a new bug arrives, the whole open backlog re-orders automatically. No stale rankings, no manual triage runs.
+- **PM calibration** — after 30 verdicts, the system learns the team's judgment (what they treat as P1, what they downgrade) and injects that pattern into every future analysis.
+- **Reporter-bias removal** — the model derives priority from ticket content, explicitly ignoring the reporter's self-assigned label.
+- **Knowledge Base + RAG** — product context and uploaded docs (PDF/Word/MD) are embedded into pgvector and retrieved per-bug for product-aware ranking.
+- **Backlog health score** — a 0-100 score with week-over-week trend, plus a weekly email digest.
+- **Jira write-back** — approved priorities sync back to the ticket with an AI summary comment.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Engineering highlights
 
-### `npm run eject`
+A few decisions worth calling out:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- **Serverless-aware AI pipeline** — batch LLM calls run with bounded concurrency and retry logic; long-running work (Jira write-back, calibration recompute) uses Vercel's `waitUntil` so the response returns instantly while side-effects finish in the background.
+- **Idempotent bulk sync** — the "import all Jira bugs" endpoint paginates through the Jira REST API, skips already-imported bugs, respects the user's monthly quota, and self-limits against the function timeout with an in-flight advisory lock to prevent double-counting on parallel runs.
+- **Two-tier model strategy for cost** — Haiku (cheap, fast) handles the high-volume batch scoring; Sonnet (higher quality) is reserved for on-demand per-bug detail. Keeps AI cost at roughly $0.02/bug.
+- **Trial system** — 14-day no-credit-card trial computed from a single `getPlanStatus()` source of truth, with consistent expiry gating across every AI-consuming endpoint and a daily reminder cron.
+- **Row-Level Security throughout** — every user-data table is RLS-protected; every API route is auth-gated with ownership checks on mutations.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Tech stack
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 (App Router), TypeScript, React 19, Tailwind CSS |
+| Hosting | Vercel (serverless functions + cron) |
+| Database / Auth | Supabase (Postgres, pgvector, Row-Level Security) |
+| AI | Anthropic Claude (Haiku + Sonnet), OpenAI embeddings |
+| Email | Resend |
+| Billing | DodoPayments |
 
-## Learn More
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Local development
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+# 1. Install dependencies
+yarn install
 
-### Code Splitting
+# 2. Create .env.local with the required keys (see below)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+# 3. Run the dev server (no function timeout locally — full AI features work)
+yarn dev
+```
 
-### Analyzing the Bundle Size
+Open [http://localhost:3000](http://localhost:3000).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+> **Why run locally?** Vercel's Hobby tier caps serverless functions at 10s, which is too short for the AI triage pipeline. The local dev server has no such limit, so **all features work end-to-end locally** regardless of the deployed tier. This is the recommended way to see full functionality. See [`DEMO.md`](./DEMO.md) for a guided walkthrough.
 
-### Making a Progressive Web App
+### Required environment variables (`.env.local`)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 
-### Advanced Configuration
+# AI
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+# Email
+RESEND_API_KEY=
 
-### Deployment
+# Billing (optional for local demo)
+DODO_PAYMENTS_API_KEY=
+DODO_PAYMENTS_WEBHOOK_KEY=
+DODO_PAYMENTS_ENVIRONMENT=
+DODO_PRO_PRODUCT_ID=
+DODO_MAX_PRODUCT_ID=
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+# Config
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+ADMIN_EMAIL=                 # log in with this email for admin + unlimited usage
+CRON_SECRET=                 # any random string for local
+```
 
-### `npm run build` fails to minify
+### Sample data
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+[`demo-backlog.csv`](./demo-backlog.csv) contains 18 realistic bugs crafted to show off the AI's range — genuine P1s, over-prioritized cosmetic tickets, duplicates, missing repro steps, financial-integrity bugs, and customer escalations with ARR signals. Upload it to produce a varied, impressive triage result.
+
+---
+
+## Scripts
+
+```bash
+yarn dev      # local dev server on :3000
+yarn build    # production build
+yarn start    # serve the production build
+yarn lint     # eslint
+```
+
+---
+
+*Built solo, 2026. A product + engineering exercise in turning an LLM into a defensible workflow product rather than a thin wrapper.*
