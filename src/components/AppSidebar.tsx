@@ -51,13 +51,24 @@ export function AppSidebar() {
   useEffect(() => {
     const supabase = createClient()
     let channel: ReturnType<typeof supabase.channel> | null = null
+    // Guards the async race in React Strict Mode (dev double-mount): if the
+    // component unmounts before getUser() resolves, we must NOT create the
+    // channel — otherwise the second mount reuses the already-subscribed
+    // channel by topic name and .on() throws
+    // "cannot add postgres_changes callbacks after subscribe()".
+    let cancelled = false
 
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return
+      if (cancelled || !data.user) return
       setEmail(data.user.email ?? '')
       const meta = data.user.user_metadata ?? {}
       const full = meta.full_name || `${meta.first_name ?? ''} ${meta.last_name ?? ''}`.trim()
       setDisplayName(full)
+
+      // Defensive: drop any stale channel with this topic left over from a
+      // previous mount before creating a fresh one.
+      const existing = supabase.getChannels().find(c => c.topic === 'realtime:sidebar-jira-inserts')
+      if (existing) supabase.removeChannel(existing)
 
       // Global Jira realtime subscription — shows a toast on any page when a
       // new bug arrives via the Jira webhook so the PM always gets notified.
@@ -86,7 +97,12 @@ export function AppSidebar() {
     fetch('/api/plan').then(r => r.ok ? r.json() : null).then(d => d && setPlan(d))
     refreshBadge()
 
-    return () => { if (channel) createClient().removeChannel(channel) }
+    return () => {
+      cancelled = true
+      // Remove via the SAME client instance that created the channel (not a
+      // fresh createClient()), so it actually leaves the right registry.
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [refreshBadge])
 
   // Auto-dismiss Jira toast after 7 seconds
