@@ -37,17 +37,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Checkout is not configured yet. Please contact support.' }, { status: 503 })
   }
 
-  // Guard: prevent duplicate subscriptions
+  // Guard: prevent duplicate subscriptions — but ONLY for users who are already
+  // PAYING. Trial users have plan='pro' with no payment_subscription_id; they
+  // must be able to convert to a paid subscription. Checking the plan name alone
+  // would block every trial→paid conversion in the single-plan model.
   const { data: userPlanData } = await supabase
     .from('user_plans')
-    .select('plan')
+    .select('plan, payment_subscription_id')
     .eq('user_id', user.id)
     .single()
 
-  const currentRank = PLAN_RANK[userPlanData?.plan ?? 'starter'] ?? 0
-  const requestedRank = PLAN_RANK[plan] ?? 0
-  if (currentRank >= requestedRank) {
-    return NextResponse.json({ error: 'already_subscribed' }, { status: 409 })
+  if (userPlanData?.payment_subscription_id) {
+    const currentRank = PLAN_RANK[userPlanData?.plan ?? 'starter'] ?? 0
+    const requestedRank = PLAN_RANK[plan] ?? 0
+    if (currentRank >= requestedRank) {
+      return NextResponse.json({ error: 'already_subscribed' }, { status: 409 })
+    }
   }
 
   try {

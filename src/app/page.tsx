@@ -207,7 +207,7 @@ export default function LandingPage() {
               },
               {
                 q: 'Is there a free trial?',
-                a: 'Yes. Every signup gets a 14-day free trial of Pro (or Max if you start from that CTA) — no credit card required. You get full features, 250 bugs/month, live Jira integration, and AI calibration. After 14 days, choose a plan to continue. Your backlog stays intact regardless.',
+                a: 'Yes. Every signup gets a 14-day free trial — no credit card required. There\'s one plan ($29/mo) and the trial includes the full product: live Jira integration, continuous re-ranking, AI calibration, and a written rationale for every bug. After 14 days, subscribe to continue. Your backlog stays intact regardless.',
               },
             ].map((item, i) => (
               <div key={i} className="py-6">
@@ -285,7 +285,7 @@ export default function LandingPage() {
             {
               '@type': 'Question',
               name: 'Is there a free trial?',
-              acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every signup gets a 14-day free trial of Pro (or Max) — no credit card required. Full features, 250 bugs/month, live Jira integration, AI calibration. After 14 days, choose a plan to continue.' },
+              acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every signup gets a 14-day free trial — no credit card required. One plan at $29/mo; the trial includes the full product: live Jira integration, continuous re-ranking, AI calibration, and a written rationale for every bug. After 14 days, subscribe to continue.' },
             },
           ],
         }) }}
