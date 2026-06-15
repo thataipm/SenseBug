@@ -1,20 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/renewal-reminder",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/trial-reminders",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/weekly-digest",
-      "schedule": "0 8 * * 1"
-    },
-    {
-      "path": "/api/cron/jira-sync",
-      "schedule": "*/30 * * * *"
-    }
-  ]
+  "crons": []
 }

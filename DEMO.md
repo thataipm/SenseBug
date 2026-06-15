@@ -12,10 +12,27 @@ The project was parked in 2026 with Vercel downgraded to Hobby. As a result:
 |---|---|---|
 | **Live triage on sensebug.com** | ❌ Times out | Vercel Hobby caps functions at 10s; the AI pipeline needs longer |
 | **Supabase database** | ⏸️ Auto-pauses after ~7 days idle | Free-tier behavior — must be manually resumed |
-| **Vercel crons** | ❌ Off schedule | Hobby tier cron limits |
+| **Vercel crons** | ❌ Removed from vercel.json | Hobby allows max 2 crons, once-daily; our config exceeded that and blocked deploys |
 | **Local dev (`yarn dev`)** | ✅ Fully works | No function timeout locally |
 
 **Bottom line: do NOT demo from the live URL. Demo locally, or use the recorded video.**
+
+### Restoring crons when you upgrade to Vercel Pro
+
+`vercel.json` was emptied to `{ "crons": [] }` so Hobby would accept deploys.
+The cron *route files* are all still in `src/app/api/cron/`. To re-enable the
+schedule after upgrading to Pro, paste this back into `vercel.json`:
+
+```json
+{
+  "crons": [
+    { "path": "/api/cron/renewal-reminder", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/trial-reminders",  "schedule": "0 9 * * *" },
+    { "path": "/api/cron/weekly-digest",    "schedule": "0 8 * * 1" },
+    { "path": "/api/cron/jira-sync",         "schedule": "*/30 * * * *" }
+  ]
+}
+```
 
 ---
 
